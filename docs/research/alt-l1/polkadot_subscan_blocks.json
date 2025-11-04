@@ -1,0 +1,19 @@
+{
+  "block_num": 28489131,
+  "block_timestamp": 1762231392,
+  "hash": "0x3e6b5e49967065f4efe4b90954e261b0f8a01bc8470d27425929df06841292b5",
+  "event_count": 58,
+  "extrinsics_count": 2,
+  "finalized": false,
+  "ref_time": 321928280202,
+  "max_ref_time": 0,
+  "proof_size": 589674,
+  "max_proof_size": 0,
+  "account_display": {
+    "address": "15twfAkh6TKdNpE7kNgxcQSRYtSpt3QpgjxmR6HKHFGs6Yrz",
+    "people": {
+      "display": "Figment 4",
+      "identity": true
+    }
+  }
+}

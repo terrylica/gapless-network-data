@@ -1,0 +1,36 @@
+[
+  {
+    "date": "2025-11-03T00:00:00Z",
+    "level": 10763151,
+    "timestamp": "2025-11-03T23:59:52Z",
+    "totalSupply": 1084161581884738,
+    "circulatingSupply": 1064098768580992,
+    "totalBootstrapped": 156020221896628,
+    "totalCommitments": 608298376116072,
+    "totalActivated": 588235562812327,
+    "totalCreated": 322319799697333,
+    "totalBurned": 2166088173252,
+    "totalBanished": 310727652043,
+    "totalFrozen": 294875143206648,
+    "totalRollupBonds": 0,
+    "totalSmartRollupBonds": 40000000000,
+    "totalLost": 1
+  },
+  {
+    "date": "2025-11-02T00:00:00Z",
+    "level": 10752378,
+    "timestamp": "2025-11-02T23:59:52Z",
+    "totalSupply": 1084060767316057,
+    "circulatingSupply": 1063997954012311,
+    "totalBootstrapped": 156020221896628,
+    "totalCommitments": 608298376116072,
+    "totalActivated": 588235562812327,
+    "totalCreated": 322204953511418,
+    "totalBurned": 2165849463502,
+    "totalBanished": 296934744559,
+    "totalFrozen": 294508023847698,
+    "totalRollupBonds": 0,
+    "totalSmartRollupBonds": 40000000000,
+    "totalLost": 1
+  }
+]

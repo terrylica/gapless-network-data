@@ -1,0 +1,1003 @@
+openapi: 3.1.0
+info:
+  title: Gapless Network Data - Master Project Roadmap
+  version: 0.1.0
+  description: |
+    Single Source of Truth (SSoT) for gapless-network-data project planning.
+    Coordinates all phases, specifications, and implementation work.
+
+    This is the master coordination file that links all sub-specifications:
+    - documentation-audit-phase.yaml (completed 2025-11-03)
+    - duckdb-integration-strategy.yaml (planning complete 2025-11-03)
+    - Future phase specifications
+
+    Architecture: OpenAPI 3.1.1 machine-readable format
+    Pattern: Logical dependencies (capabilities, not time-based)
+    Evolution: Dynamic - findings tracked in x-implementation-findings
+
+  x-metadata:
+    project_name: "gapless-network-data"
+    project_version: "v0.1.0 (alpha)"
+    current_phase: "Phase 0: Foundation (complete), Phase 1: Basic Collection (planned)"
+    next_milestone: "v0.2.0 (Ethereum PRIMARY + Bitcoin SECONDARY collection)"
+    last_updated: "2025-11-04T01:00:00Z"
+    supersedes: ["duckdb-integration-strategy.yaml (implementation-focused roadmap)"]
+    focus_shift: |
+      1. Feature-driven planning (WHAT to collect) vs architecture-driven (HOW to implement)
+      2. Ethereum LlamaRPC (12s high-frequency) as PRIMARY focus, Bitcoin mempool.space (5min low-frequency) as SECONDARY
+      3. Chronological phase ordering: Collection → Quality → Features → Expansion → Production → Release
+
+  x-architecture:
+    core_principle: "Parquet for Data, DuckDB for Queries"
+    rationale: |
+      Store all immutable time-series data in Parquet files.
+      Use DuckDB as query engine for analytics and validation.
+
+    benefits:
+      - "110x storage savings (Parquet vs DuckDB tables)"
+      - "10-100x performance gains (DuckDB SQL vs Python/pandas)"
+      - "Zero-copy queries (read Parquet without loading into memory)"
+      - "Production-proven (DoorDash case study)"
+
+  x-slos:
+    correctness:
+      target: "100% data accuracy"
+      measurement: "All validation layers pass, no silent errors"
+      validation: "5-layer validation pipeline + DuckDB CHECK constraints"
+      failure_mode: "Exception-only failures (no defaults, no fallbacks)"
+
+    observability:
+      target: "100% operation tracking"
+      measurement: "All data collection and validation logged"
+      log_format: "timestamp, operation, status, duration, errors"
+      storage: "Parquet validation reports (queryable with DuckDB)"
+      failure_mode: "Silent failures, missing audit trail"
+
+    maintainability:
+      target: "<30 minutes for common operations"
+      measurement: "Time to add new validation layer, new collector, new query"
+      documentation: "Hub-and-spoke with progressive disclosure (CLAUDE.md)"
+      failure_mode: "Undocumented patterns, unclear architecture"
+
+x-project-phases:
+  phase_0_foundation:
+    name: "Foundation & Research"
+    status: "completed"
+    duration: "2025-10-28 to 2025-11-03"
+    completion_date: "2025-11-03"
+
+    objectives:
+      - "Establish package structure and SDK quality standards"
+      - "Research data sources (mempool.space, LlamaRPC)"
+      - "Document collector patterns from GitHub projects"
+      - "Audit documentation quality (5-agent investigation)"
+      - "Investigate DuckDB opportunities (5-agent investigation)"
+
+    deliverables:
+      - status: "completed"
+        item: "Package structure with PEP 561 compliance (py.typed)"
+      - status: "completed"
+        item: "API interface (fetch_snapshots, get_latest_snapshot)"
+      - status: "completed"
+        item: "Structured exceptions (HTTP, Validation, RateLimit)"
+      - status: "completed"
+        item: "Retry logic (exponential backoff, max 3 retries)"
+      - status: "completed"
+        item: "LlamaRPC research (52 files, ~1MB documentation)"
+      - status: "completed"
+        item: "Collector patterns documentation (28 patterns)"
+      - status: "completed"
+        item: "Documentation audit (6 findings, all resolved)"
+      - status: "completed"
+        item: "DuckDB investigation (23 features, 110x savings, 10-100x speedups)"
+
+    findings:
+      architecture:
+        - "Referential implementation: gapless-crypto-data provides proven ValidationStorage pattern"
+        - "DuckDB optimal for time-series analytics (not just storage)"
+        - "Parquet better for immutable data (110x smaller than DuckDB tables)"
+        - "ASOF JOIN prevents data leakage (critical for trading models)"
+
+      data_sources:
+        - "mempool.space: M5 recent, H12 historical (Bitcoin)"
+        - "LlamaRPC: 12s block-level, 2015+ archive (Ethereum)"
+        - "No multi-source redundancy for Bitcoin (single public API)"
+
+      documentation:
+        - "Blob calculations outdated (EIP-7691: 6→9 blobs)"
+        - "Collector patterns 54% complete (missing tradeoffs, 4 patterns)"
+        - "Applicability claims 77% accurate (Ethereum→Bitcoin requires adaptation)"
+
+    success_gates:
+      - gate: "SDK quality standards defined"
+        status: "passed"
+        evidence: "PEP 561 compliance, structured exceptions, type stubs"
+
+      - gate: "Data sources validated"
+        status: "passed"
+        evidence: "mempool.space REST API confirmed (10 req/sec, no auth)"
+
+      - gate: "Architecture principle established"
+        status: "passed"
+        evidence: "Parquet for Data, DuckDB for Queries (investigation-backed)"
+
+      - gate: "Documentation quality acceptable"
+        status: "passed"
+        evidence: "All 6 audit findings resolved, 85% compliance"
+
+  phase_1_basic_collection:
+    name: "Basic Data Collection (Prove We Can Collect)"
+    status: "planned"
+    estimated_duration: "1-2 weeks"
+    dependencies: ["phase_0_foundation"]
+
+    objectives:
+      - "Collect Ethereum block data (12-second intervals) - PRIMARY HIGH-FREQUENCY SOURCE"
+      - "Collect Bitcoin mempool snapshots (5-minute intervals) - LOWER FREQUENCY"
+      - "Store reliably in Parquet format"
+      - "Basic validation (RPC/HTTP, schema)"
+
+    priority_note: "Ethereum is the only validated high-frequency source (~12s blocks). Bitcoin mempool.space provides 5-min granularity only."
+
+    features:
+      ethereum_network_collection:
+        name: "Ethereum Block Data"
+        priority: "P0"
+        effort: "6-8 hours"
+        status: "pending"
+
+        what_to_collect:
+          - "LlamaRPC eth_getBlockByNumber (latest block every 12 seconds)"
+          - "Key fields: number, timestamp, baseFeePerGas, gasUsed, gasLimit, transactions.length"
+          - "Store as: ethereum_YYYYMMDD_HH.parquet (300 blocks per hour)"
+
+        tasks:
+          - task: "LlamaRPC collector implementation"
+            effort: "3-4 hours"
+            details:
+              - "web3.py client with LlamaRPC endpoint"
+              - "Poll latest block every 12 seconds (eth_getBlockByNumber('latest'))"
+              - "Extract 6 core fields from block object"
+              - "Convert to pandas DataFrame with DatetimeIndex"
+              - "Write to Parquet (1-hour files, snappy compression)"
+
+          - task: "Basic validation (Layer 1-2 only)"
+            effort: "2-3 hours"
+            details:
+              - "Layer 1: RPC call validation (connection, response structure)"
+              - "Layer 2: Schema validation (6 fields present, correct types)"
+              - "Raise structured exceptions on failure"
+              - "No historical backfill yet (deferred to Phase 2)"
+
+          - task: "Multi-chain API"
+            effort: "1-2 hours"
+            details:
+              - "Add chain parameter: fetch_snapshots(chain='bitcoin'|'ethereum')"
+              - "Separate storage directories: data/bitcoin/, data/ethereum/"
+              - "Chain-specific collectors (dispatch by chain)"
+
+        acceptance_criteria:
+          - "Successfully collect Ethereum blocks every 12 seconds"
+          - "Data stored in Parquet format (correct schema)"
+          - "RPC errors handled with retry logic"
+          - "Schema validation catches missing/malformed fields"
+          - "Multi-chain API works: fetch_snapshots(chain='ethereum')"
+          - "Manual verification: 1 hour of data ≈ 300 blocks in Parquet file"
+
+      bitcoin_mempool_collection:
+        name: "Bitcoin Mempool Snapshots"
+        priority: "P1"
+        effort: "4-6 hours"
+        status: "pending"
+
+        what_to_collect:
+          - "mempool.space /api/mempool endpoint (5-minute intervals only)"
+          - "9 fields: timestamp, unconfirmed_count, vsize_mb, total_fee_btc, 5 fee rates"
+          - "Store as: bitcoin_mempool_YYYYMMDD_HH.parquet (12 snapshots per hour)"
+
+        limitation: "Bitcoin mempool.space provides M5 (5-minute) granularity for recent data, H12 (12-hour) for historical. Not true high-frequency."
+
+        tasks:
+          - task: "Implement mempool.space collector"
+            effort: "2-3 hours"
+            details:
+              - "Poll /api/mempool every 300 seconds (5 minutes)"
+              - "Extract 9 fields from JSON response"
+              - "Convert to pandas DataFrame with DatetimeIndex"
+              - "Write to Parquet (1-hour files, snappy compression)"
+
+          - task: "Basic validation (Layer 1-2 only)"
+            effort: "2-3 hours"
+            details:
+              - "Layer 1: HTTP validation (200 OK, timeout handling)"
+              - "Layer 2: Schema validation (all 9 fields present, correct types)"
+              - "Raise structured exceptions on failure"
+
+        acceptance_criteria:
+          - "Successfully collect Bitcoin mempool snapshots every 5 minutes"
+          - "Data stored in Parquet format (correct schema)"
+          - "HTTP errors handled with retry logic"
+          - "Schema validation catches missing/malformed fields"
+          - "Manual verification: 1 hour of data = 12 snapshots in Parquet file"
+
+    deliverables:
+      - "Ethereum network data collection via LlamaRPC (PRIMARY - 12s high-frequency)"
+      - "Bitcoin mempool snapshots (SECONDARY - 5min low-frequency)"
+      - "Multi-chain API: fetch_snapshots(chain='ethereum'|'bitcoin')"
+      - "Parquet storage format (1-hour files)"
+      - "Basic validation (HTTP/RPC + schema)"
+
+    success_gates:
+      - gate: "Ethereum collection operational (PRIMARY)"
+        criteria:
+          - "LlamaRPC integration working"
+          - "Collect blocks every ~12 seconds"
+          - "Extract 6 core fields: number, timestamp, baseFeePerGas, gasUsed, gasLimit, transactions.length"
+          - "Data stored in Parquet format"
+          - "Basic validation (RPC + schema) operational"
+
+      - gate: "Bitcoin collection operational (SECONDARY)"
+        criteria:
+          - "mempool.space integration working"
+          - "Collect snapshots every 5 minutes"
+          - "Extract 9 fields (mempool metrics + fee rates)"
+          - "Data stored in Parquet format"
+          - "Basic validation (HTTP + schema) operational"
+
+      - gate: "Multi-chain API working"
+        criteria:
+          - "fetch_snapshots(chain='ethereum') works"
+          - "fetch_snapshots(chain='bitcoin') works"
+          - "Separate storage: data/ethereum/, data/bitcoin/"
+          - "Chain-specific collectors dispatched correctly"
+
+  phase_2_data_quality:
+    name: "Data Quality & Validation (Prove It's Reliable)"
+    status: "planned"
+    estimated_duration: "1-2 weeks"
+    dependencies: ["phase_1_basic_collection"]
+
+    objectives:
+      - "Complete 5-layer validation pipeline"
+      - "Gap detection and automatic backfill"
+      - "Zero-gap guarantee for Ethereum (high-frequency source)"
+      - "ValidationStorage for audit trail"
+
+    features:
+      validation_pipeline:
+        name: "5-Layer Validation Pipeline"
+        priority: "P0"
+        effort: "6-8 hours"
+
+        layers:
+          - layer: "Layer 1 - HTTP/RPC Validation (already implemented)"
+          - layer: "Layer 2 - Schema Validation (already implemented)"
+          - layer: "Layer 3 - Sanity Checks"
+            details:
+              - "Ethereum: baseFeePerGas > 0, gasUsed <= gasLimit, timestamp increasing"
+              - "Bitcoin: fee ordering (fastest >= half_hour >= hour >= economy >= minimum)"
+              - "Value range checks"
+          - layer: "Layer 4 - Gap Detection"
+            details:
+              - "Detect missing intervals (Ethereum: >15s gaps, Bitcoin: >6min gaps)"
+              - "Use DuckDB LAG() window function (20x faster than Python)"
+              - "Return gap ranges with start, end, duration, missing_count"
+          - layer: "Layer 5 - Anomaly Detection"
+            details:
+              - "Z-score anomaly detection on key metrics"
+              - "Ethereum: baseFeePerGas spikes, gasUsed anomalies"
+              - "Bitcoin: vsize spikes, fee rate anomalies"
+              - "Use DuckDB QUALIFY clause (10x faster than pandas)"
+
+        tasks:
+          - task: "Implement Layer 3 sanity checks"
+            effort: "2 hours"
+          - task: "Implement Layer 4 gap detection (DuckDB LAG)"
+            effort: "2-3 hours"
+          - task: "Implement Layer 5 anomaly detection (DuckDB QUALIFY)"
+            effort: "2-3 hours"
+
+      gap_backfill:
+        name: "Automatic Gap Backfill"
+        priority: "P0"
+        effort: "6-8 hours"
+
+        what_to_backfill:
+          - "Ethereum: Use LlamaRPC to fetch missing blocks by number"
+          - "Bitcoin: Limited by mempool.space granularity (5min recent, 12hr historical)"
+
+        tasks:
+          - task: "Ethereum historical backfill"
+            effort: "4-5 hours"
+            details:
+              - "Detect gaps in block sequence"
+              - "Fetch missing blocks by number: eth_getBlockByNumber(block_num)"
+              - "Parallel requests with rate limiting"
+              - "Progress tracking and resume capability"
+              - "Validation for backfilled data"
+
+          - task: "Bitcoin backfill (limited)"
+            effort: "2-3 hours"
+            details:
+              - "Detect gaps in 5-minute snapshots"
+              - "Attempt backfill from mempool.space historical API (12hr granularity)"
+              - "Document granularity limitations"
+
+      validation_storage:
+        name: "ValidationStorage for Audit Trail"
+        priority: "P0"
+        effort: "4-5 hours"
+
+        what_to_store:
+          - "Validation reports: timestamp, layer, severity, status, details"
+          - "Store as Parquet files: validation_reports_YYYYMMDD.parquet"
+          - "Queryable with DuckDB (110x smaller than DuckDB tables)"
+
+        tasks:
+          - task: "Implement Parquet-backed ValidationStorage"
+            effort: "3-4 hours"
+            details:
+              - "Write validation reports to Parquet (daily files)"
+              - "Query interface using DuckDB read_parquet()"
+              - "Aggregation queries (error trending, layer performance)"
+
+          - task: "Validation report viewer"
+            effort: "1-2 hours"
+            details:
+              - "CLI command: validate view --date=YYYY-MM-DD"
+              - "Show validation summary (errors by layer, severity)"
+              - "Filter by chain, layer, severity"
+
+    deliverables:
+      - "5-layer validation pipeline operational"
+      - "Gap detection for Ethereum (12s granularity)"
+      - "Automatic backfill for Ethereum (historical blocks)"
+      - "ValidationStorage with Parquet backend"
+      - "Zero-gap guarantee for Ethereum"
+
+    success_gates:
+      - gate: "Validation pipeline complete"
+        criteria:
+          - "All 5 layers operational"
+          - "Sanity checks enforce data quality rules"
+          - "Gap detection finds 100% of missing intervals"
+          - "Anomaly detection flags outliers (z-score > 3)"
+
+      - gate: "Zero-gap guarantee achieved"
+        criteria:
+          - "Ethereum: No gaps >15 seconds in collected data"
+          - "Automatic backfill recovers missing blocks"
+          - "Bitcoin: Acknowledged 5-min granularity limitation"
+
+      - gate: "ValidationStorage operational"
+        criteria:
+          - "Validation reports stored in Parquet"
+          - "Query interface working (DuckDB)"
+          - "CLI validation viewer functional"
+          - "Documentation complete"
+
+  phase_3_feature_engineering:
+    name: "Feature Engineering (Prove It's Useful)"
+    status: "planned"
+    estimated_duration: "1-2 weeks"
+    dependencies: ["phase_2_data_quality"]
+
+    objectives:
+      - "Temporal alignment with OHLCV data (prevent data leakage)"
+      - "Cross-domain features (Ethereum gas + price, Bitcoin mempool + price)"
+      - "Production-ready examples for ML pipelines"
+      - "Integration with gapless-crypto-data"
+
+    features:
+      temporal_alignment:
+        name: "Temporal Alignment with OHLCV"
+        priority: "P0"
+        effort: "6-8 hours"
+
+        why_needed: "Align network data (Ethereum gas, Bitcoin mempool) with price data (OHLCV) for feature engineering. Must prevent data leakage (no lookahead bias)."
+
+        tasks:
+          - task: "Implement align_with_ohlcv() function"
+            effort: "3-4 hours"
+            details:
+              - "Use DuckDB ASOF JOIN for forward-fill alignment"
+              - "Prevents data leakage: ON ohlcv.timestamp >= network.timestamp"
+              - "16x faster than pandas reindex (800ms → 50ms)"
+              - "Works for both Ethereum and Bitcoin data"
+
+          - task: "Integration with gapless-crypto-data"
+            effort: "2-3 hours"
+            details:
+              - "Test alignment with BTCUSDT OHLCV (1-minute)"
+              - "Test alignment with ETHUSDT OHLCV (1-minute)"
+              - "Verify no lookahead bias (unit tests)"
+              - "Performance benchmarks vs pandas"
+
+          - task: "Documentation and examples"
+            effort: "1-2 hours"
+            details:
+              - "docs/guides/FEATURE_ENGINEERING.md"
+              - "Example: Ethereum gas + ETHUSDT OHLCV"
+              - "Example: Bitcoin mempool + BTCUSDT OHLCV"
+
+      cross_domain_features:
+        name: "Cross-Domain Feature Examples"
+        priority: "P0"
+        effort: "6-8 hours"
+
+        features_to_implement:
+          ethereum:
+            - "Gas pressure ratio: baseFeePerGas / historical_median"
+            - "Block utilization: gasUsed / gasLimit"
+            - "Gas-adjusted returns: (price_change * gasLimit) / gasUsed"
+            - "Congestion z-score: (gasUsed - mean) / std"
+            - "Transaction velocity: transactions.length / block_time"
+
+          bitcoin:
+            - "Fee pressure ratio: fastest_fee / economy_fee"
+            - "Mempool congestion z-score: (unconfirmed_count - mean) / std"
+            - "Volume per transaction: OHLCV_volume / unconfirmed_count"
+            - "Fee efficiency: total_fee_btc / vsize_mb"
+
+          cross_chain:
+            - "Relative network activity: ETH_gas_used / BTC_mempool_size"
+            - "Fee correlation: ETH_baseFee vs BTC_fastest_fee"
+
+        tasks:
+          - task: "Implement 10+ cross-domain features"
+            effort: "4-5 hours"
+          - task: "Create 43-feature engineering script"
+            effort: "2-3 hours"
+            details:
+              - "Update existing script with real Ethereum + Bitcoin data"
+              - "Demonstrate full feature engineering pipeline"
+              - "Output ready-to-use feature matrix for ML"
+
+    deliverables:
+      - "Temporal alignment API (align_with_ohlcv function)"
+      - "10+ documented cross-domain features"
+      - "Working examples: Ethereum + ETHUSDT, Bitcoin + BTCUSDT"
+      - "43-feature engineering script"
+      - "docs/guides/FEATURE_ENGINEERING.md"
+
+    success_gates:
+      - gate: "Temporal alignment working"
+        criteria:
+          - "align_with_ohlcv() prevents data leakage (verified)"
+          - "10x+ faster than pandas reindex"
+          - "Works for both Ethereum and Bitcoin"
+          - "Unit tests verify no lookahead bias"
+
+      - gate: "Cross-domain features ready"
+        criteria:
+          - "At least 10 features implemented and documented"
+          - "Working examples for both chains"
+          - "43-feature script generates ML-ready output"
+          - "Documentation complete with usage examples"
+
+  phase_4_multi_chain_expansion:
+    name: "Multi-Chain Expansion (Scale Horizontally)"
+    status: "future"
+    estimated_duration: "2-3 weeks"
+    dependencies: ["phase_3_feature_engineering"]
+
+    objectives:
+      - "Add more blockchain data sources (Solana, Avalanche, Polygon, etc.)"
+      - "Expand Ethereum metrics (full 26-field block schema)"
+      - "Historical backfill for all chains (where available)"
+
+    what_to_collect:
+      solana:
+        - "Block-level data (slot, blockHeight, blockTime, transactions)"
+        - "Network metrics (TPS, block times, fee rates)"
+        - "Source: Helius RPC or public Solana RPC"
+        - "Granularity: ~400ms block time (ultra high-frequency)"
+
+      avalanche:
+        - "C-Chain block data (number, timestamp, gasUsed, gasLimit, baseFeePerGas)"
+        - "Source: Avalanche public RPC"
+        - "Granularity: ~2s block time"
+
+      polygon:
+        - "PoS chain block data (same schema as Ethereum)"
+        - "Source: Polygon public RPC"
+        - "Granularity: ~2s block time"
+
+      ethereum_expanded:
+        - "Full 26-field block schema (from LlamaRPC research)"
+        - "20+ derived metrics (difficulty, totalDifficulty, size, uncles, etc.)"
+        - "Transaction-level metrics (average gas price, tx count by type)"
+
+    deliverables:
+      - "Support for 5+ blockchains (Ethereum, Bitcoin, Solana, Avalanche, Polygon)"
+      - "Full 26-field Ethereum schema implemented"
+      - "Historical backfill for Ethereum (2015-2025, ~12M blocks)"
+      - "Unified multi-chain API"
+
+  phase_5_production_features:
+    name: "Production Features (CLI, Monitoring, Alerts)"
+    status: "future"
+    estimated_duration: "2-3 weeks"
+    dependencies: ["phase_4_multi_chain_expansion"]
+
+    objectives:
+      - "Production-ready CLI (stream, backfill, validate, export)"
+      - "Real-time monitoring and alerting"
+      - "Performance optimization for large datasets"
+
+    features:
+      production_cli:
+        - "stream command: Real-time continuous collection"
+        - "backfill command: Historical data with progress tracking"
+        - "validate command: View validation reports"
+        - "export command: Multi-format export (CSV, JSON, Arrow)"
+
+      monitoring_alerts:
+        - "Real-time anomaly detection (fee spikes, congestion events)"
+        - "Custom alerting rules (user-defined thresholds)"
+        - "Alert delivery (email, webhook, Telegram)"
+        - "Network health dashboard queries"
+
+      performance:
+        - "DuckDB query optimization for multi-year datasets"
+        - "Remote Parquet access (S3, CDN) via httpfs extension"
+        - "Parallel query execution"
+        - "10x+ speedup for large aggregations"
+
+    deliverables:
+      - "Full-featured CLI with 4 commands"
+      - "Real-time alerting system"
+      - "Performance optimization (10x+ for large datasets)"
+      - "Remote data access capability"
+
+  phase_6_release:
+    name: "Release v1.0.0"
+    status: "future"
+    estimated_duration: "2-3 weeks"
+    dependencies: ["phase_5_production_features"]
+
+    objectives:
+      - "Complete documentation (all 9 pending docs)"
+      - "70%+ test coverage"
+      - "CI/CD automation"
+      - "PyPI publishing"
+      - "Community resources"
+
+    scope:
+      documentation:
+        - "docs/architecture/OVERVIEW.md - System architecture and data flow"
+        - "docs/architecture/DATA_FORMAT.md - Multi-chain data schemas"
+        - "docs/guides/DATA_COLLECTION.md - Collection guides for all supported chains"
+        - "docs/guides/python-api.md - Complete API reference with examples"
+        - "docs/guides/FEATURE_ENGINEERING.md - Cross-domain feature engineering"
+        - "docs/validation/OVERVIEW.md - 5-layer validation system"
+        - "docs/validation/STORAGE.md - Validation storage and query patterns"
+        - "docs/development/SETUP.md - Development environment setup"
+        - "docs/development/PUBLISHING.md - Release and publishing workflow"
+
+      testing:
+        - "70%+ test coverage (SDK, collectors, validation)"
+        - "Unit tests for all public APIs"
+        - "Integration tests (end-to-end collection + validation)"
+        - "Multi-chain tests (Bitcoin, Ethereum, alt-L1s)"
+        - "Performance regression tests"
+
+      ci_cd:
+        - "GitHub Actions workflow (test, lint, type-check)"
+        - "PyPI trusted publishing setup"
+        - "Pre-commit hooks (ruff, mypy, pytest)"
+        - "Automated releases with semantic versioning"
+        - "Documentation auto-generation"
+
+      community:
+        - "README.md with quick-start examples"
+        - "CONTRIBUTING.md guidelines"
+        - "Example notebooks (Jupyter) for common use cases"
+        - "Video tutorials (data collection, feature engineering)"
+        - "Discord/Slack community setup"
+
+    deliverables:
+      - "Complete documentation (100% of pending docs)"
+      - "70%+ test coverage across all modules"
+      - "CI/CD pipeline operational"
+      - "PyPI package published (v1.0.0)"
+      - "Community onboarding resources"
+
+    success_gates:
+      - gate: "Documentation complete"
+        criteria:
+          - "All 9 pending documentation files written"
+          - "API reference complete with examples"
+          - "Multi-chain guides for all supported chains"
+          - "Feature engineering examples working"
+
+      - gate: "Testing complete"
+        criteria:
+          - "70%+ coverage achieved"
+          - "All tests passing (unit + integration)"
+          - "Multi-chain tests for all supported chains"
+          - "Performance regression tests in place"
+
+      - gate: "CI/CD operational"
+        criteria:
+          - "GitHub Actions workflow running"
+          - "PyPI trusted publishing configured"
+          - "Pre-commit hooks working"
+          - "Automated releases functional"
+
+      - gate: "v1.0.0 release ready"
+        criteria:
+          - "All success gates passed"
+          - "PyPI package published"
+          - "Community resources available"
+          - "No critical bugs in issue tracker"
+
+x-sub-specifications:
+  documentation_audit:
+    file: "/Users/terryli/eon/gapless-network-data/specifications/documentation-audit-phase.yaml"
+    status: "completed"
+    completion_date: "2025-11-03"
+    scope: "Documentation quality audit and fixes"
+    findings:
+      - "Blob calculations outdated (EIP-7691)"
+      - "Collector patterns 54% complete"
+      - "Applicability claims 77% accurate"
+      - "YAML frontmatter missing"
+      - "File paths missing trailing spaces"
+    resolution: "All 6 findings resolved, compliance 62% → 85%"
+
+  duckdb_integration:
+    file: "/Users/terryli/eon/gapless-network-data/specifications/duckdb-integration-strategy.yaml"
+    status: "planning complete"
+    scope: "DuckDB integration strategy and implementation"
+    findings:
+      - "23 DuckDB features discovered"
+      - "110x storage savings with Parquet"
+      - "10-100x performance gains"
+      - "Production evidence: DoorDash case study"
+      - "ASOF JOIN prevents data leakage"
+    priorities:
+      phase_1: "6 high-priority features (14-19 hours)"
+      phase_2: "Analytics & optimization (10-13 hours)"
+      phase_3: "Advanced features (5-8 hours)"
+
+x-implementation-findings:
+  finding_1:
+    date: "2025-11-03"
+    phase: "phase_0_foundation"
+    topic: "DuckDB optimal use case"
+    discovery: |
+      DuckDB should be used as query engine, not persistent storage.
+      Parquet provides 110x storage savings for immutable time-series data.
+    impact: "Architecture revised: Parquet for Data, DuckDB for Queries"
+    action: "Update ValidationStorage design to use Parquet backend"
+    status: "Integrated into Phase 1 feature implementations"
+
+  finding_2:
+    date: "2025-11-03"
+    phase: "phase_0_foundation"
+    topic: "ASOF JOIN prevents data leakage"
+    discovery: |
+      ASOF JOIN with ON ohlcv.timestamp >= mempool.timestamp ensures
+      forward-fill semantics without lookahead bias. Critical for trading models.
+    impact: "16x faster than pandas reindex, prevents future information leakage"
+    action: "Prioritize ASOF JOIN for feature engineering integration"
+    status: "Part of Phase 1 feature_engineering_integration"
+
+  finding_3:
+    date: "2025-11-03"
+    phase: "phase_0_foundation"
+    topic: "Gap detection and anomaly detection not implemented"
+    discovery: |
+      CLAUDE.md mentions "gap detection logic" and "z-score on vsize, fee spikes"
+      but neither have implementations. DuckDB provides 10-20x faster solutions.
+    impact: "Core features mentioned but not built"
+    action: "Implement as part of 5-layer validation pipeline"
+    status: "Part of Phase 1 bitcoin_mempool_collection"
+
+  finding_4:
+    date: "2025-11-03"
+    phase: "phase_0_foundation"
+    topic: "Production evidence validates approach"
+    discovery: |
+      DoorDash uses DuckDB for same use case: 1-minute intervals, z-score
+      anomaly detection, <10 minutes vs hours with Spark.
+    impact: "Reduces implementation risk, validates architecture"
+    action: "Reference DoorDash case study in documentation"
+    status: "Supporting evidence for implementation choices"
+
+  finding_5:
+    date: "2025-11-04"
+    phase: "phase_1_planning"
+    topic: "Roadmap refocus: Features vs Architecture"
+    discovery: |
+      Initial roadmap (duckdb-integration-strategy.yaml) focused heavily on
+      implementation architecture (DuckDB optimization, Parquet migration, query
+      performance) rather than user-facing features (Ethereum collection, multi-chain
+      support, network insights).
+
+      User feedback: "you seem to be leaning a lot on the architecture instead of
+      what we want to do which startled me"
+    impact: "Complete roadmap revision to feature-driven planning"
+    action: |
+      Revised master-project-roadmap.yaml to focus on:
+      - Phase 1: Bitcoin + Ethereum collection (WHAT users get)
+      - Phase 2: Multi-chain expansion + analytics (user capabilities)
+      - Phase 3: Monitoring + optimization (production features)
+      - DuckDB becomes HOW we implement features, not the features themselves
+    status: "Roadmap revised (2025-11-04)"
+
+x-cross-package-integration:
+  strategy: "Separate databases, parallel patterns"
+  rationale: |
+    Investigation confirmed separate databases win 9-2 over unified approach.
+    Benefits: package independence, schema evolution, isolated testing.
+
+  databases:
+    gapless_crypto_data:
+      location: "~/.cache/gapless-crypto-data/validation.duckdb"
+      status: "Fully implemented (v3.3.0)"
+      schema: "OHLCV validation reports"
+      reference: "/Users/terryli/eon/gapless-crypto-data/src/gapless_crypto_data/validation/storage.py"
+
+    gapless_network_data:
+      location: "~/.cache/gapless-network-data/validation.duckdb"
+      status: "Planned (Phase 1)"
+      schema: "Mempool validation reports"
+      design: "Parquet backend (not DuckDB tables)"
+
+  integration_options:
+    pandas_join:
+      approach: "Export both to pandas, join on timestamp"
+      performance: "Good for <1M rows"
+      use_case: "Default integration pattern"
+
+    duckdb_asof_join:
+      approach: "Query both Parquet datasets with ASOF JOIN"
+      performance: "16x faster, prevents data leakage"
+      use_case: "Feature engineering, large datasets"
+
+    duckdb_attach:
+      approach: "ATTACH both databases for SQL joins"
+      performance: "Advanced SQL users"
+      use_case: "Cross-validation analytics"
+
+x-version-tracking:
+  current_version: "v0.1.0"
+  next_milestones:
+    - version: "v0.2.0"
+      scope: "Phase 1: Basic Data Collection"
+      features:
+        - "Ethereum block data collection via LlamaRPC (PRIMARY - 12s intervals)"
+        - "Bitcoin mempool snapshots via mempool.space (SECONDARY - 5min intervals)"
+        - "Multi-chain API: fetch_snapshots(chain='ethereum'|'bitcoin')"
+        - "Basic validation (HTTP/RPC + schema)"
+      estimated_release: "1-2 weeks"
+
+    - version: "v0.3.0"
+      scope: "Phase 2: Data Quality & Validation"
+      features:
+        - "Complete 5-layer validation pipeline"
+        - "Gap detection and automatic backfill (Ethereum)"
+        - "Zero-gap guarantee for Ethereum"
+        - "ValidationStorage with Parquet backend"
+      estimated_release: "1-2 weeks after v0.2.0"
+
+    - version: "v0.4.0"
+      scope: "Phase 3: Feature Engineering"
+      features:
+        - "Temporal alignment API (align_with_ohlcv)"
+        - "Cross-domain features (10+ features documented)"
+        - "Integration with gapless-crypto-data"
+        - "43-feature engineering script"
+      estimated_release: "1-2 weeks after v0.3.0"
+
+    - version: "v0.5.0"
+      scope: "Phase 4: Multi-Chain Expansion"
+      features:
+        - "Solana, Avalanche, Polygon support (5+ chains total)"
+        - "Full 26-field Ethereum schema"
+        - "Historical backfill for Ethereum (2015-2025)"
+      estimated_release: "2-3 weeks after v0.4.0"
+
+    - version: "v0.6.0"
+      scope: "Phase 5: Production Features"
+      features:
+        - "Production CLI (stream, backfill, validate, export)"
+        - "Real-time monitoring and alerting"
+        - "Performance optimization (10x+ for large datasets)"
+      estimated_release: "2-3 weeks after v0.5.0"
+
+    - version: "v1.0.0"
+      scope: "Phase 6: Release"
+      requirements:
+        - "All documentation complete (9 pending docs)"
+        - "70%+ test coverage"
+        - "CI/CD pipeline operational"
+        - "PyPI published"
+        - "Community resources available"
+      estimated_release: "10-14 weeks total from Phase 1 start"
+
+x-decision-log:
+  - date: "2025-11-03"
+    decision: "Use Parquet for all data storage (not DuckDB tables)"
+    rationale: "110x storage savings, immutable time-series optimal for Parquet"
+    impact: "Architecture revised: Parquet for Data, DuckDB for Queries"
+    alternatives:
+      - option: "DuckDB tables"
+        rejected: "537KB vs 4.9KB for same data"
+      - option: "CSV files"
+        rejected: "No columnar storage, poor query performance"
+
+  - date: "2025-11-03"
+    decision: "Prioritize ASOF JOIN as P0 feature"
+    rationale: "Core feature engineering use case, 16x faster, prevents data leakage"
+    impact: "Phase 1 task #2 (2-4 hours)"
+    alternatives:
+      - option: "pandas reindex"
+        rejected: "Slower, lookahead bias risk"
+      - option: "Manual merge_asof"
+        rejected: "ASOF JOIN cleaner, more SQL-native"
+
+  - date: "2025-11-03"
+    decision: "Separate databases for gapless-crypto-data and gapless-network-data"
+    rationale: "Package independence, isolated testing, schema evolution flexibility"
+    impact: "Cross-package integration uses pandas join or DuckDB ATTACH"
+    score: "9-2 in favor of separation"
+    alternatives:
+      - option: "Unified database"
+        rejected: "Tight coupling, complex migrations"
+
+  - date: "2025-11-04"
+    decision: "Refocus roadmap on features (WHAT) vs architecture (HOW)"
+    rationale: |
+      Initial DuckDB-focused roadmap emphasized implementation architecture rather
+      than user-facing capabilities. User feedback indicated this lost sight of
+      actual feature goals (Ethereum collection, multi-chain support, network insights).
+    impact: "Complete roadmap revision to feature-driven planning"
+    changes:
+      - "Phase 1: Core Features (Bitcoin + Ethereum collection)"
+      - "Phase 2: Advanced Features (multi-chain, analytics, CLI)"
+      - "Phase 3: Production Optimization (monitoring, performance)"
+      - "DuckDB optimizations now implementation details, not features"
+    alternatives:
+      - option: "Keep DuckDB-focused roadmap"
+        rejected: "Too architecture-heavy, loses sight of user value"
+    status: "Implemented (master-project-roadmap.yaml revised)"
+
+  - date: "2025-11-04"
+    decision: "Prioritize Ethereum (LlamaRPC) as PRIMARY, Bitcoin as SECONDARY"
+    rationale: |
+      Research validation revealed:
+      - Ethereum LlamaRPC: ~12 second block intervals (TRUE high-frequency)
+      - Bitcoin mempool.space: M5 (5-minute) recent, H12 (12-hour) historical (LOW-frequency)
+
+      Only Ethereum provides the high-frequency data needed for trading models and ML pipelines.
+    impact: "Ethereum becomes Phase 1 priority (P0), Bitcoin becomes P1 (secondary)"
+    changes:
+      - "Phase 1: Ethereum first (6-8 hours), Bitcoin second (4-6 hours)"
+      - "Success gates prioritize Ethereum collection"
+      - "Bitcoin acknowledged as 5-min granularity limitation"
+      - "Zero-gap guarantee only applicable to Ethereum"
+    data_granularity:
+      ethereum: "12 seconds (300 blocks/hour)"
+      bitcoin: "5 minutes (12 snapshots/hour)"
+    alternatives:
+      - option: "Prioritize Bitcoin (mempool was in project name)"
+        rejected: "Only 5-min granularity, not suitable for high-frequency trading"
+    status: "Implemented (roadmap reorganized with Ethereum PRIMARY)"
+
+  - date: "2025-11-04"
+    decision: "Chronological phase ordering (6 phases)"
+    rationale: |
+      Logical dependency order ensures each phase builds on previous:
+      1. Collection (prove we can get data)
+      2. Quality (prove data is reliable)
+      3. Features (prove data is useful)
+      4. Expansion (scale horizontally - more chains)
+      5. Production (scale vertically - monitoring, CLI, performance)
+      6. Release (ship it)
+    impact: "Clear progression from basic to production-ready"
+    phases:
+      - "Phase 1: Basic Collection (Ethereum + Bitcoin)"
+      - "Phase 2: Data Quality & Validation (5-layer pipeline, gap detection)"
+      - "Phase 3: Feature Engineering (temporal alignment, cross-domain)"
+      - "Phase 4: Multi-Chain Expansion (Solana, Avalanche, Polygon)"
+      - "Phase 5: Production Features (CLI, monitoring, alerts)"
+      - "Phase 6: Release v1.0.0 (docs, tests, PyPI)"
+    alternatives:
+      - option: "Put feature engineering in Phase 1"
+        rejected: "Can't engineer features without reliable data first"
+      - option: "Put multi-chain expansion in Phase 2"
+        rejected: "Should prove single-chain works before expanding"
+    status: "Implemented (6-phase structure)"
+
+x-risk-assessment:
+  implementation_risks:
+    - risk: "ValidationStorage migration complexity"
+      severity: "low"
+      mitigation: "Copy from gapless-crypto-data, proven implementation"
+
+    - risk: "DuckDB learning curve"
+      severity: "low"
+      mitigation: "Comprehensive investigation reports, 23 features documented"
+
+    - risk: "Performance expectations not met"
+      severity: "medium"
+      mitigation: "Benchmarks with acceptance criteria (10x minimum speedup)"
+
+  schedule_risks:
+    - risk: "Phase 1 takes longer than 14-19 hours"
+      severity: "low"
+      mitigation: "Tasks estimated conservatively, can defer low-priority features"
+
+    - risk: "Testing reveals correctness issues"
+      severity: "medium"
+      mitigation: "Unit tests verify against reference implementations (pandas, scipy)"
+
+  technical_debt:
+    - debt: "Gap detection and anomaly detection mentioned but not implemented"
+      severity: "high"
+      resolution: "Phase 1 implements both (6-8 hours combined)"
+
+    - debt: "Documentation incomplete (9 files pending)"
+      severity: "medium"
+      resolution: "Phase 4 completes all documentation"
+
+x-success-metrics:
+  code_quality:
+    - metric: "Test coverage"
+      target: "70%+ for SDK, validation, collectors"
+      current: "~30% (basic tests only)"
+
+    - metric: "Type coverage"
+      target: "100% (mypy strict mode)"
+      current: "100% (py.typed marker present)"
+
+  performance:
+    - metric: "Storage efficiency"
+      target: "110x savings (Parquet vs DuckDB tables)"
+      baseline: "537KB (DuckDB) → 4.9KB (Parquet)"
+
+    - metric: "Analytics speedup"
+      target: "10-100x (DuckDB vs pandas)"
+      benchmarks:
+        - "ASOF JOIN: 16x (800ms → 50ms)"
+        - "Gap detection: 20x (1200ms → 60ms)"
+        - "Z-score: 10x (300ms → 30ms)"
+
+  documentation:
+    - metric: "Documentation completeness"
+      target: "100% (all pending docs completed)"
+      current: "~40% (4/9 guide docs pending)"
+
+    - metric: "Code example coverage"
+      target: "All features have working examples"
+      current: "6/6 DuckDB features have examples in spec"
+
+x-references:
+  investigation_reports:
+    - path: "/tmp/duckdb-capabilities/EXECUTIVE_SUMMARY.md"
+      content: "23 features, priority matrix, 3-week roadmap"
+
+    - path: "/tmp/duckdb-current-usage/duckdb-usage-audit-report.md"
+      content: "0% implementation gap, referential implementation guidance"
+
+    - path: "/tmp/duckdb-parquet/REPORT.md"
+      content: "110x storage savings, zero-copy queries, benchmarks"
+
+    - path: "/tmp/duckdb-analytics/analytics_query_patterns_report.md"
+      content: "10-100x speedups, 8 query templates, API design"
+
+    - path: "/tmp/duckdb-cross-package/EXECUTIVE_SUMMARY.md"
+      content: "Separate databases strategy, integration options"
+
+  project_documentation:
+    - path: "/Users/terryli/eon/gapless-network-data/CLAUDE.md"
+      content: "Project memory, navigation hub, DuckDB strategy"
+
+    - path: "/Users/terryli/eon/gapless-network-data/specifications/duckdb-integration-strategy.yaml"
+      content: "23 features, implementation roadmap, acceptance criteria"
+
+    - path: "/Users/terryli/eon/gapless-network-data/specifications/documentation-audit-phase.yaml"
+      content: "Documentation audit findings and resolutions (completed)"

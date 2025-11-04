@@ -1,0 +1,184 @@
+================================================================================
+ALTERNATIVE L1 HIGH-FREQUENCY DATA RESEARCH - SUMMARY
+================================================================================
+Research Date: 2025-11-03
+Workspace: /tmp/altl1-research/
+Status: COMPLETE ✅
+
+================================================================================
+KEY FINDING
+================================================================================
+
+FREE 1-MINUTE OHLCV DATA AVAILABLE FOR ALL MAJOR ALT-L1s FROM 2022
+
+Primary Source: Binance Public API (https://api.binance.com/api/v3/klines)
+- Authentication: NONE REQUIRED
+- Frequency: M1 (1-minute), M5 (5-minute), M15 (15-minute)
+- Historical: From 2022-01-01 (verified)
+- Rate Limit: 120 requests/minute (sufficient)
+- Coverage: 8 blockchains tested and verified
+
+================================================================================
+VERIFIED BLOCKCHAINS (all with 2022-01-01 data)
+================================================================================
+
+1. Solana (SOLUSDT)         - Top 10 by market cap  ✅
+2. Avalanche (AVAXUSDT)     - Top 15 by market cap  ✅
+3. Cardano (ADAUSDT)        - Top 10 by market cap  ✅
+4. Polkadot (DOTUSDT)       - Top 15 by market cap  ✅
+5. Cosmos (ATOMUSDT)        - Top 20 by market cap  ✅
+6. Near (NEARUSDT)          - Top 25 by market cap  ✅
+7. Algorand (ALGOUSDT)      - Top 30 by market cap  ✅
+8. Tezos (XTZUSDT)          - Top 40 by market cap  ✅
+
+================================================================================
+QUICK START EXAMPLE
+================================================================================
+
+# Get 1000 1-minute candles for Solana from 2022-01-01
+curl "https://api.binance.com/api/v3/klines?symbol=SOLUSDT&interval=1m&startTime=1640995200000&limit=1000"
+
+# Response format: [timestamp, open, high, low, close, volume, ...]
+
+================================================================================
+FREQUENCY OPTIONS AVAILABLE
+================================================================================
+
+Interval    Binance Code    Tested    Status
+1-minute    1m              YES       ✅ Available
+5-minute    5m              YES       ✅ Available
+15-minute   15m             YES       ✅ Available
+30-minute   30m             -         ✅ Available
+1-hour      1h              -         ✅ Available
+4-hour      4h              -         ✅ Available
+1-day       1d              -         ✅ Available
+
+================================================================================
+BACKUP SOURCE: COINBASE EXCHANGE API
+================================================================================
+
+URL: https://api.exchange.coinbase.com/products/{id}/candles
+Authentication: NONE REQUIRED
+Frequency: 60s (1m), 300s (5m), 900s (15m)
+Rate Limit: 10 req/sec (600 req/min)
+Coverage: 7 of 8 alt-L1s (NEAR not available)
+
+================================================================================
+ON-CHAIN NETWORK METRICS
+================================================================================
+
+Blockchain    API             Frequency           Auth Required
+Polkadot      Subscan         Block (~6s)         NO
+Tezos         TzKT            Block (~30s)        NO
+Avalanche     Snowtrace       Daily aggregates    OPTIONAL
+Near          NearBlocks      Daily aggregates    NO
+Algorand      AlgoNode        Block (~4.5s)       NO
+
+================================================================================
+DELIVERABLES CREATED
+================================================================================
+
+Documentation:
+  ✅ README.md                      - Index and quick start
+  ✅ EXECUTIVE_SUMMARY.md           - High-level findings
+  ✅ QUICK_REFERENCE.md             - Curl examples and API reference
+  ✅ COMPREHENSIVE_FINDINGS.md      - Complete research report
+  ✅ alt_l1_inventory.md            - Blockchain inventory
+
+Code:
+  ✅ fetch_binance_historical.py    - Python bulk download script
+  ✅ test_binance_altl1s.sh         - Binance coverage test
+  ✅ test_coinbase_altl1s.sh        - Coinbase coverage test
+
+Test Results:
+  ✅ 29 test result JSON files      - API validation data
+
+================================================================================
+REQUIREMENTS VERIFICATION
+================================================================================
+
+Requirement                          Status
+M1 (1-minute) frequency              ✅ VERIFIED
+M5 (5-minute) frequency              ✅ VERIFIED
+M15 (15-minute) frequency            ✅ VERIFIED
+Historical depth to 2022             ✅ VERIFIED (2022-01-01)
+No authentication required           ✅ VERIFIED
+Reasonable rate limits               ✅ VERIFIED (120 req/min)
+Major alt-L1 coverage                ✅ VERIFIED (8 blockchains)
+On-chain metrics available           ✅ VERIFIED (5 chains)
+
+================================================================================
+RECOMMENDATION
+================================================================================
+
+PRIMARY STRATEGY:
+1. Use Binance API for OHLCV data (1m/5m/15m)
+2. Start historical collection from 2022-01-01
+3. Implement 1 req/sec rate limiting (conservative)
+4. Cache locally in Parquet format
+
+SUPPLEMENTARY STRATEGY:
+1. Use blockchain-specific explorers for on-chain metrics
+2. Combine OHLCV + on-chain for feature engineering
+3. Use Coinbase as backup/redundancy
+
+================================================================================
+RESEARCH METHODOLOGY
+================================================================================
+
+Phase 1: Discovery
+  ✅ Identified 10 major alt-L1 blockchains
+  ✅ Researched official block explorers
+  ✅ Tested API endpoint availability
+
+Phase 2: OHLCV Testing
+  ✅ Tested Binance API (8 blockchains)
+  ✅ Verified M1/M5/M15 frequencies
+  ✅ Confirmed 2022-01-01 historical depth
+  ✅ Tested Coinbase as backup
+
+Phase 3: On-Chain Testing
+  ✅ Tested 5 blockchain explorers
+  ✅ Verified block-level data access
+  ✅ Documented frequency and depth
+
+Phase 4: Documentation
+  ✅ Created comprehensive report
+  ✅ Developed quick reference guide
+  ✅ Wrote example scripts
+  ✅ Documented rate limits
+
+================================================================================
+FILES LOCATION
+================================================================================
+
+All research files stored in: /tmp/altl1-research/
+
+Key Files:
+  - README.md                    (Start here)
+  - EXECUTIVE_SUMMARY.md         (High-level overview)
+  - QUICK_REFERENCE.md           (Copy-paste examples)
+  - COMPREHENSIVE_FINDINGS.md    (Full details)
+  - fetch_binance_historical.py  (Implementation script)
+
+================================================================================
+NEXT STEPS
+================================================================================
+
+1. Review documentation (start with README.md)
+2. Test API access using curl examples
+3. Run fetch_binance_historical.py to download sample data
+4. Implement production pipeline with error handling
+5. Build feature engineering workflow
+
+================================================================================
+RESEARCH STATUS: COMPLETE ✅
+================================================================================
+
+All requirements met. Free high-frequency data (M1/M5/M15) available for
+all major alternative L1 blockchains from 2022 via Binance public API with
+no authentication required.
+
+Recommended action: Use Binance API as primary data source.
+
+================================================================================

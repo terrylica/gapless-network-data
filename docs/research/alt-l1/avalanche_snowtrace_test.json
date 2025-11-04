@@ -1,0 +1,10 @@
+{
+  "status": "1",
+  "message": "OK",
+  "result": {
+    "ethbtc": "0.00015807",
+    "ethbtc_timestamp": "1762231331",
+    "ethusd": "16.89",
+    "ethusd_timestamp": "1762231331"
+  }
+}

@@ -1,0 +1,41 @@
+# Python-generated files
+__pycache__/
+*.py[oc]
+build/
+dist/
+wheels/
+*.egg-info
+
+# Virtual environments
+.venv
+venv/
+env/
+test-env/
+*-env/
+
+# Mempool data checkpoint files (auto-generated during collection)
+.gapless_checkpoints/
+
+# UV task workspaces
+tmp/probe/
+
+# macOS system files
+.DS_Store
+*/.DS_Store
+
+# Test coverage artifacts
+.coverage
+coverage.json
+htmlcov/
+
+# .Sessions folder - never delete
+.sessions/
+!.sessions/.gitignore
+
+# DuckDB validation storage
+*.duckdb
+*.duckdb.wal
+
+# Output data files (for local testing)
+*.parquet
+output/

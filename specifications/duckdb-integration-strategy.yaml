@@ -1,0 +1,586 @@
+openapi: 3.1.0
+info:
+  title: DuckDB Integration Strategy
+  version: 1.0.0
+  description: |
+    Comprehensive DuckDB integration plan for gapless-network-data based on
+    5-agent investigation (2025-11-03). Defines architectural principle,
+    23 features, implementation priorities, and migration strategy.
+
+    Investigation Output: /tmp/duckdb-*/ (~12,000 lines, 15 reports)
+
+  x-metadata:
+    investigation_date: 2025-11-03
+    agents:
+      - duckdb-capabilities
+      - current-usage-audit
+      - parquet-integration
+      - analytics-patterns
+      - cross-package-strategy
+    supersedes: []
+    last_updated: 2025-11-03T23:00:00Z
+
+  x-architectural-principle:
+    name: "Parquet for Data, DuckDB for Queries"
+    rationale: |
+      DuckDB excels as a query engine, not persistent storage. Store all
+      immutable time-series data in Parquet, use DuckDB to query it.
+
+    benefits:
+      storage: "110x savings (Parquet 4.9KB vs DuckDB tables 537KB)"
+      performance: "10-100x faster analytics (DuckDB SQL vs Python iteration)"
+      zero_copy: "Query Parquet directly without loading into memory"
+      production_evidence: "DoorDash uses DuckDB for same use case (1-min intervals, z-score)"
+
+  x-slos:
+    performance:
+      target: "10-100x speedup for analytics operations"
+      measurement: "Benchmark against pandas baseline (525K rows, 1 year data)"
+      validation: "Performance tests for ASOF JOIN, gap detection, z-score"
+      failure_mode: "Regression to pandas performance (<2x speedup)"
+
+    correctness:
+      target: "100% query result accuracy"
+      measurement: "DuckDB results match pandas reference implementation"
+      validation: "Unit tests comparing DuckDB SQL vs pandas output"
+      failure_mode: "Query results diverge (floating point errors, NULL handling)"
+
+    observability:
+      target: "100% query execution tracking"
+      measurement: "All DuckDB queries logged with execution time"
+      log_format: "timestamp, query, rows_returned, duration_ms"
+      failure_mode: "Silent query failures, missing execution metrics"
+
+x-features:
+  phase_1_high_priority:
+    description: "Essential features for core use cases (14-19 hours total)"
+    features:
+      - id: asof-join
+        name: "ASOF JOIN (Temporal Alignment)"
+        priority: P0
+        effort: "2-4 hours"
+        impact: HIGH
+        use_case: "Core feature engineering - align mempool + OHLCV timestamps"
+        current_approach: "df_mempool.reindex(df_ohlcv.index, method='ffill')"
+        duckdb_solution: |
+          SELECT ohlcv.*, mempool.* EXCLUDE (timestamp)
+          FROM read_parquet('ohlcv/*.parquet') AS ohlcv
+          ASOF LEFT JOIN read_parquet('mempool/*.parquet') AS mempool
+          ON ohlcv.timestamp >= mempool.timestamp
+        performance: "16x faster (800ms → 50ms for 525K rows)"
+        data_leakage_prevention: "No lookahead bias (critical for trading models)"
+        implementation_reference: "/tmp/duckdb-analytics/analytics_query_patterns_report.md lines 274-358"
+
+        acceptance_criteria:
+          - "ASOF JOIN query template documented"
+          - "Performance test: 10x faster than pandas reindex"
+          - "Unit test: Verify forward-fill semantics (no lookahead)"
+          - "Example usage in docs/guides/FEATURE_ENGINEERING.md"
+
+      - id: check-constraints
+        name: "CHECK Constraints (Schema Validation)"
+        priority: P0
+        effort: "2-3 hours"
+        impact: HIGH
+        use_case: "Database-level validation for fee ordering, non-negative values"
+        current_approach: "Python validation in 5-layer pipeline (Layer 3: Sanity)"
+        duckdb_solution: |
+          CREATE TABLE mempool_snapshots (
+              timestamp TIMESTAMP NOT NULL,
+              fastest_fee DOUBLE,
+              half_hour_fee DOUBLE,
+              hour_fee DOUBLE,
+              economy_fee DOUBLE,
+              minimum_fee DOUBLE,
+              CHECK (fastest_fee >= half_hour_fee),
+              CHECK (half_hour_fee >= hour_fee),
+              CHECK (hour_fee >= economy_fee),
+              CHECK (economy_fee >= minimum_fee),
+              CHECK (minimum_fee >= 1),
+              CHECK (unconfirmed_count >= 0),
+              CHECK (vsize_mb >= 0)
+          )
+        performance: "Catches corruption at ingestion time (fail-fast)"
+        integration: "Replaces Layer 3 sanity checks in validation pipeline"
+
+        acceptance_criteria:
+          - "CHECK constraints added to ValidationStorage schema"
+          - "Test: Invalid data raises exception with constraint name"
+          - "Test: Valid data passes all constraints"
+          - "Documentation: Constraint rationale in STORAGE.md"
+
+      - id: window-functions-qualify
+        name: "Window Functions + QUALIFY (Anomaly Detection)"
+        priority: P0
+        effort: "3-4 hours"
+        impact: HIGH
+        use_case: "Z-score anomaly detection (mentioned in CLAUDE.md, not implemented)"
+        current_approach: "Not implemented (only mentioned in spec)"
+        duckdb_solution: |
+          SELECT timestamp, unconfirmed_count, z_score
+          FROM (
+              SELECT
+                  timestamp,
+                  unconfirmed_count,
+                  (unconfirmed_count - AVG(unconfirmed_count) OVER w) /
+                  (STDDEV(unconfirmed_count) OVER w + 1e-10) AS z_score
+              FROM read_parquet('mempool_*.parquet')
+              WINDOW w AS (ORDER BY timestamp ROWS BETWEEN 60 PRECEDING AND CURRENT ROW)
+          )
+          QUALIFY ABS(z_score) > 3  -- Filter anomalies (>3σ from mean)
+        performance: "10x faster than pandas (300ms → 30ms for 525K rows)"
+        production_evidence: "DoorDash case study (same algorithm, <10 min vs hours with Spark)"
+
+        acceptance_criteria:
+          - "Z-score query template with configurable window size"
+          - "QUALIFY clause filters anomalies directly in SQL"
+          - "Performance test: 5x faster than pandas rolling window"
+          - "Unit test: Verify z-score calculation accuracy (vs scipy.stats)"
+          - "Documentation: Anomaly detection guide with examples"
+
+      - id: gap-detection-lag
+        name: "Gap Detection with LAG() (Zero-Gap Guarantee)"
+        priority: P0
+        effort: "3-4 hours"
+        impact: HIGH
+        use_case: "Detect missing 1-minute intervals (mentioned in CLAUDE.md, not implemented)"
+        current_approach: "Not implemented (only mentioned in spec)"
+        duckdb_solution: |
+          WITH gaps AS (
+              SELECT
+                  timestamp,
+                  LAG(timestamp) OVER (ORDER BY timestamp) AS prev_timestamp,
+                  EXTRACT(EPOCH FROM (timestamp - LAG(timestamp) OVER (ORDER BY timestamp))) AS gap_seconds
+              FROM read_parquet('mempool_*.parquet')
+          )
+          SELECT * FROM gaps WHERE gap_seconds > 90  -- Detect >90s gaps (1.5× expected 60s)
+        performance: "20x faster than Python iteration (1200ms → 60ms for 525K rows)"
+        integration: "Replaces Layer 4 gap detection in validation pipeline"
+
+        acceptance_criteria:
+          - "Gap detection query template with configurable threshold"
+          - "Returns gap ranges with start/end/duration"
+          - "Performance test: 10x faster than Python loop"
+          - "Unit test: Detect single gap, multiple gaps, no gaps"
+          - "Integration: Feeds into automatic backfill system"
+
+      - id: time-bucket
+        name: "time_bucket() (Time-Series Aggregation)"
+        priority: P0
+        effort: "1-2 hours"
+        impact: MEDIUM
+        use_case: "Hourly/daily aggregations for analytics and reporting"
+        current_approach: "pandas.resample() or manual grouping"
+        duckdb_solution: |
+          SELECT
+              time_bucket(INTERVAL '1 hour', timestamp) AS hour,
+              AVG(fastest_fee) AS avg_fastest_fee,
+              MAX(unconfirmed_count) AS max_unconfirmed
+          FROM read_parquet('mempool_*.parquet')
+          GROUP BY hour
+          ORDER BY hour
+        performance: "Native function, optimized for time-series"
+        use_cases:
+          - "Hourly validation report aggregations"
+          - "Daily statistics for monitoring dashboards"
+          - "Multi-timeframe feature engineering"
+
+        acceptance_criteria:
+          - "time_bucket() template for hourly/daily/weekly buckets"
+          - "Unit test: Verify bucket boundaries (inclusive/exclusive)"
+          - "Example: Hourly aggregation query in docs"
+
+      - id: statistical-aggregates
+        name: "Statistical Aggregates (MEDIAN, MAD, PERCENTILE_CONT)"
+        priority: P0
+        effort: "2-3 hours"
+        impact: MEDIUM
+        use_case: "Validation reports, robust anomaly detection (resistant to outliers)"
+        current_approach: "pandas.describe() or numpy percentile"
+        duckdb_solution: |
+          SELECT
+              validation_layer,
+              COUNT(*) AS error_count,
+              MEDIAN(response_time_ms) AS median_response,
+              MAD(response_time_ms) AS mad_response,
+              PERCENTILE_CONT(0.95) WITHIN GROUP (ORDER BY response_time_ms) AS p95_response
+          FROM read_parquet('validation_reports/*.parquet')
+          GROUP BY validation_layer
+        benefit: "Robust statistics for validation analytics (median unaffected by outliers)"
+
+        acceptance_criteria:
+          - "Validation report queries use MEDIAN, MAD, PERCENTILE_CONT"
+          - "Unit test: Verify percentile calculation (vs numpy)"
+          - "Documentation: When to use median vs mean"
+
+  phase_2_medium_priority:
+    description: "Optimization and advanced features (10-13 hours total)"
+    features:
+      - id: range-join-backfill
+        name: "RANGE JOIN for Backfill Planning"
+        priority: P1
+        effort: "2-3 hours"
+        impact: MEDIUM
+        use_case: "Generate missing intervals for backfill"
+        duckdb_solution: |
+          WITH time_series AS (
+              SELECT generate_series(
+                  '2024-01-01 00:00:00'::TIMESTAMP,
+                  '2024-01-31 23:59:00'::TIMESTAMP,
+                  INTERVAL '1 minute'
+              ) AS expected_timestamp
+          )
+          SELECT expected_timestamp
+          FROM time_series
+          LEFT JOIN read_parquet('mempool_*.parquet') AS actual
+          ON time_series.expected_timestamp = actual.timestamp
+          WHERE actual.timestamp IS NULL
+        performance: "100x faster than Python loop (generates 525K timestamps in <1s)"
+
+      - id: quantile-window
+        name: "Quantile Window Functions"
+        priority: P1
+        effort: "1-2 hours"
+        impact: MEDIUM
+        use_case: "Rolling percentile features (e.g., 95th percentile fee over 24h)"
+
+      - id: array-aggregation
+        name: "ARRAY_AGG for Source Tracking"
+        priority: P1
+        effort: "1 hour"
+        impact: LOW
+        use_case: "Aggregate validation sources (if multi-source collection added)"
+
+      - id: macro-functions
+        name: "User-Defined Macros"
+        priority: P1
+        effort: "2 hours"
+        impact: MEDIUM
+        use_case: "Reusable query templates (z-score, gap detection)"
+
+      - id: explain-analyze
+        name: "EXPLAIN ANALYZE for Query Optimization"
+        priority: P1
+        effort: "1 hour"
+        impact: LOW
+        use_case: "Profile slow queries, identify bottlenecks"
+
+      - id: pragma-optimization
+        name: "PRAGMA Configuration"
+        priority: P1
+        effort: "2 hours"
+        impact: MEDIUM
+        use_case: "Memory limits, threads, progress bar"
+
+  phase_3_advanced:
+    description: "Advanced features and extensions (5-8 hours total)"
+    features:
+      - id: httpfs-extension
+        name: "httpfs Extension for Remote Parquet"
+        priority: P2
+        effort: "2-3 hours"
+        impact: HIGH
+        use_case: "Query Parquet files from S3/CDN without download"
+        duckdb_solution: |
+          INSTALL httpfs;
+          LOAD httpfs;
+          SELECT * FROM read_parquet('https://cdn.example.com/mempool_*.parquet');
+        benefit: "Zero local storage, query historical data on-demand"
+
+      - id: json-extension
+        name: "JSON Extension for Nested Data"
+        priority: P2
+        effort: "1-2 hours"
+        impact: LOW
+        use_case: "Parse JSON validation report details"
+
+      - id: spatial-extension
+        name: "Spatial Extension (Future)"
+        priority: P3
+        effort: "2 hours"
+        impact: LOW
+        use_case: "Geographic analysis (if multi-region collectors added)"
+
+      - id: parquet-encryption
+        name: "Parquet Encryption"
+        priority: P2
+        effort: "1-2 hours"
+        impact: MEDIUM
+        use_case: "Encrypt sensitive validation data"
+
+      - id: duckdb-wasm
+        name: "DuckDB-Wasm for Browser Analytics"
+        priority: P3
+        effort: "4-6 hours"
+        impact: LOW
+        use_case: "In-browser data exploration dashboard"
+
+x-validation-storage-redesign:
+  current_design:
+    storage: "DuckDB tables (validation.duckdb)"
+    size: "537KB for 120 validation reports"
+    schema: "7 fields (timestamp, layer, severity, issue_type, details, data_timestamp, created_at)"
+    queries: "SQL via duckdb.execute()"
+
+  new_design:
+    storage: "Parquet files (validation_reports/*.parquet)"
+    size: "4.9KB for 120 validation reports (110x savings)"
+    schema: "Same 7 fields, columnar format"
+    queries: "DuckDB read_parquet() with SQL"
+
+    rationale: |
+      Validation reports are immutable time-series data. Parquet is optimal for
+      storage, DuckDB queries provide SQL interface without table overhead.
+
+  migration_strategy:
+    step_1:
+      task: "Update ValidationStorage to write Parquet instead of DuckDB tables"
+      effort: "2 hours"
+      changes:
+        - "Replace INSERT INTO with COPY TO parquet"
+        - "Update query methods to use read_parquet()"
+        - "Add daily file rotation (validation_YYYYMMDD.parquet)"
+
+    step_2:
+      task: "Add DuckDB query helpers"
+      effort: "2 hours"
+      changes:
+        - "Create query templates (error_counts, gap_reports, anomaly_summary)"
+        - "Add convenience methods (get_errors(), get_layer_stats())"
+
+    step_3:
+      task: "Migrate tests from DuckDB tables to Parquet"
+      effort: "1-2 hours"
+      changes:
+        - "Update test fixtures to generate Parquet files"
+        - "Verify query results match old table-based queries"
+
+  backward_compatibility:
+    approach: "Dual write during migration (DuckDB tables + Parquet)"
+    deprecation: "DuckDB tables deprecated in v0.2.0, removed in v0.3.0"
+    migration_tool: "validation-storage-migrate.py script"
+
+x-implementation-roadmap:
+  phase_1_foundation:
+    duration: "2-3 weeks (14-19 hours)"
+    deliverables:
+      - "ValidationStorage Parquet backend"
+      - "Top 6 DuckDB features implemented"
+      - "Performance benchmarks"
+      - "Documentation updates"
+
+    tasks:
+      - id: validation-storage-parquet
+        title: "Migrate ValidationStorage to Parquet backend"
+        effort: "4-5 hours"
+        dependencies: []
+        acceptance:
+          - "ValidationStorage writes to Parquet"
+          - "110x storage savings verified"
+          - "Queries work with read_parquet()"
+          - "Tests pass"
+
+      - id: asof-join-implementation
+        title: "Implement ASOF JOIN for temporal alignment"
+        effort: "2-4 hours"
+        dependencies: []
+        acceptance:
+          - "ASOF JOIN query template"
+          - "16x performance gain verified"
+          - "Unit tests pass"
+          - "Example in FEATURE_ENGINEERING.md"
+
+      - id: gap-detection-sql
+        title: "Implement gap detection with LAG()"
+        effort: "3-4 hours"
+        dependencies: []
+        acceptance:
+          - "Gap detection query template"
+          - "20x performance gain verified"
+          - "Integration with backfill system"
+
+      - id: anomaly-detection-zscore
+        title: "Implement z-score anomaly detection"
+        effort: "3-4 hours"
+        dependencies: []
+        acceptance:
+          - "Z-score query with QUALIFY"
+          - "10x performance gain verified"
+          - "Documentation with DoorDash case study reference"
+
+      - id: check-constraints
+        title: "Add CHECK constraints to schema"
+        effort: "2-3 hours"
+        dependencies: [validation-storage-parquet]
+        acceptance:
+          - "Constraints enforce fee ordering"
+          - "Tests verify constraint violations"
+
+      - id: time-bucket-aggregations
+        title: "Add time_bucket() aggregation templates"
+        effort: "1-2 hours"
+        dependencies: []
+        acceptance:
+          - "Hourly/daily aggregation examples"
+          - "Unit tests verify bucket boundaries"
+
+  phase_2_analytics:
+    duration: "1-2 weeks (10-13 hours)"
+    deliverables:
+      - "Analytics query library"
+      - "Validation analytics dashboard"
+      - "Performance optimization"
+
+    tasks:
+      - id: analytics-query-module
+        title: "Create gapless_network_data.analytics module"
+        effort: "4 hours"
+        modules:
+          - "analytics.gap_detection"
+          - "analytics.anomaly_detection"
+          - "analytics.temporal_alignment"
+
+      - id: validation-analytics
+        title: "Validation analytics queries"
+        effort: "3 hours"
+        queries:
+          - "Error trending (daily/hourly)"
+          - "Layer performance analysis"
+          - "Anomaly frequency distribution"
+
+      - id: performance-benchmarks
+        title: "Comprehensive performance benchmarks"
+        effort: "3 hours"
+        comparisons:
+          - "DuckDB vs pandas (10 operations)"
+          - "Parquet vs DuckDB tables (storage)"
+          - "ASOF JOIN vs reindex (temporal alignment)"
+
+  phase_3_advanced_features:
+    duration: "1 week (5-8 hours)"
+    deliverables:
+      - "Remote Parquet access (httpfs)"
+      - "Advanced query optimization"
+      - "Extended feature set"
+
+x-cross-package-integration:
+  strategy: "Separate databases, parallel patterns"
+
+  databases:
+    gapless_crypto_data:
+      location: "~/.cache/gapless-crypto-data/validation.duckdb"
+      status: "Fully implemented (v3.3.0)"
+      schema: "OHLCV validation reports"
+
+    gapless_network_data:
+      location: "~/.cache/gapless-network-data/validation.duckdb"
+      status: "Planned (v0.1.1 or v0.2.0)"
+      schema: "Mempool validation reports"
+
+  integration_patterns:
+    pandas_join:
+      approach: "Export both to pandas, join on timestamp"
+      performance: "Good for small datasets (<1M rows)"
+      code: |
+        df_ohlcv = gcd.get_data(...)
+        df_mempool = gmd.fetch_snapshots(...)
+        df_features = df_ohlcv.join(df_mempool.reindex(df_ohlcv.index, method='ffill'))
+
+    duckdb_asof_join:
+      approach: "Query both Parquet datasets with ASOF JOIN"
+      performance: "16x faster, prevents data leakage"
+      code: |
+        import duckdb
+        result = duckdb.execute("""
+            SELECT ohlcv.*, mempool.* EXCLUDE (timestamp)
+            FROM read_parquet('ohlcv/*.parquet') AS ohlcv
+            ASOF LEFT JOIN read_parquet('mempool/*.parquet') AS mempool
+            ON ohlcv.timestamp >= mempool.timestamp
+        """).df()
+
+    duckdb_attach:
+      approach: "Attach mempool DB to crypto DB for SQL joins"
+      performance: "Advanced SQL users, requires both databases"
+      code: |
+        con = duckdb.connect('~/.cache/gapless-crypto-data/validation.duckdb')
+        con.execute("ATTACH '~/.cache/gapless-network-data/validation.duckdb' AS mempool")
+        con.execute("SELECT * FROM main.reports JOIN mempool.reports ON ...")
+
+x-performance-benchmarks:
+  dataset: "525K rows (1 year, 1-minute intervals)"
+
+  results:
+    rolling_mean:
+      pandas: "150ms"
+      duckdb: "15ms"
+      speedup: "10x"
+
+    asof_join:
+      pandas: "800ms"
+      duckdb: "50ms"
+      speedup: "16x"
+
+    gap_detection:
+      pandas: "1200ms"
+      duckdb: "60ms"
+      speedup: "20x"
+
+    zscore:
+      pandas: "300ms"
+      duckdb: "30ms"
+      speedup: "10x"
+
+    full_scan:
+      duckdb: "0.15ms"
+      note: "Sub-millisecond for 120 rows"
+
+    cross_package_join:
+      duckdb: "2.3ms"
+      note: "Mempool + OHLCV with 43 features"
+
+x-references:
+  investigation_reports:
+    - path: "/tmp/duckdb-capabilities/EXECUTIVE_SUMMARY.md"
+      content: "23 features, priority matrix, 3-week roadmap"
+
+    - path: "/tmp/duckdb-current-usage/duckdb-usage-audit-report.md"
+      content: "0% implementation gap analysis, referential implementation"
+
+    - path: "/tmp/duckdb-parquet/REPORT.md"
+      content: "110x storage savings, zero-copy queries, benchmarks"
+
+    - path: "/tmp/duckdb-analytics/analytics_query_patterns_report.md"
+      content: "10-100x speedups, 8 query templates, API design"
+
+    - path: "/tmp/duckdb-cross-package/EXECUTIVE_SUMMARY.md"
+      content: "Separate databases strategy, integration options"
+
+  production_evidence:
+    doordash_case_study:
+      use_case: "Time-series anomaly detection (1-minute intervals, z-score)"
+      performance: "<10 minutes (vs hours with Spark)"
+      algorithm: "Same as gapless-network-data (rolling window z-score)"
+      conclusion: "Validates DuckDB for production time-series analytics"
+
+x-decision-log:
+  - date: "2025-11-03"
+    decision: "Use Parquet for validation storage (not DuckDB tables)"
+    rationale: "110x storage savings, immutable time-series data optimal for Parquet"
+    alternatives_considered:
+      - "DuckDB tables: Rejected (537KB vs 4.9KB)"
+      - "CSV: Rejected (no columnar storage)"
+      - "JSON: Rejected (no query performance)"
+
+  - date: "2025-11-03"
+    decision: "Implement ASOF JOIN as top priority (P0)"
+    rationale: "Core feature engineering use case, 16x faster, prevents data leakage"
+    alternatives_considered:
+      - "pandas reindex: Rejected (slower, lookahead bias risk)"
+      - "Manual merge_asof: Rejected (pandas merge_asof exists but ASOF JOIN cleaner)"
+
+  - date: "2025-11-03"
+    decision: "Separate databases for gapless-crypto-data and gapless-network-data"
+    rationale: "Package independence, isolated testing, schema evolution"
+    alternatives_considered:
+      - "Unified database: Rejected (tight coupling, complex migrations)"
+      - "No DuckDB in crypto package: Rejected (already implemented, proven)"

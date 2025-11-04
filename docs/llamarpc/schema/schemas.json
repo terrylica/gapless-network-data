@@ -1,0 +1,389 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "definitions": {
+    "BlockSchema": {
+      "type": "object",
+      "description": "Ethereum block object returned by eth_getBlockByNumber",
+      "required": [
+        "baseFeePerGas",
+        "difficulty",
+        "gasLimit",
+        "gasUsed",
+        "hash",
+        "miner",
+        "number",
+        "parentHash",
+        "timestamp",
+        "transactions"
+      ],
+      "properties": {
+        "baseFeePerGas": {
+          "type": "string",
+          "pattern": "^0x[0-9a-fA-F]+$",
+          "description": "Base fee per gas in wei (hex string). Introduced in EIP-1559 (London fork)."
+        },
+        "blobGasUsed": {
+          "type": "string",
+          "pattern": "^0x[0-9a-fA-F]+$",
+          "description": "Total blob gas used in this block (hex). EIP-4844 (Cancun fork)."
+        },
+        "difficulty": {
+          "type": "string",
+          "pattern": "^0x[0-9a-fA-F]+$",
+          "description": "Block difficulty (always 0x0 post-Merge)"
+        },
+        "excessBlobGas": {
+          "type": "string",
+          "pattern": "^0x[0-9a-fA-F]+$",
+          "description": "Excess blob gas from previous blocks (hex). EIP-4844 (Cancun fork)."
+        },
+        "extraData": {
+          "type": "string",
+          "pattern": "^0x[0-9a-fA-F]*$",
+          "description": "Arbitrary data included by block builder/miner (hex)"
+        },
+        "gasLimit": {
+          "type": "string",
+          "pattern": "^0x[0-9a-fA-F]+$",
+          "description": "Maximum gas allowed in this block (hex)"
+        },
+        "gasUsed": {
+          "type": "string",
+          "pattern": "^0x[0-9a-fA-F]+$",
+          "description": "Total gas used by all transactions (hex)"
+        },
+        "hash": {
+          "type": "string",
+          "pattern": "^0x[0-9a-fA-F]{64}$",
+          "description": "Block hash (32 bytes)"
+        },
+        "logsBloom": {
+          "type": "string",
+          "pattern": "^0x[0-9a-fA-F]{512}$",
+          "description": "Bloom filter for logs (256 bytes)"
+        },
+        "miner": {
+          "type": "string",
+          "pattern": "^0x[0-9a-fA-F]{40}$",
+          "description": "Address of block builder (20 bytes)"
+        },
+        "mixHash": {
+          "type": "string",
+          "pattern": "^0x[0-9a-fA-F]{64}$",
+          "description": "Mix hash (32 bytes, PoS post-Merge)"
+        },
+        "nonce": {
+          "type": "string",
+          "pattern": "^0x[0-9a-fA-F]{16}$",
+          "description": "Block nonce (always 0x0000000000000000 post-Merge)"
+        },
+        "number": {
+          "type": "string",
+          "pattern": "^0x[0-9a-fA-F]+$",
+          "description": "Block number (height) as hex string"
+        },
+        "parentBeaconBlockRoot": {
+          "type": "string",
+          "pattern": "^0x[0-9a-fA-F]{64}$",
+          "description": "Root of parent beacon chain block. EIP-4788 (Cancun fork)."
+        },
+        "parentHash": {
+          "type": "string",
+          "pattern": "^0x[0-9a-fA-F]{64}$",
+          "description": "Hash of previous block (32 bytes)"
+        },
+        "receiptsRoot": {
+          "type": "string",
+          "pattern": "^0x[0-9a-fA-F]{64}$",
+          "description": "Root hash of receipts trie (32 bytes)"
+        },
+        "requestsHash": {
+          "type": "string",
+          "pattern": "^0x[0-9a-fA-F]{64}$",
+          "description": "Hash of withdrawal requests. EIP-7685."
+        },
+        "sha3Uncles": {
+          "type": "string",
+          "pattern": "^0x[0-9a-fA-F]{64}$",
+          "description": "Hash of uncles list (always empty post-Merge)"
+        },
+        "size": {
+          "type": "string",
+          "pattern": "^0x[0-9a-fA-F]+$",
+          "description": "Block size in bytes (hex)"
+        },
+        "stateRoot": {
+          "type": "string",
+          "pattern": "^0x[0-9a-fA-F]{64}$",
+          "description": "Root hash of state trie (32 bytes)"
+        },
+        "timestamp": {
+          "type": "string",
+          "pattern": "^0x[0-9a-fA-F]+$",
+          "description": "Unix timestamp in seconds (hex)"
+        },
+        "transactions": {
+          "type": "array",
+          "description": "Array of transaction hashes (if includeTransactions=false) or full transaction objects (if true)",
+          "items": {
+            "oneOf": [
+              {
+                "type": "string",
+                "pattern": "^0x[0-9a-fA-F]{64}$",
+                "description": "Transaction hash"
+              },
+              {
+                "$ref": "#/definitions/TransactionSchema"
+              }
+            ]
+          }
+        },
+        "transactionsRoot": {
+          "type": "string",
+          "pattern": "^0x[0-9a-fA-F]{64}$",
+          "description": "Root hash of transactions trie (32 bytes)"
+        },
+        "uncles": {
+          "type": "array",
+          "description": "Array of uncle block hashes (always empty post-Merge)",
+          "items": {
+            "type": "string",
+            "pattern": "^0x[0-9a-fA-F]{64}$"
+          }
+        },
+        "withdrawals": {
+          "type": "array",
+          "description": "Validator withdrawals. EIP-4895 (Shanghai fork).",
+          "items": {
+            "$ref": "#/definitions/WithdrawalSchema"
+          }
+        },
+        "withdrawalsRoot": {
+          "type": "string",
+          "pattern": "^0x[0-9a-fA-F]{64}$",
+          "description": "Root hash of withdrawals trie (32 bytes)"
+        }
+      }
+    },
+    "TransactionSchema": {
+      "type": "object",
+      "description": "Ethereum transaction object",
+      "required": [
+        "blockHash",
+        "blockNumber",
+        "from",
+        "gas",
+        "hash",
+        "nonce",
+        "transactionIndex",
+        "type"
+      ],
+      "properties": {
+        "accessList": {
+          "type": "array",
+          "description": "EIP-2930 access list (addresses and storage keys)",
+          "items": {
+            "type": "object",
+            "properties": {
+              "address": {
+                "type": "string",
+                "pattern": "^0x[0-9a-fA-F]{40}$"
+              },
+              "storageKeys": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "pattern": "^0x[0-9a-fA-F]{64}$"
+                }
+              }
+            }
+          }
+        },
+        "blockHash": {
+          "type": "string",
+          "pattern": "^0x[0-9a-fA-F]{64}$",
+          "description": "Block hash containing this transaction"
+        },
+        "blockNumber": {
+          "type": "string",
+          "pattern": "^0x[0-9a-fA-F]+$",
+          "description": "Block number containing this transaction"
+        },
+        "chainId": {
+          "type": "string",
+          "pattern": "^0x[0-9a-fA-F]+$",
+          "description": "Chain ID (0x1 for mainnet)"
+        },
+        "from": {
+          "type": "string",
+          "pattern": "^0x[0-9a-fA-F]{40}$",
+          "description": "Sender address (20 bytes)"
+        },
+        "gas": {
+          "type": "string",
+          "pattern": "^0x[0-9a-fA-F]+$",
+          "description": "Gas limit for this transaction"
+        },
+        "gasPrice": {
+          "type": "string",
+          "pattern": "^0x[0-9a-fA-F]+$",
+          "description": "Gas price in wei (legacy txs) or effective price (EIP-1559)"
+        },
+        "hash": {
+          "type": "string",
+          "pattern": "^0x[0-9a-fA-F]{64}$",
+          "description": "Transaction hash (32 bytes)"
+        },
+        "input": {
+          "type": "string",
+          "pattern": "^0x[0-9a-fA-F]*$",
+          "description": "Transaction calldata (hex)"
+        },
+        "maxFeePerGas": {
+          "type": "string",
+          "pattern": "^0x[0-9a-fA-F]+$",
+          "description": "Max total fee willing to pay per gas (EIP-1559)"
+        },
+        "maxPriorityFeePerGas": {
+          "type": "string",
+          "pattern": "^0x[0-9a-fA-F]+$",
+          "description": "Max priority fee (tip) per gas (EIP-1559)"
+        },
+        "nonce": {
+          "type": "string",
+          "pattern": "^0x[0-9a-fA-F]+$",
+          "description": "Sender's transaction count"
+        },
+        "r": {
+          "type": "string",
+          "pattern": "^0x[0-9a-fA-F]+$",
+          "description": "ECDSA signature r value"
+        },
+        "s": {
+          "type": "string",
+          "pattern": "^0x[0-9a-fA-F]+$",
+          "description": "ECDSA signature s value"
+        },
+        "to": {
+          "type": ["string", "null"],
+          "pattern": "^0x[0-9a-fA-F]{40}$",
+          "description": "Recipient address (null for contract creation)"
+        },
+        "transactionIndex": {
+          "type": "string",
+          "pattern": "^0x[0-9a-fA-F]+$",
+          "description": "Position in block (0-indexed)"
+        },
+        "type": {
+          "type": "string",
+          "pattern": "^0x[0-3]$",
+          "description": "Transaction type: 0x0 (legacy), 0x1 (EIP-2930), 0x2 (EIP-1559), 0x3 (EIP-4844 blob)"
+        },
+        "v": {
+          "type": "string",
+          "pattern": "^0x[0-9a-fA-F]+$",
+          "description": "ECDSA recovery ID"
+        },
+        "value": {
+          "type": "string",
+          "pattern": "^0x[0-9a-fA-F]+$",
+          "description": "ETH value transferred in wei"
+        },
+        "yParity": {
+          "type": "string",
+          "pattern": "^0x[01]$",
+          "description": "Y-parity of signature (EIP-2718)"
+        }
+      }
+    },
+    "WithdrawalSchema": {
+      "type": "object",
+      "description": "Validator withdrawal object (EIP-4895)",
+      "required": ["address", "amount", "index", "validatorIndex"],
+      "properties": {
+        "address": {
+          "type": "string",
+          "pattern": "^0x[0-9a-fA-F]{40}$",
+          "description": "Recipient address (20 bytes)"
+        },
+        "amount": {
+          "type": "string",
+          "pattern": "^0x[0-9a-fA-F]+$",
+          "description": "Withdrawal amount in Gwei (not wei!)"
+        },
+        "index": {
+          "type": "string",
+          "pattern": "^0x[0-9a-fA-F]+$",
+          "description": "Global withdrawal index"
+        },
+        "validatorIndex": {
+          "type": "string",
+          "pattern": "^0x[0-9a-fA-F]+$",
+          "description": "Validator index on beacon chain"
+        }
+      }
+    },
+    "FeeHistorySchema": {
+      "type": "object",
+      "description": "Fee history response from eth_feeHistory",
+      "required": [
+        "baseFeePerGas",
+        "gasUsedRatio",
+        "oldestBlock"
+      ],
+      "properties": {
+        "baseFeePerBlobGas": {
+          "type": "array",
+          "description": "Base fee per blob gas for each block + next block (length = blockCount + 1)",
+          "items": {
+            "type": "string",
+            "pattern": "^0x[0-9a-fA-F]+$"
+          }
+        },
+        "baseFeePerGas": {
+          "type": "array",
+          "description": "Base fee per gas for each block + next block prediction (length = blockCount + 1)",
+          "items": {
+            "type": "string",
+            "pattern": "^0x[0-9a-fA-F]+$"
+          }
+        },
+        "blobGasUsedRatio": {
+          "type": "array",
+          "description": "Ratio of blob gas used to max (0.0-1.0) for each block (length = blockCount)",
+          "items": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1
+          }
+        },
+        "gasUsedRatio": {
+          "type": "array",
+          "description": "Ratio of gas used to gas limit (0.0-1.0) for each block (length = blockCount)",
+          "items": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1
+          }
+        },
+        "oldestBlock": {
+          "type": "string",
+          "pattern": "^0x[0-9a-fA-F]+$",
+          "description": "Oldest block number in the range"
+        },
+        "reward": {
+          "type": "array",
+          "description": "Priority fee percentiles for each block (length = blockCount)",
+          "items": {
+            "type": "array",
+            "description": "Array of priority fees at requested percentiles (in wei, hex)",
+            "items": {
+              "type": "string",
+              "pattern": "^0x[0-9a-fA-F]+$"
+            }
+          }
+        }
+      }
+    }
+  }
+}

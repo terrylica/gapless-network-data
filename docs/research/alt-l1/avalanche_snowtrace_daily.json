@@ -1,0 +1,17 @@
+[
+  {
+    "UTCDate": "2022-01-01",
+    "unixTimeStamp": "1640995200",
+    "transactionCount": "517168"
+  },
+  {
+    "UTCDate": "2022-01-02",
+    "unixTimeStamp": "1641081600",
+    "transactionCount": "677397"
+  },
+  {
+    "UTCDate": "2022-01-03",
+    "unixTimeStamp": "1641168000",
+    "transactionCount": "697942"
+  }
+]

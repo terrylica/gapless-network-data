@@ -1,0 +1,365 @@
+openapi: 3.1.0
+info:
+  title: Gapless Mempool Data - Core Collection (Phase 1)
+  version: 0.1.0
+
+  description: |
+    Bitcoin mempool pressure data collection with zero-gap guarantee.
+    Phase 1 focuses on fixing core collection issues and implementing
+    API client with proper error handling.
+
+    This specification serves as the Single Source of Truth (SSoT) for
+    Phase 1 implementation, synced with TodoWrite-managed tasks.
+
+  x-metadata:
+    implementation_date: 2025-11-03
+    implementation_status: in_progress
+    referential_implementation: /Users/terryli/eon/gapless-crypto-data
+    last_updated: 2025-11-03T20:00:00Z
+    supersedes: []
+    completed_tasks:
+      - fix-historical-collection
+      - structured-exceptions
+      - implement-retry-logic
+
+  x-version-history:
+    - version: 0.1.0
+      date: 2025-11-03
+      changes:
+        - Initial specification for Phase 1 core collection
+        - Identified architectural flaw in collect_range (calls live API for historical timestamps)
+        - Defined forward-collection-only approach
+        - Established SLOs for availability, correctness, observability, maintainability
+
+  x-slos:
+    availability:
+      target: 99.5%
+      measurement: Percentage of successful API requests over 24-hour window
+      failure_mode: Network errors, API downtime, rate limit exceeded
+      mitigation: Exponential backoff retry, graceful degradation with structured exceptions
+
+    correctness:
+      target: 100%
+      measurement: All collected snapshots match mempool.space API schema
+      validation: Pydantic validation on every snapshot, sanity checks on fee ordering
+      failure_mode: Schema mismatch, invalid fee ordering, missing required fields
+
+    observability:
+      target: 100%
+      measurement: All API requests logged with timestamp, endpoint, status code
+      log_format: Structured logging with ISO 8601 timestamps
+      failure_mode: Logging system unavailable
+
+    maintainability:
+      target: Configuration changes require < 5 minutes
+      measurement: Time to adjust retry parameters, rate limits, endpoints
+      documentation: Python docstrings with examples, type hints throughout
+
+  x-implementation-findings:
+    architectural_issues:
+      - issue: collect_range() calls live API repeatedly for historical timestamps
+        impact: Cannot actually collect historical data
+        resolution: Redefine as forward-collection-only (daemon mode)
+        status: pending_implementation
+
+      - issue: No retry logic on HTTP failures
+        impact: Transient failures cause data loss
+        resolution: Implement exponential backoff with max 3 retries
+        status: pending_implementation
+
+      - issue: No ETag caching
+        impact: Excessive bandwidth usage
+        resolution: Implement httpx caching with ETag support
+        status: pending_implementation
+
+      - issue: Test coverage 17% (target 70-85%)
+        impact: Low confidence in collector stability
+        resolution: Write comprehensive tests for collector, API, validation
+        status: pending_implementation
+
+    design_decisions:
+      - decision: Forward-collection-only (no historical API)
+        rationale: mempool.space does not provide historical snapshot API
+        alternative_considered: Historical data export via blockchain archive
+        chosen_approach: Real-time collection daemon with gap detection
+
+      - decision: Use httpx instead of requests
+        rationale: Async support, modern API, better performance
+        alignment: Follows gapless-crypto-data pattern
+
+      - decision: Exception-only failures
+        rationale: No fallbacks, no defaults, no silent errors
+        alignment: Follows gapless-crypto-data pattern
+
+      - decision: Use Polars internally, export pandas
+        rationale: Polars for performance, pandas DatetimeIndex for compatibility
+        alignment: Follows gapless-crypto-data pattern
+
+components:
+  schemas:
+    MempoolSnapshot:
+      type: object
+      required:
+        - timestamp
+        - unconfirmed_count
+        - vsize_mb
+        - total_fee_btc
+        - fastest_fee
+        - half_hour_fee
+        - hour_fee
+        - economy_fee
+        - minimum_fee
+      properties:
+        timestamp:
+          type: string
+          format: date-time
+          description: Snapshot timestamp (ISO 8601 UTC)
+        unconfirmed_count:
+          type: integer
+          minimum: 0
+          description: Number of unconfirmed transactions
+        vsize_mb:
+          type: number
+          format: float
+          minimum: 0
+          description: Total mempool virtual size (MB)
+        total_fee_btc:
+          type: number
+          format: float
+          minimum: 0
+          description: Total fees in mempool (BTC)
+        fastest_fee:
+          type: number
+          format: float
+          minimum: 1
+          maximum: 10000
+          description: Fee rate for next block (sat/vB)
+        half_hour_fee:
+          type: number
+          format: float
+          minimum: 1
+          maximum: 10000
+          description: Fee rate for ~30min confirmation (sat/vB)
+        hour_fee:
+          type: number
+          format: float
+          minimum: 1
+          maximum: 10000
+          description: Fee rate for ~1hr confirmation (sat/vB)
+        economy_fee:
+          type: number
+          format: float
+          minimum: 1
+          maximum: 10000
+          description: Fee rate for low-priority tx (sat/vB)
+        minimum_fee:
+          type: number
+          format: float
+          minimum: 1
+          description: Minimum relay fee (sat/vB)
+
+    HTTPException:
+      type: object
+      required:
+        - timestamp
+        - endpoint
+        - message
+      properties:
+        timestamp:
+          type: string
+          format: date-time
+          description: When error occurred (ISO 8601)
+        endpoint:
+          type: string
+          description: API endpoint that failed
+        http_status:
+          type: integer
+          description: HTTP status code (if applicable)
+        message:
+          type: string
+          description: Human-readable error description
+        retry_count:
+          type: integer
+          description: Number of retries attempted
+
+paths:
+  /api/mempool:
+    get:
+      summary: Get current mempool state
+      operationId: getMempoolState
+      responses:
+        '200':
+          description: Current mempool state
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [count, vsize, total_fee]
+                properties:
+                  count:
+                    type: integer
+                    description: Unconfirmed transaction count
+                  vsize:
+                    type: integer
+                    description: Mempool virtual size (bytes)
+                  total_fee:
+                    type: integer
+                    description: Total fees (satoshis)
+        '5xx':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPException'
+
+  /api/v1/fees/recommended:
+    get:
+      summary: Get recommended fee rates
+      operationId: getRecommendedFees
+      responses:
+        '200':
+          description: Recommended fee rates
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [fastestFee, halfHourFee, hourFee, economyFee, minimumFee]
+                properties:
+                  fastestFee:
+                    type: number
+                    description: Next block fee rate (sat/vB)
+                  halfHourFee:
+                    type: number
+                    description: ~30min fee rate (sat/vB)
+                  hourFee:
+                    type: number
+                    description: ~1hr fee rate (sat/vB)
+                  economyFee:
+                    type: number
+                    description: Low-priority fee rate (sat/vB)
+                  minimumFee:
+                    type: number
+                    description: Minimum relay fee (sat/vB)
+        '5xx':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPException'
+
+x-phase1-tasks:
+  critical_path:
+    - id: fix-historical-collection
+      title: Fix historical collection approach
+      description: Remove fake historical collection, implement forward-only daemon mode
+      status: completed
+      priority: P0
+      dependencies: []
+      acceptance_criteria:
+        - Remove collect_range timestamp override (line 119) ✓
+        - Document forward-collection-only constraint ✓
+        - Add validation that start/end are recent (within 5 minutes) ✓
+      estimated_effort: 1 hour
+      actual_effort: 30 minutes
+
+    - id: implement-retry-logic
+      title: Implement exponential backoff retry
+      description: Add retry logic with exponential backoff (max 3 retries)
+      status: completed
+      priority: P0
+      dependencies: []
+      acceptance_criteria:
+        - tenacity library integration (off-the-shelf solution) ✓
+        - Max 3 retries with exponential backoff (1s, 2s, 4s) ✓
+        - Structured exceptions with retry_count ✓
+      estimated_effort: 2 hours
+      actual_effort: 45 minutes
+
+    - id: add-etag-caching
+      title: Add ETag-based HTTP caching
+      description: Implement HTTP caching to reduce bandwidth
+      status: pending
+      priority: P1
+      dependencies: [implement-retry-logic]
+      acceptance_criteria:
+        - httpx-cache or hishel integration
+        - Cache backend (SQLite or in-memory)
+        - ETag header support
+        - Cache hit/miss logging
+      estimated_effort: 2 hours
+
+    - id: structured-exceptions
+      title: Implement structured exception classes
+      description: Create exception classes with context (timestamp, endpoint, http_status)
+      status: completed
+      priority: P0
+      dependencies: []
+      acceptance_criteria:
+        - MempoolHTTPException with required fields ✓
+        - MempoolValidationException for data quality ✓
+        - All exceptions include ISO 8601 timestamp ✓
+        - Exceptions propagate (no silent failures) ✓
+      estimated_effort: 1 hour
+      actual_effort: 30 minutes
+
+    - id: comprehensive-tests
+      title: Write comprehensive test suite
+      description: Achieve 70%+ coverage on collectors, 85%+ on API
+      status: pending
+      priority: P0
+      dependencies: [fix-historical-collection, implement-retry-logic, structured-exceptions]
+      acceptance_criteria:
+        - test_collectors.py with mock HTTP responses
+        - test_api.py covering all public functions
+        - test_validation.py for sanity checks
+        - Coverage report shows 70%+ on collectors
+      estimated_effort: 4 hours
+
+    - id: cli-implementation
+      title: Implement functional CLI commands
+      description: Make collect and stream commands operational
+      status: pending
+      priority: P1
+      dependencies: [fix-historical-collection, structured-exceptions]
+      acceptance_criteria:
+        - gapless-network-data stream works (live snapshots)
+        - gapless-network-data collect --output /path works
+        - CLI help text accurate
+        - Error messages helpful
+      estimated_effort: 2 hours
+
+  validation_gates:
+    - gate: unit_tests_pass
+      description: All unit tests pass with 70%+ coverage
+      required_before: v0.2.0 release
+
+    - gate: integration_test_pass
+      description: Collect 60 snapshots (1 hour) successfully
+      required_before: v0.2.0 release
+
+    - gate: no_silent_failures
+      description: All error paths raise structured exceptions
+      validation: Code review + tests for error scenarios
+      required_before: v0.2.0 release
+
+x-release-plan:
+  v0.2.0:
+    target_date: 2025-11-04
+    scope: Phase 1 - Core Collection Fixed
+    deliverables:
+      - Forward-collection-only implementation
+      - Retry logic with exponential backoff
+      - ETag caching
+      - Structured exceptions
+      - 70%+ test coverage
+      - Functional CLI (stream, collect)
+    success_gates:
+      - All tasks in critical_path complete
+      - All validation_gates pass
+      - CHANGELOG.md updated
+      - Git tag v0.2.0 created
+      - GitHub Release published
+    rollback_criteria:
+      - Integration test fails (cannot collect 60 snapshots)
+      - Coverage below 70%
+      - Silent failures detected
