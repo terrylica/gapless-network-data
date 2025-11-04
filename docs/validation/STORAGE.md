@@ -196,6 +196,7 @@ data/
 ```
 
 **Rationale**:
+
 - Raw data partitioned by chain (different schemas)
 - Validation data unified by type (same schema across chains)
 - Daily granularity for efficient queries and retention policies
@@ -280,16 +281,19 @@ anomalies = storage.query_anomalies(
 ### Performance Benchmarks
 
 **Storage Savings** (vs DuckDB persistent tables):
+
 - Validation reports: 110x smaller (Parquet with Snappy compression)
 - Gap reports: 95x smaller
 - Anomaly reports: 105x smaller
 
 **Query Performance** (DuckDB reading Parquet):
+
 - Simple filters: 10-20x faster than pandas
 - Complex aggregations: 15-30x faster
 - Temporal joins: 40-60x faster with ASOF JOIN
 
 **Compression Ratios** (Snappy):
+
 - Validation reports: ~3x smaller than uncompressed
 - Gap reports: ~4x smaller (many NULL values in backfill fields)
 - Anomaly reports: ~2.5x smaller
@@ -305,6 +309,7 @@ anomalies = storage.query_anomalies(
 **Anomaly Reports**: Keep for 180 days, then archive
 
 **Automated Cleanup**:
+
 ```python
 from gapless_network_data.validation import cleanup_old_reports
 
@@ -321,10 +326,12 @@ cleanup_old_reports(
 ## Current Implementation Status
 
 **Implemented** (v0.1.0):
+
 - Pydantic validation models (MempoolValidationReport)
 - Basic exception structure (MempoolValidationException)
 
 **Pending** (Phase 2 - Data Quality):
+
 - ValidationStorage class with write methods
 - Parquet file generation for validation reports
 - DuckDB query interface
@@ -345,6 +352,7 @@ Until this document is completed, refer to:
 ---
 
 **Related Documentation**:
+
 - [Validation Overview](/Users/terryli/eon/gapless-network-data/docs/validation/OVERVIEW.md) - Validation pipeline
 - [DuckDB Integration Strategy](/Users/terryli/eon/gapless-network-data/specifications/duckdb-integration-strategy.yaml) - Query architecture
 

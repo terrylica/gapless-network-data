@@ -1,5 +1,5 @@
 """
-Command-line interface for gapless-mempool-data.
+Command-line interface for gapless-network-data.
 """
 
 import sys
@@ -16,7 +16,7 @@ def main() -> None:
         version: Show version information
     """
     if len(sys.argv) < 2:
-        print("Usage: gapless-mempool-data <command> [options]")
+        print("Usage: gapless-network-data <command> [options]")
         print()
         print("Commands:")
         print("  collect  Collect mempool data for a time range")
@@ -29,7 +29,7 @@ def main() -> None:
     if command == "version":
         from gapless_network_data import __version__
 
-        print(f"gapless-mempool-data v{__version__}")
+        print(f"gapless-network-data v{__version__}")
     elif command == "collect":
         print("collect command: Implementation pending")
         print("Use Python API for now:")

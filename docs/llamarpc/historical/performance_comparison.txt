@@ -116,7 +116,7 @@ KEY TAKEAWAYS:
    • Slow for large backfills (~18 hours per 1M blocks)
    • Not suitable for production
 
-💡 Recommendation for gapless-mempool-data:
+💡 Recommendation for gapless-network-data:
    Use LlamaRPC for testing/prototyping only.
    For production, use Alchemy/Infura with API keys or run local Ethereum node.
 

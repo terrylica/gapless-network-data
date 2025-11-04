@@ -1,5 +1,5 @@
 """
-Structured exception classes for gapless-mempool-data.
+Structured exception classes for gapless-network-data.
 
 All exceptions include context (timestamp, endpoint, etc.) for observability.
 Follows exception-only failure pattern - no fallbacks, no defaults, no silent errors.
@@ -11,7 +11,7 @@ from typing import Optional
 
 class MempoolException(Exception):
     """
-    Base exception for all gapless-mempool-data errors.
+    Base exception for all gapless-network-data errors.
 
     All exceptions include ISO 8601 timestamp for observability.
     """

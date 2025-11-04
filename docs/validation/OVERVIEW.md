@@ -16,6 +16,7 @@ This document will provide comprehensive documentation for the 5-layer validatio
 ### 5-Layer Validation Pipeline
 
 #### Layer 1: HTTP/RPC Validation
+
 - **Purpose**: Verify API responses are valid before processing
 - **Checks**:
   - HTTP status code (200-299 success range)
@@ -25,6 +26,7 @@ This document will provide comprehensive documentation for the 5-layer validatio
 - **Action on Failure**: Raise `MempoolHTTPException`, retry with exponential backoff (max 3 retries)
 
 #### Layer 2: Schema Validation
+
 - **Purpose**: Ensure data structure matches expected schema
 - **Checks**:
   - Required fields present
@@ -33,6 +35,7 @@ This document will provide comprehensive documentation for the 5-layer validatio
 - **Action on Failure**: Raise `MempoolValidationException` with schema mismatch details
 
 #### Layer 3: Sanity Validation
+
 - **Purpose**: Verify data values are logically consistent
 - **Checks**:
   - Non-negative values (gas prices, fees, counts)
@@ -42,6 +45,7 @@ This document will provide comprehensive documentation for the 5-layer validatio
 - **Action on Failure**: Raise `MempoolValidationException` with sanity check failures
 
 #### Layer 4: Gap Detection
+
 - **Purpose**: Identify missing data intervals (zero-gap guarantee)
 - **Checks**:
   - Ethereum: Missing block numbers (should be consecutive)
@@ -50,6 +54,7 @@ This document will provide comprehensive documentation for the 5-layer validatio
 - **Action on Failure**: Log gaps, trigger automatic backfill, store gap report in DuckDB
 
 #### Layer 5: Anomaly Detection
+
 - **Purpose**: Flag unusual but not necessarily invalid data
 - **Checks**:
   - Z-score outliers (base fee spikes >3 standard deviations)
@@ -173,12 +178,14 @@ df = gnd.fetch_snapshots(
 ## Current Implementation Status
 
 **Implemented** (v0.1.0):
+
 - Layer 1: HTTP validation (basic)
 - Layer 2: Schema validation (Pydantic models)
 - Structured exceptions (MempoolHTTPException, MempoolValidationException)
 - Retry logic with exponential backoff
 
 **Pending** (Phase 2 - Data Quality):
+
 - Layer 3: Sanity validation (range checks, ordering constraints)
 - Layer 4: Gap detection (missing intervals, automatic backfill)
 - Layer 5: Anomaly detection (z-score outliers, rate-of-change)
@@ -198,6 +205,7 @@ Until this document is completed, refer to:
 ---
 
 **Related Documentation**:
+
 - [ValidationStorage Specification](/Users/terryli/eon/gapless-network-data/docs/validation/STORAGE.md) - Storage format details
 - [Architecture Overview](/Users/terryli/eon/gapless-network-data/docs/architecture/OVERVIEW.md) - System design
 

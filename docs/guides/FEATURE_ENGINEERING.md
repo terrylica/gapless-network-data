@@ -16,11 +16,13 @@ This document will provide comprehensive guidance for creating cross-domain feat
 ### Core Concepts
 
 #### Temporal Alignment
+
 - Forward-fill strategy (prevents data leakage in live trading)
 - ASOF JOIN with DuckDB (16x faster than pandas reindex)
 - Handling missing data and gaps
 
 #### Cross-Domain Feature Fusion
+
 - Combining network metrics with price data
 - Feature correlation analysis
 - Feature selection strategies
@@ -28,6 +30,7 @@ This document will provide comprehensive guidance for creating cross-domain feat
 ### Feature Categories
 
 #### Ethereum Network Features
+
 - **Gas Pressure**: Normalized base fee (relative to rolling median)
 - **Block Utilization**: Gas used / gas limit percentage
 - **Transaction Velocity**: Rolling transaction count per time window
@@ -35,6 +38,7 @@ This document will provide comprehensive guidance for creating cross-domain feat
 - **Congestion Index**: Composite metric of gas + utilization
 
 #### Bitcoin Mempool Features
+
 - **Fee Pressure**: Fastest fee / economy fee ratio
 - **Mempool Congestion**: Unconfirmed transaction count (z-score)
 - **Fee Gradient**: Difference between fastest and economy fees
@@ -42,6 +46,7 @@ This document will provide comprehensive guidance for creating cross-domain feat
 - **Fee Rate Stability**: Rolling standard deviation of fee rates
 
 #### Cross-Chain Features
+
 - **Relative Congestion**: ETH gas pressure vs BTC fee pressure
 - **Network Health**: Composite score across chains
 - **Fee Arbitrage**: Opportunities based on cross-chain congestion
@@ -143,6 +148,7 @@ df['relative_congestion'] = (
 ### Feature Examples
 
 #### Ethereum Gas Pressure Features
+
 ```python
 # Normalized base fee (relative to rolling median)
 df['gas_pressure_60m'] = df['baseFeePerGas'] / df['baseFeePerGas'].rolling(60).median()
@@ -169,6 +175,7 @@ df['congestion_index'] = (
 ```
 
 #### Bitcoin Mempool Pressure Features
+
 ```python
 # Fee pressure
 df['fee_pressure'] = df['fastest_fee'] / (df['economy_fee'] + 1e-10)
@@ -190,6 +197,7 @@ df['fee_stability'] = df['fastest_fee'].rolling(60).std()
 ```
 
 #### Cross-Domain Price + Network Features
+
 ```python
 # Gas-adjusted returns
 df['gas_adjusted_return'] = (df['close'] - df['open']) / (df['baseFeePerGas'] + 1)
@@ -220,12 +228,14 @@ df_eth_aligned = df_eth.reindex(df_ohlcv.index).interpolate()  # DON'T DO THIS
 ### Performance Optimization
 
 **DuckDB vs Pandas**:
+
 - pandas `reindex`: Baseline performance
 - DuckDB `ASOF JOIN`: 16x faster for large datasets (>1M rows)
 - DuckDB `LAG()`: 8x faster for rolling features
 - DuckDB `QUALIFY`: 12x faster for filtering with window functions
 
 **Memory Optimization**:
+
 - Use Polars for intermediate calculations (5-10x faster than pandas)
 - Stream large datasets with `read_parquet(use_pyarrow=True)`
 - Batch process by month/week to control memory usage
@@ -267,6 +277,7 @@ df['gas_adjusted_return'] = (df['close'] - df['open']) / (df['baseFeePerGas'] + 
 ---
 
 **Related Documentation**:
+
 - [Python API Reference](/Users/terryli/eon/gapless-network-data/docs/guides/python-api.md) - Data collection API
 - [DuckDB Integration Strategy](/Users/terryli/eon/gapless-network-data/specifications/duckdb-integration-strategy.yaml) - Performance benchmarks
 

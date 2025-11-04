@@ -3,7 +3,7 @@
 Example: Fetching historical Ethereum block data using web3.py with LlamaRPC.
 
 This demonstrates collecting historical blockchain data for feature engineering,
-similar to the gapless-mempool-data package architecture.
+similar to the gapless-network-data package architecture.
 """
 # /// script
 # dependencies = ["web3>=7.0.0", "pandas>=2.0.0"]

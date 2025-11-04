@@ -95,7 +95,7 @@ Hub-and-spoke documentation architecture for multi-chain blockchain network metr
 ### Data Granularity Comparison
 
 | Chain    | Granularity | Snapshots/Hour | Historical Depth | Status        |
-|----------|-------------|----------------|------------------|---------------|
+| -------- | ----------- | -------------- | ---------------- | ------------- |
 | Ethereum | ~12 seconds | 300 blocks     | 2015+ (Genesis)  | **PRIMARY**   |
 | Bitcoin  | 5 minutes   | 12 snapshots   | 2016+            | **SECONDARY** |
 
@@ -104,6 +104,7 @@ Hub-and-spoke documentation architecture for multi-chain blockchain network metr
 **Current Phase**: Phase 0 (Foundation) - ✅ Complete
 
 **Next Phase**: Phase 1 (Basic Collection) - 🚧 Planned
+
 - Ethereum block data collection (6-8 hours, P0)
 - Bitcoin mempool collection (4-6 hours, P1)
 
@@ -164,11 +165,13 @@ See [master-project-roadmap.yaml](/Users/terryli/eon/gapless-network-data/specif
 ### Key Concepts
 
 **Data Scope**: On-chain network metrics ONLY
+
 - ✅ Ethereum gas prices, block data, network congestion
 - ✅ Bitcoin mempool pressure, fee rates, transaction counts
 - ❌ Exchange OHLCV (Binance, Coinbase, Kraken) - Use [gapless-crypto-data](https://github.com/terrylica/gapless-crypto-data) instead
 
 **Architecture Principles**:
+
 - **DuckDB for Queries, Parquet for Data**: 110x storage savings, 10-100x query speedups
 - **Zero-Gap Guarantee**: Automated gap detection and backfill recovery
 - **Feature Engineering First**: All data designed for temporal alignment with OHLCV
@@ -193,6 +196,7 @@ See [master-project-roadmap.yaml](/Users/terryli/eon/gapless-network-data/specif
 **Current Version**: v0.1.0 (2025-11-04)
 
 **Version History**:
+
 - v0.1.0: Foundation phase complete (package structure, research, planning)
 - v0.2.0 (planned): Basic collection operational (Ethereum + Bitcoin)
 - v1.0.0 (target): Production release (full validation, multi-chain, PyPI published)

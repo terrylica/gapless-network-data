@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Basic usage example for gapless-mempool-data.
+Basic usage example for gapless-network-data.
 
 Demonstrates:
 1. Getting the latest mempool snapshot

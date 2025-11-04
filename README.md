@@ -90,14 +90,14 @@ gapless-network-data collect \
 
 ### Ethereum Block Data (12-second intervals)
 
-| Field             | Type     | Description                          |
-| ----------------- | -------- | ------------------------------------ |
-| `number`          | int      | Block number                         |
-| `timestamp`       | datetime | UTC timestamp (ISO 8601)             |
-| `baseFeePerGas`   | int      | Base fee per gas (wei)               |
-| `gasUsed`         | int      | Total gas used in block              |
-| `gasLimit`        | int      | Block gas limit                      |
-| `transactions`    | int      | Number of transactions in block      |
+| Field           | Type     | Description                     |
+| --------------- | -------- | ------------------------------- |
+| `number`        | int      | Block number                    |
+| `timestamp`     | datetime | UTC timestamp (ISO 8601)        |
+| `baseFeePerGas` | int      | Base fee per gas (wei)          |
+| `gasUsed`       | int      | Total gas used in block         |
+| `gasLimit`      | int      | Block gas limit                 |
+| `transactions`  | int      | Number of transactions in block |
 
 ### Bitcoin Mempool Data (5-minute intervals)
 

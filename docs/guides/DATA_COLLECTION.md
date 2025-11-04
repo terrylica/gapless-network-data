@@ -16,6 +16,7 @@ This document will provide comprehensive guidance for collecting blockchain netw
 ### CLI Usage
 
 #### Collect Command
+
 ```bash
 # Ethereum block data collection (PRIMARY - 12s intervals)
 gapless-network-data collect \
@@ -33,6 +34,7 @@ gapless-network-data collect \
 ```
 
 #### Stream Command
+
 ```bash
 # Live Ethereum block streaming
 gapless-network-data stream \
@@ -46,6 +48,7 @@ gapless-network-data stream \
 ```
 
 #### Validate Command
+
 ```bash
 # Validate collected data
 gapless-network-data validate \
@@ -55,22 +58,26 @@ gapless-network-data validate \
 ```
 
 ### Collection Modes
+
 - **Historical Collection**: Backfill past data with gap detection
 - **Live Streaming**: Real-time collection with automatic reconnection
 - **Hybrid Mode**: Live + backfill gaps on-the-fly
 
 ### Configuration
+
 - Environment variables (LLAMARPC_URL, MEMPOOL_SPACE_URL)
 - Config file format (.gapless-network-data.yaml)
 - Rate limiting configuration
 
 ### Best Practices
+
 - Recommended collection intervals per chain
 - Output directory organization
 - Handling API rate limits
 - Monitoring collection health
 
 ### Troubleshooting
+
 - Common errors and solutions
 - Gap detection and recovery
 - API endpoint failures
@@ -103,6 +110,7 @@ gapless-network-data stream \
 ---
 
 **Related Documentation**:
+
 - [Python API Reference](/Users/terryli/eon/gapless-network-data/docs/guides/python-api.md) - Programmatic collection
 - [Data Format Specification](/Users/terryli/eon/gapless-network-data/docs/architecture/DATA_FORMAT.md) - Output schemas
 

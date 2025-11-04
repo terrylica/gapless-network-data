@@ -35,6 +35,7 @@ df_eth: pd.DataFrame = gnd.fetch_snapshots(
 ```
 
 **Parameters**:
+
 - `chain` (str): Chain identifier ("ethereum", "bitcoin", "solana", etc.)
 - `start` (str | datetime): Start timestamp (ISO 8601 format)
 - `end` (str | datetime): End timestamp (ISO 8601 format)
@@ -44,6 +45,7 @@ df_eth: pd.DataFrame = gnd.fetch_snapshots(
 **Returns**: `pd.DataFrame` with DatetimeIndex
 
 **Raises**:
+
 - `MempoolHTTPException`: API request failed
 - `MempoolValidationException`: Data quality check failed
 - `ValueError`: Invalid parameters
@@ -65,12 +67,14 @@ print(f"Transactions: {block['transactions']}")
 ```
 
 **Parameters**:
+
 - `chain` (str): Chain identifier ("ethereum", "bitcoin", "solana", etc.)
 - `validate` (bool, optional): Run validation pipeline (default: True)
 
 **Returns**: `dict` with snapshot data
 
 **Raises**:
+
 - `MempoolHTTPException`: API request failed
 - `MempoolValidationException`: Data quality check failed
 
@@ -79,6 +83,7 @@ print(f"Transactions: {block['transactions']}")
 ### Advanced Features
 
 #### Multi-Chain Collection
+
 ```python
 # Collect from multiple chains in parallel
 import asyncio
@@ -94,6 +99,7 @@ eth_df, btc_df = asyncio.run(collect_multi_chain())
 ```
 
 #### Custom Validation Rules
+
 ```python
 # Define custom validation rules
 from gapless_network_data.validation import ValidationRule
@@ -113,6 +119,7 @@ df = gnd.fetch_snapshots(
 ```
 
 #### Gap Detection and Backfill
+
 ```python
 # Detect gaps in collected data
 from gapless_network_data.validation import detect_gaps
@@ -217,6 +224,7 @@ print(f"Base fee: {block['baseFeePerGas']} wei")
 ---
 
 **Related Documentation**:
+
 - [Data Collection Guide](/Users/terryli/eon/gapless-network-data/docs/guides/DATA_COLLECTION.md) - CLI usage
 - [Feature Engineering Guide](/Users/terryli/eon/gapless-network-data/docs/guides/FEATURE_ENGINEERING.md) - Cross-domain features
 

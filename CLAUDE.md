@@ -7,6 +7,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 Gapless Network Data is a multi-chain blockchain network metrics collection tool with zero-gap guarantee. Designed for feature engineering in cryptocurrency trading and ML pipelines.
 
 **Core Capability**: Collect complete historical blockchain network data with high-frequency granularity:
+
 - **Ethereum** (PRIMARY): Block-level data via LlamaRPC (~12 second intervals)
 - **Bitcoin**: Mempool snapshots via mempool.space (5-minute intervals)
 - **Multi-chain**: Extensible to Solana, Avalanche, Polygon, etc.
