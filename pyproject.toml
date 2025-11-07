@@ -1,6 +1,6 @@
 [project]
 name = "gapless-network-data"
-version = "0.1.0"
+version = "0.0.0"
 description = "Multi-chain blockchain network metrics collection with zero-gap guarantee (Ethereum, Bitcoin, Solana, etc.)"
 readme = "README.md"
 requires-python = ">=3.9"
@@ -54,6 +54,7 @@ dev = [
     "ruff>=0.3.0",
     "mypy>=1.8.0",
     "pre-commit>=3.6.0",
+    "python-semantic-release>=10.4.1",
 ]
 
 [project.urls]
@@ -113,3 +114,36 @@ warn_return_any = true
 warn_unused_configs = true
 disallow_untyped_defs = true
 strict = true
+
+[dependency-groups]
+dev = [
+    "pytest>=8.4.2",
+    "pytest-cov>=7.0.0",
+]
+
+[tool.semantic_release]
+version_toml = ["pyproject.toml:project.version"]
+build_command = "uv build"
+commit_parser = "conventional"
+major_on_zero = true
+allow_zero_version = true
+
+[tool.semantic_release.commit_parser_options]
+minor_tags = ["feat"]
+patch_tags = ["fix", "perf"]
+
+[tool.semantic_release.changelog]
+exclude_commit_patterns = [
+    '''chore(?:\([^)]*?\))?: .+''',
+    '''ci(?:\([^)]*?\))?: .+''',
+    '''style(?:\([^)]*?\))?: .+''',
+    '''test(?:\([^)]*?\))?: .+''',
+    '''build\((?!deps\): .+)''',
+]
+
+[tool.semantic_release.branches.main]
+match = "^main$"
+
+[tool.semantic_release.remote]
+type = "github"
+token = { env = "GH_TOKEN" }
