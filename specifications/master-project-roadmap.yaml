@@ -28,29 +28,38 @@ info:
       3. Chronological phase ordering: Collection → Quality → Features → Expansion → Production → Release
 
   x-architecture:
-    core_principle: "Parquet for Data, DuckDB for Queries"
+    core_principle: "DuckDB PRIMARY for Raw Data Storage"
     rationale: |
-      Store all immutable time-series data in Parquet files.
-      Use DuckDB as query engine for analytics and validation.
+      Store all raw blockchain data in DuckDB tables (single data.duckdb file).
+      Provides maximum flexibility for historical data + feature engineering.
 
     benefits:
-      - "110x storage savings (Parquet vs DuckDB tables)"
-      - "10-100x performance gains (DuckDB SQL vs Python/pandas)"
-      - "Zero-copy queries (read Parquet without loading into memory)"
-      - "Production-proven (DoorDash case study)"
+      - "Maximum flexibility: Direct SQL resampling, temporal joins, window functions"
+      - "10-100x faster: DuckDB SQL vs Pandas for feature engineering"
+      - "Simplicity: Single data.duckdb file (~1.5 GB for 5 years Ethereum)"
+      - "Compact storage: ~1.5 GB DuckDB vs ~1.2 GB Parquet (negligible 300 MB difference)"
+      - "Production-proven (DoorDash uses DuckDB for 1-min time-series)"
 
   x-slos:
+    availability:
+      target: "Data collection operations complete without manual intervention"
+      measurement: "Percentage of collection runs that complete successfully with checkpoint/resume"
+      validation: "Checkpoint-based resume survives crashes, batch operations handle errors gracefully"
+      failure_mode: "Collection hangs, requires manual restart, loses progress on crash"
+      error_handling: "Raise and propagate exceptions, no fallbacks/defaults/silent handling"
+
     correctness:
       target: "100% data accuracy"
       measurement: "All validation layers pass, no silent errors"
       validation: "5-layer validation pipeline + DuckDB CHECK constraints"
       failure_mode: "Exception-only failures (no defaults, no fallbacks)"
+      error_handling: "Structured exceptions with context, no silent data corruption"
 
     observability:
       target: "100% operation tracking"
       measurement: "All data collection and validation logged"
       log_format: "timestamp, operation, status, duration, errors"
-      storage: "Parquet validation reports (queryable with DuckDB)"
+      storage: "Validation reports with queryable history"
       failure_mode: "Silent failures, missing audit trail"
 
     maintainability:
@@ -58,6 +67,10 @@ info:
       measurement: "Time to add new validation layer, new collector, new query"
       documentation: "Hub-and-spoke with progressive disclosure (CLAUDE.md)"
       failure_mode: "Undocumented patterns, unclear architecture"
+
+    exclusions:
+      note: "Performance/speed, security, and availability SLAs explicitly excluded"
+      rationale: "Focus on correctness and observability; performance optimization deferred to production phases"
 
 x-project-phases:
   phase_0_foundation:
@@ -126,85 +139,121 @@ x-project-phases:
         evidence: "All 6 audit findings resolved, 85% compliance"
 
   phase_1_basic_collection:
-    name: "Basic Data Collection (Prove We Can Collect)"
+    name: "Historical Data Collection (5-Year Backfill)"
     status: "planned"
-    estimated_duration: "1-2 weeks"
+    estimated_duration: "3-4 weeks development + 22-27 days machine runtime (530-650 hours at 5.5-6.85 blocks/sec)"
     dependencies: ["phase_0_foundation"]
+    validation_status: "Empirically validated 2025-11-04 - see scratch/README.md"
 
     objectives:
-      - "Collect Ethereum block data (12-second intervals) - PRIMARY HIGH-FREQUENCY SOURCE"
-      - "Collect Bitcoin mempool snapshots (5-minute intervals) - LOWER FREQUENCY"
-      - "Store reliably in Parquet format"
+      - "Collect 5 years of Ethereum block data (2020-2025, ~13M blocks) - PRIMARY HISTORICAL BACKFILL"
+      - "Store in DuckDB PRIMARY (single data.duckdb file, ~1.5 GB for Ethereum)"
+      - "Batch fetching with checkpoint/resume capability (survive 22-27 day runtime)"
       - "Basic validation (RPC/HTTP, schema)"
+      - "Bitcoin collection deferred to Phase 2+ (SECONDARY priority)"
 
-    priority_note: "Ethereum is the only validated high-frequency source (~12s blocks). Bitcoin mempool.space provides 5-min granularity only."
+    priority_note: "Historical backfill is PRIMARY goal. Forward-only collection (real-time) is deferred to Phase 2+."
+
+    collection_mode: "historical"
+    architectural_decision: |
+      Phase 1 focuses on historical data collection (5 years back), NOT real-time forward collection.
+      This allows building complete historical dataset first, then adding real-time collection later.
+
+      Rationale:
+      - Use case requires historical data for feature engineering and backtesting
+      - Ethereum archive nodes (LlamaRPC) provide complete history from 2015+
+      - Real-time collection can be added as incremental feature in Phase 2
 
     features:
-      ethereum_network_collection:
-        name: "Ethereum Block Data"
+      ethereum_historical_backfill:
+        name: "Ethereum 5-Year Historical Backfill"
         priority: "P0"
-        effort: "6-8 hours"
+        effort: "20-30 hours development + 150 hours machine runtime"
         status: "pending"
+        detailed_specification: "/Users/terryli/eon/gapless-network-data/specifications/ethereum-collector-phase1.yaml"
 
         what_to_collect:
-          - "LlamaRPC eth_getBlockByNumber (latest block every 12 seconds)"
+          - "5 years of Ethereum blocks (2020-01-01 to 2025-01-01, ~13M blocks)"
+          - "LlamaRPC eth_getBlockByNumber with archive node access (from 2015+)"
           - "Key fields: number, timestamp, baseFeePerGas, gasUsed, gasLimit, transactions.length"
-          - "Store as: ethereum_YYYYMMDD_HH.parquet (300 blocks per hour)"
+          - "Store in: DuckDB ethereum_blocks table (~1.5 GB, 76-100 bytes/block empirically validated)"
 
         tasks:
-          - task: "LlamaRPC collector implementation"
-            effort: "3-4 hours"
+          - task: "Historical collector implementation"
+            effort: "6-8 hours"
             details:
-              - "web3.py client with LlamaRPC endpoint"
-              - "Poll latest block every 12 seconds (eth_getBlockByNumber('latest'))"
+              - "web3.py client with LlamaRPC archive node endpoint"
+              - "Batch fetching (100 blocks at a time, parallel requests)"
+              - "Checkpoint-based resume (survive crashes, 7-day runtime)"
               - "Extract 6 core fields from block object"
-              - "Convert to pandas DataFrame with DatetimeIndex"
-              - "Write to Parquet (1-hour files, snappy compression)"
+              - "DuckDB batch INSERT (1000 blocks per transaction)"
 
-          - task: "Basic validation (Layer 1-2 only)"
+          - task: "Block number resolution"
             effort: "2-3 hours"
             details:
-              - "Layer 1: RPC call validation (connection, response structure)"
-              - "Layer 2: Schema validation (6 fields present, correct types)"
-              - "Raise structured exceptions on failure"
-              - "No historical backfill yet (deferred to Phase 2)"
+              - "Convert timestamps to block numbers (binary search)"
+              - "Cache timestamp→block mapping for performance"
+
+          - task: "Progress tracking"
+            effort: "2-3 hours"
+            details:
+              - "CLI progress bar (blocks/sec, ETA, % complete)"
+              - "Checkpoint logging (last block processed, timestamp)"
+
+          - task: "Retry & error handling"
+            effort: "3-4 hours"
+            details:
+              - "Exponential backoff for failed blocks"
+              - "Skip blocks that consistently fail (log to errors table)"
+              - "Handle rate limit 429 errors (back off 60 seconds)"
 
           - task: "Multi-chain API"
             effort: "1-2 hours"
             details:
               - "Add chain parameter: fetch_snapshots(chain='bitcoin'|'ethereum')"
-              - "Separate storage directories: data/bitcoin/, data/ethereum/"
+              - "Single DuckDB database, separate tables (ethereum_blocks, bitcoin_mempool)"
               - "Chain-specific collectors (dispatch by chain)"
 
         acceptance_criteria:
-          - "Successfully collect Ethereum blocks every 12 seconds"
-          - "Data stored in Parquet format (correct schema)"
+          - "Successfully collect 5 years of Ethereum blocks (~13M blocks)"
+          - "Data stored in DuckDB ethereum_blocks table"
+          - "< 0.01% missing blocks (allow ~1,300 failures out of 13M)"
+          - "Checkpoint/resume works (tested with forced restarts)"
           - "RPC errors handled with retry logic"
           - "Schema validation catches missing/malformed fields"
-          - "Multi-chain API works: fetch_snapshots(chain='ethereum')"
-          - "Manual verification: 1 hour of data ≈ 300 blocks in Parquet file"
+          - "Multi-chain API works: fetch_snapshots(chain='ethereum', mode='historical')"
 
-      bitcoin_mempool_collection:
-        name: "Bitcoin Mempool Snapshots"
+      bitcoin_historical_collection:
+        name: "Bitcoin Mempool Historical Data"
         priority: "P1"
-        effort: "4-6 hours"
+        effort: "8-12 hours"
         status: "pending"
 
         what_to_collect:
-          - "mempool.space /api/mempool endpoint (5-minute intervals only)"
+          - "5 years of Bitcoin mempool data (H12 granularity, 3,650 snapshots)"
+          - "mempool.space historical API (12-hour intervals for data > 1 month old)"
           - "9 fields: timestamp, unconfirmed_count, vsize_mb, total_fee_btc, 5 fee rates"
-          - "Store as: bitcoin_mempool_YYYYMMDD_HH.parquet (12 snapshots per hour)"
+          - "Store in: DuckDB bitcoin_mempool table (~5 MB)"
 
-        limitation: "Bitcoin mempool.space provides M5 (5-minute) granularity for recent data, H12 (12-hour) for historical. Not true high-frequency."
+        limitation: |
+          Bitcoin mempool.space provides:
+          - M5 (5-minute) granularity for recent data (< 1 month)
+          - H12 (12-hour) granularity for historical data (> 1 month)
+          This means 99.3% data loss for historical collection (5-min → 12-hour).
+
+        decision: |
+          Collect H12 historical data despite low granularity.
+          Rationale: Some historical context better than none for feature engineering.
+          Can add recent M5 data later for improved granularity.
 
         tasks:
-          - task: "Implement mempool.space collector"
-            effort: "2-3 hours"
+          - task: "Implement historical mempool collector"
+            effort: "3-4 hours"
             details:
-              - "Poll /api/mempool every 300 seconds (5 minutes)"
+              - "Fetch historical snapshots from mempool.space API"
+              - "Parse H12 (12-hour) granularity data"
               - "Extract 9 fields from JSON response"
-              - "Convert to pandas DataFrame with DatetimeIndex"
-              - "Write to Parquet (1-hour files, snappy compression)"
+              - "DuckDB batch INSERT (100 snapshots per transaction)"
 
           - task: "Basic validation (Layer 1-2 only)"
             effort: "2-3 hours"
@@ -213,42 +262,51 @@ x-project-phases:
               - "Layer 2: Schema validation (all 9 fields present, correct types)"
               - "Raise structured exceptions on failure"
 
+          - task: "Testing"
+            effort: "3-5 hours"
+            details:
+              - "Unit tests with mocked API responses"
+              - "Integration test: collect 100 real historical snapshots"
+              - "Coverage: 70%+ on bitcoin collector"
+
         acceptance_criteria:
-          - "Successfully collect Bitcoin mempool snapshots every 5 minutes"
-          - "Data stored in Parquet format (correct schema)"
+          - "Successfully collect 5 years of Bitcoin mempool data (3,650 snapshots)"
+          - "Data stored in DuckDB bitcoin_mempool table"
           - "HTTP errors handled with retry logic"
           - "Schema validation catches missing/malformed fields"
-          - "Manual verification: 1 hour of data = 12 snapshots in Parquet file"
+          - "Granularity limitation documented (H12 for historical)"
 
     deliverables:
-      - "Ethereum network data collection via LlamaRPC (PRIMARY - 12s high-frequency)"
-      - "Bitcoin mempool snapshots (SECONDARY - 5min low-frequency)"
-      - "Multi-chain API: fetch_snapshots(chain='ethereum'|'bitcoin')"
-      - "Parquet storage format (1-hour files)"
+      - "5 years of Ethereum block data (2020-2025, ~13M blocks, ~1.5 GB in DuckDB)"
+      - "DuckDB PRIMARY storage (single data.duckdb file, empirically validated)"
+      - "Batch fetching with checkpoint/resume capability (crash-tested)"
+      - "Block number resolution (binary search, 20-24 RPC calls)"
+      - "Progress tracking (CLI with ETA, blocks/sec)"
       - "Basic validation (HTTP/RPC + schema)"
+      - "Bitcoin collection deferred to Phase 2+"
 
     success_gates:
-      - gate: "Ethereum collection operational (PRIMARY)"
+      - gate: "Ethereum historical backfill complete (PRIMARY)"
         criteria:
-          - "LlamaRPC integration working"
-          - "Collect blocks every ~12 seconds"
-          - "Extract 6 core fields: number, timestamp, baseFeePerGas, gasUsed, gasLimit, transactions.length"
-          - "Data stored in Parquet format"
+          - "5 years of Ethereum blocks collected (~13M blocks)"
+          - "< 0.01% missing blocks (allow ~1,300 failures)"
+          - "Data stored in DuckDB ethereum_blocks table"
+          - "Checkpoint/resume works (tested with forced restarts)"
           - "Basic validation (RPC + schema) operational"
 
-      - gate: "Bitcoin collection operational (SECONDARY)"
+      - gate: "Bitcoin historical collection complete (SECONDARY)"
         criteria:
+          - "5 years of Bitcoin mempool data collected (3,650 snapshots)"
+          - "Data stored in DuckDB bitcoin_mempool table"
           - "mempool.space integration working"
-          - "Collect snapshots every 5 minutes"
-          - "Extract 9 fields (mempool metrics + fee rates)"
-          - "Data stored in Parquet format"
+          - "H12 granularity limitation documented"
           - "Basic validation (HTTP + schema) operational"
 
       - gate: "Multi-chain API working"
         criteria:
-          - "fetch_snapshots(chain='ethereum') works"
-          - "fetch_snapshots(chain='bitcoin') works"
-          - "Separate storage: data/ethereum/, data/bitcoin/"
+          - "fetch_snapshots(chain='ethereum', mode='historical') works"
+          - "fetch_snapshots(chain='bitcoin', mode='historical') works"
+          - "Single DuckDB storage: data.duckdb with ethereum_blocks and bitcoin_mempool tables"
           - "Chain-specific collectors dispatched correctly"
 
   phase_2_data_quality:
@@ -661,6 +719,73 @@ x-sub-specifications:
       phase_2: "Analytics & optimization (10-13 hours)"
       phase_3: "Advanced features (5-8 hours)"
 
+  core_collection_phase1:
+    file: "/Users/terryli/eon/gapless-network-data/specifications/archive/core-collection-phase1.yaml"
+    status: "superseded"
+    superseded_date: "2025-11-04"
+    superseded_by: "master-project-roadmap.yaml Phase 1 (multi-chain)"
+    scope: "Bitcoin-only Phase 1 implementation (3/6 tasks completed)"
+    reason: "Conflicts with Option A decision (Ethereum PRIMARY + Bitcoin multi-chain)"
+    reusable_content:
+      - "Retry logic patterns (tenacity library, exponential backoff)"
+      - "Structured exceptions (HTTP, Validation, RateLimit)"
+      - "Forward-collection enforcement (validates start time within 5 minutes)"
+    note: "Archived for reference; Bitcoin collector patterns reused in multi-chain Phase 1"
+
+  ethereum_collector_phase1:
+    file: "/Users/terryli/eon/gapless-network-data/specifications/ethereum-collector-phase1.yaml"
+    status: "active"
+    created_date: "2025-11-04"
+    scope: "Ethereum collector implementation via web3.py + LlamaRPC (PRIMARY data source)"
+    priority: "P0"
+    deliverables:
+      - "EthereumCollector class with 6-field minimal schema"
+      - "Multi-chain API integration (chain parameter)"
+      - "Basic validation (Layer 1-2: RPC + schema)"
+      - "Comprehensive tests (70%+ coverage)"
+      - "CLI multi-chain support"
+    estimated_effort: "14 hours (6 tasks in critical path)"
+    reference: "Part of Phase 1 multi-chain implementation (v0.2.0)"
+
+  duckdb_schema:
+    file: "/Users/terryli/eon/gapless-network-data/specifications/duckdb-schema-specification.yaml"
+    status: "active"
+    created_date: "2025-11-04"
+    scope: "DuckDB PRIMARY storage schema for ethereum_blocks and bitcoin_mempool tables"
+    priority: "P0"
+    content:
+      - "DDL statements with constraints and indexes"
+      - "Common query patterns (time_bucket, ASOF JOIN, window functions)"
+      - "Data integrity checks (gap detection, duplicates, invalid values)"
+      - "Performance tuning guidelines"
+    storage_architecture:
+      location: "~/.cache/gapless-network-data/data.duckdb"
+      size: "~1.5 GB for 5 years (13M Ethereum blocks at 76-100 bytes/block, empirically validated)"
+      tables:
+        - "ethereum_blocks (BIGINT PRIMARY KEY, 6 fields)"
+        - "bitcoin_mempool (INTEGER PRIMARY KEY, 9 fields) - deferred to Phase 2+"
+        - "metadata (checkpoints and collection progress)"
+
+  historical_collection_strategy:
+    file: "/Users/terryli/eon/gapless-network-data/HISTORICAL_COLLECTION_STRATEGY.md"
+    status: "active"
+    created_date: "2025-11-04"
+    scope: "5-year historical data backfill strategy (2020-2025)"
+    priority: "P0"
+    architectural_decision: "Historical backfill is Phase 1 PRIMARY (forward-only collection deferred to Phase 2+)"
+    content:
+      - "Ethereum 5-year backfill (13M blocks, 150-hour runtime at 1 req/sec)"
+      - "Bitcoin 5-year backfill (H12 granularity, 3,650 snapshots)"
+      - "Batch fetching with checkpoint/resume capability"
+      - "Progress tracking (CLI with ETA, blocks/sec)"
+      - "Retry & error handling"
+    time_estimates:
+      ethereum:
+        conservative: "150 hours (1 req/sec = 7 days)"
+        aggressive: "15 hours (10 req/sec = ~1 day)"
+      bitcoin: "8-12 hours development"
+    reference: "Defines Phase 1 collection mode (historical, NOT real-time)"
+
 x-implementation-findings:
   finding_1:
     date: "2025-11-03"
@@ -819,10 +944,45 @@ x-version-tracking:
       estimated_release: "10-14 weeks total from Phase 1 start"
 
 x-decision-log:
+  - date: "2025-11-04"
+    decision: "DuckDB PRIMARY for raw data storage (supersedes 2025-11-03 Parquet decision)"
+    rationale: |
+      User requirement is historical data collection + flexible feature engineering.
+      DuckDB provides superior flexibility for:
+      - Resampling (time_bucket for any interval)
+      - Temporal joins (ASOF JOIN with OHLCV data)
+      - Feature engineering (window functions, aggregations, z-scores)
+      - Ad-hoc exploration (SQL console)
+
+      Storage size is negligible (~1.5 GB for 5 years) - NOT "big data".
+      110x savings only applies to validation reports, not time-series raw data.
+    impact: "Architecture: Single DuckDB file for all raw data, export to Parquet for backup"
+    storage_comparison:
+      duckdb_table: "~1.5 GB for 13M Ethereum blocks (5 years, 76-100 bytes/block empirically validated)"
+      parquet_files: "~1.2 GB for same data"
+      difference: "300 MB (negligible, NOT 110x)"
+    benefits:
+      - "10-100x faster queries vs Pandas"
+      - "Direct SQL feature engineering (no Parquet → Pandas → processing)"
+      - "Simple architecture (one data.duckdb file vs 365+ Parquet files)"
+      - "Maximum flexibility (time_bucket, ASOF JOIN, window functions)"
+    alternatives:
+      - option: "Parquet for Data, DuckDB for Queries (2025-11-03 decision)"
+        rejected: |
+          Complexity: 365+ Parquet files per year, file management overhead
+          Slower: Must load Parquet → Pandas → process → write back
+          Less flexible: Cannot resample directly, need Pandas operations
+      - option: "Hybrid (Parquet immutable storage + DuckDB views)"
+        rejected: "Unnecessary complexity for ~500 MB dataset"
+    supersedes: "2025-11-03 'Parquet for all data storage' decision"
+    status: "Decided (2025-11-04), refactoring all specifications"
+
   - date: "2025-11-03"
     decision: "Use Parquet for all data storage (not DuckDB tables)"
+    status: "SUPERSEDED by 2025-11-04 DuckDB PRIMARY decision"
     rationale: "110x storage savings, immutable time-series optimal for Parquet"
     impact: "Architecture revised: Parquet for Data, DuckDB for Queries"
+    note: "This decision was based on validation report storage analysis, not raw time-series data"
     alternatives:
       - option: "DuckDB tables"
         rejected: "537KB vs 4.9KB for same data"
@@ -911,6 +1071,57 @@ x-decision-log:
       - option: "Put multi-chain expansion in Phase 2"
         rejected: "Should prove single-chain works before expanding"
     status: "Implemented (6-phase structure)"
+
+  - date: "2025-11-04"
+    decision: "Phase 1 Scope: Ethereum PRIMARY + Bitcoin SECONDARY (Option A)"
+    rationale: |
+      SSoT audit revealed two conflicting Phase 1 specifications:
+      - Option A: master-project-roadmap.yaml (Ethereum + Bitcoin multi-chain)
+      - Option B: core-collection-phase1.yaml (Bitcoin-only, 3/6 tasks complete)
+
+      Chose Option A because:
+      1. Aligns with package rename (gapless-mempool-data → gapless-network-data)
+      2. Delivers high-frequency data (~12s Ethereum) needed for trading models
+      3. web3.py already in dependencies (ready for Ethereum)
+      4. Validates multi-chain architecture from Day 1
+      5. Matches master-project-roadmap.yaml as written
+    impact: "Phase 1 = Ethereum (P0) + Bitcoin (P1) in v0.2.0, duration 2 weeks"
+    changes:
+      - "Ethereum collector: 6-8 hours implementation (NEW)"
+      - "Multi-chain API design: 2-3 hours (NEW)"
+      - "Bitcoin collector: keep existing (3/6 tasks complete)"
+      - "ETag caching: defer to Phase 2 (lower priority)"
+      - "ValidationStorage: defer to Phase 2 (not blocking collection)"
+    timeline:
+      preparation: "6-10 hours (Ethereum spec, multi-chain API design)"
+      implementation: "10-14 hours (Ethereum collector, Bitcoin completion, multi-chain API)"
+      testing: "4-6 hours (70%+ coverage, integration tests)"
+      total: "2 weeks (20-30 hours effort)"
+    deliverables:
+      - "Ethereum block collection (12s intervals, PRIMARY)"
+      - "Bitcoin mempool snapshots (5min intervals, SECONDARY)"
+      - "Multi-chain API: fetch_snapshots(chain='ethereum'|'bitcoin')"
+      - "Basic validation (HTTP/RPC + schema) for both chains"
+      - "70%+ test coverage"
+      - "CLI with multi-chain support"
+    alternatives:
+      - option: "Option B: Bitcoin-only v0.2.0, defer Ethereum to v0.3.0"
+        rejected: |
+          While faster (1 week vs 2 weeks) and lower risk (single-chain), this choice:
+          - Delays high-frequency data delivery (only 5-min Bitcoin granularity)
+          - Leaves package name mismatch (gapless-network-data implies multi-chain)
+          - Postpones multi-chain validation
+          - Doesn't align with master roadmap vision
+    superseded_specifications:
+      - file: "core-collection-phase1.yaml"
+        status: "superseded"
+        reason: "Bitcoin-only scope conflicts with multi-chain Phase 1"
+        action: "Archived to specifications/archive/ (2025-11-04)"
+        reusable_content:
+          - "Retry logic patterns (completed)"
+          - "Structured exceptions (completed)"
+          - "Forward-collection enforcement (completed)"
+    status: "Decided (2025-11-04), implementing"
 
 x-risk-assessment:
   implementation_risks:
