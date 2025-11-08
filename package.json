@@ -7,7 +7,7 @@
     "url": "https://github.com/terrylica/gapless-network-data.git"
   },
   "engines": {
-    "node": ">=22.0.0"
+    "node": ">=22.14.0"
   },
   "scripts": {
     "release": "semantic-release"
