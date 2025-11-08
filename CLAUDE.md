@@ -61,18 +61,26 @@ Coordinates all project phases, specifications, and implementation work.
 
 - `documentation-audit-phase.yaml` - Documentation audit (completed 2025-11-03, 6 findings resolved)
 - `duckdb-integration-strategy.yaml` - DuckDB integration (23 features, 29-40 hours total)
+- `archive/core-collection-phase1.yaml` - Bitcoin-only Phase 1 (superseded 2025-11-04, archived)
 
 **Current Status**:
 
-- **Phase**: Phase 1 (DuckDB Foundation, 14-19 hours) - planned
+- **Phase**: Phase 1 (Historical Data Collection: 5-Year Backfill) - in progress
 - **Version**: v0.1.0 (alpha)
-- **Next Milestone**: v0.2.0 (Phase 1 complete) or v0.1.1 (doc-fix only) - TBD
+- **Next Milestone**: v0.2.0 (Historical backfill complete: 13M Ethereum blocks)
+- **Timeline**: 3-4 weeks development + **110 days machine runtime on LlamaRPC free tier** (1.37 RPS sustained, empirically validated 2025-11-05) - **RPC provider decision required**
+- **Collection Mode**: Historical backfill PRIMARY, forward-only collection deferred to Phase 2+
+- **Authoritative Spec**: `/Users/terryli/eon/gapless-network-data/specifications/master-project-roadmap.yaml ` Phase 1
+- **Validation**: Empirical validation complete - see `/Users/terryli/eon/gapless-network-data/scratch/README.md ` and `/Users/terryli/eon/gapless-network-data/scratch/ethereum-collector-poc/ETHEREUM_COLLECTOR_POC_REPORT.md `
 
 **Key Decisions Logged**:
 
-1. Architecture: "Parquet for Data, DuckDB for Queries" (110x storage savings)
+1. Architecture: DuckDB PRIMARY for raw data storage (2025-11-04, supersedes Parquet approach)
 2. Separate databases for gapless-crypto-data and gapless-network-data (9-2 score)
 3. ASOF JOIN as P0 feature (prevents data leakage, 16x faster)
+4. Ethereum PRIMARY, Bitcoin SECONDARY (12s vs 5min granularity)
+5. Phase 1 Scope: Multi-chain (Option A) - Ethereum + Bitcoin in v0.2.0 (decided 2025-11-04)
+6. **RPC Rate Limiting**: LlamaRPC free tier sustainable rate is 1.37 RPS (not 50 RPS documented), requiring 110-day timeline - investigating alternative providers (2025-11-05)
 
 ## Quick Navigation
 
@@ -103,23 +111,81 @@ Coordinates all project phases, specifications, and implementation work.
 
 - [Research Index](/Users/terryli/eon/gapless-network-data/docs/research/INDEX.md) - Free on-chain network metrics sources (2025-11-03)
 - [LlamaRPC Deep Dive](/Users/terryli/eon/gapless-network-data/docs/llamarpc/INDEX.md) - Comprehensive Ethereum RPC research (2025-11-03)
+- [Ethereum Collector POC](/Users/terryli/eon/gapless-network-data/scratch/ethereum-collector-poc/ETHEREUM_COLLECTOR_POC_REPORT.md) - Rate limiting validation and RPC provider options (2025-11-05)
 
 **Focus**: On-chain network metrics (gas prices, mempool congestion, block data, transaction counts)
 
 **Verified Sources for High-Granularity Historical Data (3-5+ years)**:
 
-- **Ethereum**: LlamaRPC (block-level ~12s, 2015+, no auth) ✅ PRIMARY
+- **Ethereum**: LlamaRPC (block-level ~12s, 2015+, no auth) ⚠️ FREE TIER LIMITED
   - [Official Docs](/Users/terryli/eon/gapless-network-data/docs/llamarpc/official/) - Capabilities, pricing, rate limits
   - [Python SDK](/Users/terryli/eon/gapless-network-data/docs/llamarpc/sdk/) - web3.py recommended
   - [Data Schema](/Users/terryli/eon/gapless-network-data/docs/llamarpc/schema/) - 26 block fields, 20+ metrics
   - [Historical Access](/Users/terryli/eon/gapless-network-data/docs/llamarpc/historical/) - Bulk fetching strategies
   - [Community](/Users/terryli/eon/gapless-network-data/docs/llamarpc/community/) - Collector patterns, RPC comparison
+  - **Rate Limiting**: Free tier sustainable rate 1.37 RPS (110-day timeline for 13M blocks) - see [POC Report](/Users/terryli/eon/gapless-network-data/scratch/ethereum-collector-poc/ETHEREUM_COLLECTOR_POC_REPORT.md)
 - **Bitcoin**: mempool.space (M5 recent / H12 historical, 2016+, no auth)
 - **Bitcoin**: blockchain.info (mempool size, ~H29, 2009+, no auth)
 - **Ethereum**: Alchemy RPC (300M CU/month free tier)
 - **Multi-chain**: Dune Analytics (SQL aggregation, block-level, 2020+, free signup)
 
 **What This Research EXCLUDES**: Exchange OHLCV price data (Binance, Coinbase, Kraken) - not on-chain network metrics
+
+## Project Skills
+
+**Location**: `/Users/terryli/eon/gapless-network-data/.claude/skills/ `
+
+Project-specific skills that capture validated workflows from scratch investigations. These skills are committed to git and shared with team members.
+
+### blockchain-rpc-provider-research
+
+**Description**: Systematic workflow for researching and validating blockchain RPC providers. Use when evaluating RPC providers for historical data collection, rate limits, archive access, compute unit costs, or timeline estimation.
+
+**Key Principle**: Never trust documented rate limits—always validate empirically with POC testing.
+
+**What This Skill Provides**:
+
+- 5-step investigation workflow (Research → Calculate → Validate → Compare → Recommend)
+- Scripts: `calculate_timeline.py`, `test_rpc_rate_limits.py`
+- References: `validated-providers.md` (Alchemy vs LlamaRPC case study), `rpc-comparison-template.md`
+- Common pitfalls to avoid (burst vs sustained limits, parallel fetching on free tiers)
+
+**When to Use**:
+
+- Evaluating blockchain RPC providers for a new project
+- Planning historical data backfill timelines
+- Investigating rate limiting issues with current provider
+- Researching compute unit or API credit costs
+
+**Validated Pattern From**: `scratch/ethereum-collector-poc/` (LlamaRPC 1.37 RPS finding) and `scratch/rpc-provider-comparison/` (Alchemy 4.2x speedup discovery)
+
+**Package**: Available as `/Users/terryli/eon/gapless-network-data/blockchain-rpc-provider-research.zip ` for distribution
+
+### blockchain-data-collection-validation
+
+**Description**: Empirical validation workflow for blockchain data collection pipelines before production implementation. Use when validating data sources, testing DuckDB integration, building POC collectors, or verifying complete fetch-to-storage pipelines.
+
+**Key Principle**: Validate every component empirically before implementation—connectivity, schema, rate limits, storage, and complete pipeline.
+
+**What This Skill Provides**:
+
+- 5-step validation workflow (Connectivity → Schema → Rate Limits → Pipeline → Decision)
+- POC template scripts: `poc_single_block.py`, `poc_complete_pipeline.py`
+- DuckDB patterns: CHECKPOINT for durability, batch INSERT, CHECK constraints
+- References: `duckdb-patterns.md` (crash-tested patterns), `ethereum-collector-poc-findings.md` (complete case study)
+- Common pitfalls to avoid (forgetting CHECKPOINT, testing with too few blocks, parallel fetching on free tiers)
+
+**When to Use**:
+
+- Validating a new blockchain RPC provider before implementation
+- Testing DuckDB integration for blockchain data
+- Building POC collector for new blockchain
+- Verifying complete fetch-to-storage pipeline
+- Investigating data quality issues
+
+**Validated Pattern From**: `scratch/ethereum-collector-poc/` (5 POC scripts progression) and `scratch/duckdb-batch-validation/` (CHECKPOINT crash testing, 124K blocks/sec performance)
+
+**Package**: Available as `/Users/terryli/eon/gapless-network-data/blockchain-data-collection-validation.zip ` for distribution
 
 ## SDK Quality Standards
 
@@ -182,26 +248,28 @@ Coordinates all project phases, specifications, and implementation work.
 
 ## DuckDB Architecture & Strategy
 
-**Version**: Based on 5-agent investigation (2025-11-03)
-**Investigation Output**: `/tmp/duckdb-*/` (~12,000 lines, 15 reports)
+**Version**: DuckDB PRIMARY architecture (2025-11-04)
+**Supersedes**: "Parquet for Data" architecture (2025-11-03)
 
-### Architectural Principle: "Parquet for Data, DuckDB for Queries"
+### Architectural Principle: "DuckDB for Everything"
 
-**Core Insight**: DuckDB excels as a **query engine**, not persistent storage. Store all immutable data in Parquet, use DuckDB to query it.
+**Core Insight**: For historical data collection + flexible feature engineering, DuckDB PRIMARY storage provides maximum flexibility at negligible storage cost.
 
 **Architecture**:
 
 ```
-User API (pandas) → DuckDB Query Engine → Storage Layer
-                    (analytics, validation)  (Parquet files)
+Collection → DuckDB Tables (raw data) → SQL Queries → Features
+             ~/.cache/gapless-network-data/data.duckdb
+                 └── ethereum_blocks (~1.5 GB, 13M rows)
 ```
 
-**Why This Matters**:
+**Why This Approach**:
 
-- **110x storage savings**: Parquet validation reports (4.9KB) vs DuckDB tables (537KB)
-- **Zero-copy queries**: Query Parquet directly without loading into memory
-- **10-100x performance**: DuckDB SQL vs Python iteration for analytics
-- **Proven at scale**: DoorDash uses DuckDB for same use case (1-min intervals, z-score anomaly detection)
+- **Maximum flexibility**: Direct SQL resampling (time_bucket), temporal joins (ASOF JOIN), window functions
+- **10-100x faster**: DuckDB SQL vs Pandas operations for feature engineering
+- **Simplicity**: Single data.duckdb file, no file management complexity
+- **Compact storage**: ~1.5 GB for 5 years of Ethereum data (76-100 bytes/block empirically validated)
+- **Proven at scale**: DoorDash uses DuckDB for 1-min time-series with z-score anomaly detection
 
 ### DuckDB Use Cases (23 Features Discovered)
 
@@ -234,7 +302,6 @@ duckdb.execute("""
 
 #### 2. Gap Detection (LAG Window Function)
 
-**Current**: CLAUDE.md mentions "gap detection logic" but NO implementation
 **DuckDB Solution**: 20x faster than Python iteration
 
 ```sql
@@ -243,16 +310,15 @@ WITH gaps AS (
         timestamp,
         LAG(timestamp) OVER (ORDER BY timestamp) AS prev_timestamp,
         EXTRACT(EPOCH FROM (timestamp - LAG(timestamp) OVER (ORDER BY timestamp))) AS gap_seconds
-    FROM read_parquet('mempool_*.parquet')
+    FROM bitcoin_mempool
 )
 SELECT * FROM gaps WHERE gap_seconds > 90  -- Detect >90s gaps (1.5× expected 60s)
 ```
 
-**Implementation**: `/tmp/duckdb-analytics/analytics_query_patterns_report.md` lines 892-950
+**Implementation**: Direct queries against DuckDB tables for zero-gap guarantee
 
 #### 3. Anomaly Detection (Z-Score with QUALIFY)
 
-**Current**: CLAUDE.md mentions "anomaly detection (z-score on vsize, fee spikes)" but NO implementation
 **DuckDB Solution**: 10x faster, filters anomalies directly in SQL
 
 ```sql
@@ -263,7 +329,7 @@ FROM (
         unconfirmed_count,
         (unconfirmed_count - AVG(unconfirmed_count) OVER w) /
         (STDDEV(unconfirmed_count) OVER w + 1e-10) AS z_score
-    FROM read_parquet('mempool_*.parquet')
+    FROM bitcoin_mempool
     WINDOW w AS (ORDER BY timestamp ROWS BETWEEN 60 PRECEDING AND CURRENT ROW)
 )
 QUALIFY ABS(z_score) > 3  -- Filter anomalies (>3σ from mean)
@@ -273,20 +339,19 @@ QUALIFY ABS(z_score) > 3  -- Filter anomalies (>3σ from mean)
 
 #### 4. Temporal Alignment (ASOF JOIN)
 
-**Current**: Feature engineering uses `df_mempool.reindex(df_ohlcv.index, method='ffill')`
-**DuckDB Solution**: 16x faster, prevents lookahead bias
+**DuckDB Solution**: 16x faster than pandas reindex, prevents lookahead bias
 
 ```sql
 -- Align mempool snapshots to OHLCV timestamps (forward-fill)
 SELECT ohlcv.*, mempool.* EXCLUDE (timestamp)
-FROM read_parquet('ohlcv/*.parquet') AS ohlcv
-ASOF LEFT JOIN read_parquet('mempool/*.parquet') AS mempool
+FROM read_parquet('~/.cache/gapless-crypto-data/ohlcv/*.parquet') AS ohlcv
+ASOF LEFT JOIN bitcoin_mempool AS mempool
 ON ohlcv.timestamp >= mempool.timestamp
 ```
 
 **Critical**: Prevents data leakage in trading models (no future information)
 **Performance**: 800ms → 50ms for 525K rows
-**Implementation**: `/tmp/duckdb-analytics/analytics_query_patterns_report.md` lines 274-358
+**Cross-package**: Queries OHLCV Parquet files from gapless-crypto-data + network data from DuckDB
 
 #### 5. Schema Validation (CHECK Constraints)
 
@@ -320,7 +385,7 @@ SELECT
     time_bucket(INTERVAL '1 hour', timestamp) AS hour,
     AVG(fastest_fee) AS avg_fastest_fee,
     MAX(unconfirmed_count) AS max_unconfirmed
-FROM read_parquet('mempool_*.parquet')
+FROM bitcoin_mempool
 GROUP BY hour
 ORDER BY hour
 ```
@@ -356,15 +421,16 @@ df_mempool = gmd.fetch_snapshots(...)
 df_features = df_ohlcv.join(df_mempool.reindex(df_ohlcv.index, method='ffill'))
 
 # Option 2: DuckDB ASOF join (16x faster, prevents data leakage)
-result = duckdb.execute("""
+conn = duckdb.connect('~/.cache/gapless-network-data/data.duckdb')
+result = conn.execute("""
     SELECT ohlcv.*, mempool.* EXCLUDE (timestamp)
-    FROM read_parquet('ohlcv/*.parquet') AS ohlcv
-    ASOF LEFT JOIN read_parquet('mempool/*.parquet') AS mempool
+    FROM read_parquet('~/.cache/gapless-crypto-data/ohlcv/*.parquet') AS ohlcv
+    ASOF LEFT JOIN bitcoin_mempool AS mempool
     ON ohlcv.timestamp >= mempool.timestamp
 """).df()
 ```
 
-**Source**: `/tmp/duckdb-cross-package/cross-package-duckdb-strategy-report.md`
+**Architecture**: OHLCV data from gapless-crypto-data (Parquet files) + network data from gapless-network-data (DuckDB tables)
 
 ### Top 6 High-Priority Features (14-19 hours total)
 
@@ -407,31 +473,23 @@ All investigation materials with absolute paths:
 
 ## Data Format
 
-**Output Format**: Parquet with snappy compression
+**Primary Storage**: DuckDB (single database file)
 
-**File Granularity**: 1-hour per file (60 snapshots)
-
-**File Pattern**: `mempool_YYYYMMDD_HH.parquet`
+**Storage Location**: `~/.cache/gapless-network-data/data.duckdb`
 
 **Schema Version**: 1.0.0
 
-**Column Schema**:
+**Tables**:
 
-| Column              | Type                | Description                      | Validation      |
-| ------------------- | ------------------- | -------------------------------- | --------------- |
-| `timestamp`         | datetime64[ns, UTC] | Snapshot timestamp               | ISO 8601 format |
-| `unconfirmed_count` | int64               | Unconfirmed transactions         | >= 0            |
-| `vsize_mb`          | float64             | Mempool virtual size (MB)        | >= 0            |
-| `total_fee_btc`     | float64             | Total fees (BTC)                 | >= 0            |
-| `fastest_fee`       | float64             | Fee rate for next block (sat/vB) | 1-1000          |
-| `half_hour_fee`     | float64             | Fee rate ~30min (sat/vB)         | 1-1000          |
-| `hour_fee`          | float64             | Fee rate ~1hr (sat/vB)           | 1-1000          |
-| `economy_fee`       | float64             | Low-priority fee (sat/vB)        | 1-1000          |
-| `minimum_fee`       | float64             | Minimum relay fee (sat/vB)       | >= 1            |
+- `ethereum_blocks` - 5 years of Ethereum block data (~13M rows, ~1.5 GB)
+- `bitcoin_mempool` - Deferred to Phase 2+ (Bitcoin is SECONDARY)
 
-**Index**: DatetimeIndex on timestamp column (enables temporal alignment with gapless-crypto-data)
+**Complete Schema Specification**: See `/Users/terryli/eon/gapless-network-data/specifications/duckdb-schema-specification.yaml ` for:
 
-**Sanity Checks**: Fee rates must satisfy `fastest_fee >= half_hour_fee >= hour_fee >= economy_fee >= minimum_fee`
+- DDL statements with constraints and indexes
+- Common query patterns (time_bucket, ASOF JOIN, window functions)
+- Data integrity checks
+- Performance tuning guidelines
 
 ## Feature Engineering Integration
 
@@ -727,44 +785,43 @@ supersedes: []
 - [x] DuckDB investigation (23 features, performance validation)
 - [x] Documentation audit (6 findings resolved)
 
-**Phase 1: Core Data Collection Features** (in planning)
+**Phase 1: Historical Data Collection (5-Year Backfill)** (in planning)
 
-Bitcoin Mempool Collection:
+**Goal**: Collect 5 years of historical data (2020-2025) for both Ethereum and Bitcoin
 
-- [ ] Complete 5-layer validation pipeline
-  - [ ] Layer 1: HTTP validation
-  - [ ] Layer 2: Schema validation
-  - [ ] Layer 3: Sanity checks (fee ordering)
-  - [ ] Layer 4: Gap detection (implemented with DuckDB LAG)
-  - [ ] Layer 5: Anomaly detection (z-score with DuckDB QUALIFY)
-- [ ] Gap detection and automatic backfill
-- [ ] ETag caching for bandwidth optimization
-- [ ] Validation storage (Parquet backend)
-- [ ] Validation reporting and query interface
+Ethereum Historical Backfill (PRIMARY):
 
-Ethereum Network Collection:
+- [ ] LlamaRPC integration with archive node access (web3.py client)
+- [ ] 5-year Ethereum block collection (2020-2025, ~13M blocks)
+- [ ] Batch fetching with checkpoint/resume capability
+- [ ] Block number resolution (timestamp → block number via binary search)
+- [ ] Progress tracking (CLI with ETA, blocks/sec)
+- [ ] Retry & error handling (exponential backoff, skip consistently failed blocks)
+- [ ] DuckDB storage: INSERT INTO ethereum_blocks
+- [ ] Multi-chain API: fetch_snapshots(chain='ethereum', mode='historical')
 
-- [ ] LlamaRPC integration (web3.py client)
-- [ ] Ethereum data schema (26 fields + 20 metrics)
-- [ ] Block-level gas price collection
-- [ ] Historical backfill strategy (2015-2025)
-- [ ] Multi-chain architecture (bitcoin/, ethereum/ directories)
-- [ ] Multi-chain API: fetch_snapshots(chain=...)
+Bitcoin Historical Collection (SECONDARY):
 
-Feature Engineering Integration:
+- [ ] mempool.space historical API integration
+- [ ] 5-year Bitcoin mempool data (H12 granularity, 3,650 snapshots)
+- [ ] DuckDB storage: INSERT INTO bitcoin_mempool
+- [ ] Multi-chain API: fetch_snapshots(chain='bitcoin', mode='historical')
+- [ ] Basic validation (HTTP + schema)
+- [ ] Testing (70%+ coverage)
 
-- [ ] Temporal alignment API (ASOF JOIN, prevents data leakage)
-- [ ] align_with_ohlcv() function
-- [ ] Cross-domain feature examples (10+ features)
-- [ ] Documentation: docs/guides/FEATURE_ENGINEERING.md
-- [ ] Examples: Bitcoin + BTCUSDT, Ethereum + ETHUSDT
+Data Quality:
 
-**Phase 2: Advanced Features** (future)
+- [ ] Basic validation (Layer 1-2: HTTP/RPC + schema)
+- [ ] DuckDB CHECK constraints (fee ordering, non-negative values)
+- [ ] Schema validation (6 fields Ethereum, 9 fields Bitcoin)
 
-- [ ] Multi-chain expansion (Solana, Avalanche, Bitcoin L2s)
-- [ ] Network insights (congestion forecasting, fee optimization)
-- [ ] Production CLI (stream, backfill, validate, export commands)
-- [ ] Multi-format export (CSV, JSON, Parquet, Arrow)
+**Phase 2: Real-Time Collection & Data Quality** (future)
+
+- [ ] Forward-only collection (real-time block/mempool streaming)
+- [ ] Complete 5-layer validation pipeline (Layers 3-5: sanity, gaps, anomalies)
+- [ ] Gap detection and automatic backfill (for real-time mode)
+- [ ] ValidationStorage for audit trail (Parquet-backed validation reports)
+- [ ] Production CLI (stream, validate, export commands)
 
 **Phase 3: Production Optimization** (future)
 

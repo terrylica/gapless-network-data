@@ -14,6 +14,7 @@ Phase 3 comprehensive verification completed successfully with all acceptance cr
 **Verification Results**: 12/12 acceptance criteria PASS
 
 **Final Portfolio State**:
+
 - Compliance: **100/100** ✅
 - Skills compliant: **3/3 (100%)** ✅
 - Total lines: **282** (53% under 600-line limit) ✅
@@ -28,11 +29,13 @@ Phase 3 comprehensive verification completed successfully with all acceptance cr
 #### AC1.1: All SKILL.md files ≤200 lines
 
 **Verification command**:
+
 ```bash
 wc -l .claude/skills/*/SKILL.md
 ```
 
 **Results**:
+
 - ✅ blockchain-rpc-provider-research: 90 lines (55% under limit)
 - ✅ blockchain-data-collection-validation: 104 lines (48% under limit)
 - ✅ bigquery-ethereum-data-acquisition: 88 lines (56% under limit)
@@ -44,16 +47,19 @@ wc -l .claude/skills/*/SKILL.md
 #### AC1.2: Total portfolio lines ≤600
 
 **Verification command**:
+
 ```bash
 wc -l .claude/skills/*/SKILL.md | tail -1
 ```
 
 **Result**:
+
 ```
 282 total
 ```
 
 **Calculation**:
+
 - Target: ≤600 lines
 - Actual: 282 lines
 - Margin: 318 lines available (53% under limit)
@@ -65,11 +71,13 @@ wc -l .claude/skills/*/SKILL.md | tail -1
 #### AC1.3: No content duplication (duckdb-patterns.md)
 
 **Verification command**:
+
 ```bash
 ls .claude/skills/*/references/duckdb-patterns.md 2>/dev/null
 ```
 
 **Results**:
+
 - ✅ skill-1 (blockchain-rpc-provider-research): No duckdb-patterns.md
 - ✅ skill-2 (blockchain-data-collection-validation): duckdb-patterns.md exists (correct location)
 - ✅ skill-3 (bigquery-ethereum-data-acquisition): No duckdb-patterns.md
@@ -81,6 +89,7 @@ ls .claude/skills/*/references/duckdb-patterns.md 2>/dev/null
 #### AC1.4: Version history removed (CLAUDE.md compliance)
 
 **Verification command**:
+
 ```bash
 grep -qi "version history" .claude/skills/bigquery-ethereum-data-acquisition/SKILL.md
 ```
@@ -96,11 +105,13 @@ grep -qi "version history" .claude/skills/bigquery-ethereum-data-acquisition/SKI
 #### AC2.1: All workflow steps accessible via references
 
 **Verification command**:
+
 ```bash
 ls -1 .claude/skills/*/references/*.md | wc -l
 ```
 
 **Results**:
+
 - blockchain-rpc-provider-research: 6 reference files
 - blockchain-data-collection-validation: 5 reference files
 - bigquery-ethereum-data-acquisition: 9 reference files
@@ -109,6 +120,7 @@ ls -1 .claude/skills/*/references/*.md | wc -l
 **Reference file breakdown**:
 
 **Skill-1** (6 files):
+
 1. workflow-steps.md (156 lines)
 2. rate-limiting-guide.md (85 lines)
 3. common-pitfalls.md (107 lines)
@@ -117,6 +129,7 @@ ls -1 .claude/skills/*/references/*.md | wc -l
 6. rpc-comparison-template.md (pre-existing)
 
 **Skill-2** (5 files):
+
 1. validation-workflow.md (250 lines)
 2. common-pitfalls.md (100 lines)
 3. example-workflow.md (120 lines)
@@ -124,6 +137,7 @@ ls -1 .claude/skills/*/references/*.md | wc -l
 5. ethereum-collector-poc-findings.md (pre-existing)
 
 **Skill-3** (9 files):
+
 1. workflow-steps.md (280 lines)
 2. cost-analysis.md (200 lines)
 3. setup-guide.md (150 lines)
@@ -141,6 +155,7 @@ ls -1 .claude/skills/*/references/*.md | wc -l
 #### AC2.2: All reference links valid (no broken links)
 
 **Verification command**:
+
 ```bash
 grep -o 'references/[a-z_-]*\.md' .claude/skills/*/SKILL.md | while read ref; do
   [ -f "$ref" ] || echo "MISSING: $ref"
@@ -148,6 +163,7 @@ done
 ```
 
 **Results**:
+
 - ✅ blockchain-rpc-provider-research: 6/6 links valid
 - ✅ blockchain-data-collection-validation: 5/5 links valid
 - ✅ bigquery-ethereum-data-acquisition: 8/8 links valid
@@ -159,11 +175,13 @@ done
 #### AC2.3: Scripts README exists for all skills
 
 **Verification command**:
+
 ```bash
 ls .claude/skills/*/scripts/README.md
 ```
 
 **Results**:
+
 - ✅ blockchain-rpc-provider-research/scripts/README.md (176 lines)
 - ✅ blockchain-data-collection-validation/scripts/README.md (533 lines)
 - ✅ bigquery-ethereum-data-acquisition/scripts/README.md (328 lines)
@@ -179,9 +197,10 @@ ls .claude/skills/*/scripts/README.md
 **Verification method**: Compare reference file count vs linked references in SKILL.md
 
 **Results**:
+
 - ✅ blockchain-rpc-provider-research: 6 references, 6 linked (100%)
 - ✅ blockchain-data-collection-validation: 5 references, 5 linked (100%)
-- ⚠️  bigquery-ethereum-data-acquisition: 9 files, 8 linked (89%)
+- ⚠️ bigquery-ethereum-data-acquisition: 9 files, 8 linked (89%)
   - Note: Unlinked file is README.md (directory index, not content reference)
 
 **Verdict**: ✅ PASS (all content references linked in navigation maps)
@@ -193,6 +212,7 @@ ls .claude/skills/*/scripts/README.md
 **Verification method**: Extract "Quick start" section from each SKILL.md
 
 **Results**:
+
 - ✅ blockchain-rpc-provider-research: ~2 lines (well under limit)
 - ✅ blockchain-data-collection-validation: ~2 lines (well under limit)
 - ✅ bigquery-ethereum-data-acquisition: ~2 lines (well under limit)
@@ -204,11 +224,13 @@ ls .claude/skills/*/scripts/README.md
 #### AC3.3: YAML frontmatter present in all SKILL.md
 
 **Verification command**:
+
 ```bash
 head -5 .claude/skills/*/SKILL.md | grep -E "(^---|^name:|^description:)"
 ```
 
 **Results**:
+
 - ✅ blockchain-rpc-provider-research: name and description present
 - ✅ blockchain-data-collection-validation: name and description present
 - ✅ bigquery-ethereum-data-acquisition: name and description present
@@ -225,20 +247,20 @@ head -5 .claude/skills/*/SKILL.md | grep -E "(^---|^name:|^description:)"
 
 ## Verification Summary Matrix
 
-| AC     | Criterion                          | Result      | Evidence                         |
-| ------ | ---------------------------------- | ----------- | -------------------------------- |
-| AC1.1  | SKILL.md ≤200 lines                | ✅ PASS     | 90, 104, 88 lines                |
-| AC1.2  | Portfolio ≤600 lines               | ✅ PASS     | 282 lines (53% under)            |
-| AC1.3  | No duckdb duplication              | ✅ PASS     | Only in skill-2                  |
-| AC1.4  | Version history removed            | ✅ PASS     | Skill-3 verified                 |
-| AC2.1  | References accessible              | ✅ PASS     | 20 reference files               |
-| AC2.2  | No broken links                    | ✅ PASS     | 19/19 links valid                |
-| AC2.3  | Scripts README exists              | ✅ PASS     | 3/3 skills                       |
-| AC3.1  | Navigation maps complete           | ✅ PASS     | All content linked               |
-| AC3.2  | Quick start ≤30 lines              | ✅ PASS     | All ~2 lines                     |
-| AC3.3  | YAML frontmatter present           | ✅ PASS     | All 3 skills                     |
-| AC4    | Availability                       | N/A         | Not applicable                   |
-| **Total** | **Acceptance Criteria**         | **10/10**   | **100% compliance**              |
+| AC        | Criterion                | Result    | Evidence              |
+| --------- | ------------------------ | --------- | --------------------- |
+| AC1.1     | SKILL.md ≤200 lines      | ✅ PASS   | 90, 104, 88 lines     |
+| AC1.2     | Portfolio ≤600 lines     | ✅ PASS   | 282 lines (53% under) |
+| AC1.3     | No duckdb duplication    | ✅ PASS   | Only in skill-2       |
+| AC1.4     | Version history removed  | ✅ PASS   | Skill-3 verified      |
+| AC2.1     | References accessible    | ✅ PASS   | 20 reference files    |
+| AC2.2     | No broken links          | ✅ PASS   | 19/19 links valid     |
+| AC2.3     | Scripts README exists    | ✅ PASS   | 3/3 skills            |
+| AC3.1     | Navigation maps complete | ✅ PASS   | All content linked    |
+| AC3.2     | Quick start ≤30 lines    | ✅ PASS   | All ~2 lines          |
+| AC3.3     | YAML frontmatter present | ✅ PASS   | All 3 skills          |
+| AC4       | Availability             | N/A       | Not applicable        |
+| **Total** | **Acceptance Criteria**  | **10/10** | **100% compliance**   |
 
 **Note**: AC4 (Availability) excluded as not applicable for one-time extraction
 
@@ -251,6 +273,7 @@ head -5 .claude/skills/*/SKILL.md | grep -E "(^---|^name:|^description:)"
 **Definition**: All AC1 criteria pass (line counts, duplication, version history)
 
 **Verification**:
+
 - ✅ AC1.1: All SKILL.md ≤200 lines
 - ✅ AC1.2: Portfolio ≤600 lines (282 total)
 - ✅ AC1.3: No duckdb duplication
@@ -265,6 +288,7 @@ head -5 .claude/skills/*/SKILL.md | grep -E "(^---|^name:|^description:)"
 **Definition**: All AC2 criteria pass (references accessible, links valid, README exists)
 
 **Verification**:
+
 - ✅ AC2.1: 20 reference files accessible
 - ✅ AC2.2: 19/19 reference links valid
 - ✅ AC2.3: 3/3 scripts README exist
@@ -278,6 +302,7 @@ head -5 .claude/skills/*/SKILL.md | grep -E "(^---|^name:|^description:)"
 **Definition**: All AC3 criteria pass (navigation complete, quick starts concise, frontmatter present)
 
 **Verification**:
+
 - ✅ AC3.1: All content references linked
 - ✅ AC3.2: All quick starts ≤30 lines
 - ✅ AC3.3: All 3 skills have YAML frontmatter
@@ -299,6 +324,7 @@ head -5 .claude/skills/*/SKILL.md | grep -E "(^---|^name:|^description:)"
 ### Compliance Metrics
 
 **Before refactoring** (baseline):
+
 ```
 Total lines: 1,025
 Compliant skills: 0/3 (0%)
@@ -307,6 +333,7 @@ Portfolio compliance: 39/100
 ```
 
 **After refactoring** (final):
+
 ```
 Total lines: 282 ✅
 Compliant skills: 3/3 (100%) ✅
@@ -315,6 +342,7 @@ Portfolio compliance: 100/100 ✅
 ```
 
 **Improvement**:
+
 - Lines reduced: -743 (-72% reduction)
 - Compliance achieved: +61 points (39/100 → 100/100)
 - All skills compliant: 3/3 (0% → 100%)
@@ -323,11 +351,11 @@ Portfolio compliance: 100/100 ✅
 
 ### Skill-by-Skill Breakdown
 
-| Skill                                 | Before | After | Reduction     | Compliance |
-| ------------------------------------- | ------ | ----- | ------------- | ---------- |
-| blockchain-rpc-provider-research      | 287    | 90    | -197 (-68.5%) | ✅ PASS    |
-| blockchain-data-collection-validation | 513    | 104   | -409 (-79.7%) | ✅ PASS    |
-| bigquery-ethereum-data-acquisition    | 225    | 88    | -137 (-60.9%) | ✅ PASS    |
+| Skill                                 | Before    | After   | Reduction       | Compliance  |
+| ------------------------------------- | --------- | ------- | --------------- | ----------- |
+| blockchain-rpc-provider-research      | 287       | 90      | -197 (-68.5%)   | ✅ PASS     |
+| blockchain-data-collection-validation | 513       | 104     | -409 (-79.7%)   | ✅ PASS     |
+| bigquery-ethereum-data-acquisition    | 225       | 88      | -137 (-60.9%)   | ✅ PASS     |
 | **Portfolio Total**                   | **1,025** | **282** | **-743 (-72%)** | **✅ 100%** |
 
 ---
@@ -337,17 +365,20 @@ Portfolio compliance: 100/100 ✅
 **Total reference files created**: 10
 
 **Skill-1** (4 created + 2 pre-existing):
+
 - workflow-steps.md (156 lines)
 - rate-limiting-guide.md (85 lines)
 - common-pitfalls.md (107 lines)
 - example-workflow.md (175 lines)
 
 **Skill-2** (3 created + 2 pre-existing):
+
 - validation-workflow.md (250 lines)
 - common-pitfalls.md (100 lines)
 - example-workflow.md (120 lines)
 
 **Skill-3** (3 created + 6 pre-existing):
+
 - workflow-steps.md (280 lines)
 - cost-analysis.md (200 lines)
 - setup-guide.md (150 lines)
@@ -406,21 +437,25 @@ x-current-state:
 ## Deliverables Summary
 
 ### Phase 1: blockchain-rpc-provider-research
+
 - Files created: 5 (4 references + 1 scripts README)
 - SKILL.md: 287 → 90 lines (-197, -68.5%)
 - SLOs: All PASS
 
 ### Phase 2A: blockchain-data-collection-validation
+
 - Files created: 4 (3 references + 1 scripts README)
 - SKILL.md: 513 → 104 lines (-409, -79.7%)
 - SLOs: All PASS
 
 ### Phase 2B: bigquery-ethereum-data-acquisition
+
 - Files created: 4 (3 references + 1 scripts README enhanced)
 - SKILL.md: 225 → 88 lines (-137, -60.9%)
 - SLOs: All PASS
 
 ### Phase 3: Comprehensive Verification
+
 - Acceptance criteria: 10/10 PASS
 - Portfolio compliance: 100/100
 - All SLOs: PASS
@@ -490,6 +525,7 @@ BREAKING CHANGE: None (backward compatible, pure extraction)
 ```
 
 **Release notes**:
+
 - Version: v1.0.0 (or next semantic version)
 - Milestone: 100% REFACTOR.md compliance achieved
 - Portfolio: 282 lines (53% under 600-line limit)
@@ -503,6 +539,7 @@ BREAKING CHANGE: None (backward compatible, pure extraction)
 All 10 applicable acceptance criteria verified and passing. Portfolio achieves 100% compliance with REFACTOR.md standards through systematic extraction to references, progressive disclosure architecture, and clear navigation maps.
 
 **Final metrics**:
+
 - 282 total lines (53% under limit)
 - 3/3 skills compliant (100%)
 - 10/10 acceptance criteria PASS
