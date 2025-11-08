@@ -1,0 +1,12 @@
+# Build artifacts
+build/
+build.zip
+*.pyc
+__pycache__/
+
+# Node.js
+node_modules/
+package-lock.json
+
+# semantic-release
+.releaserc.json

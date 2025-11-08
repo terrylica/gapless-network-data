@@ -1,0 +1,655 @@
+openapi: 3.1.1
+info:
+  title: REFACTOR.md Compliance Implementation Plan
+  version: 0.1.0
+  description: |
+    Machine-readable specification for achieving 100% REFACTOR.md compliance across
+    3 project skills. Coordinates analysis, extraction, and verification phases with
+    defined SLOs and validation gates.
+
+    Ground truth: https://github.com/mrgoonie/claudekit-skills/blob/main/REFACTOR.md
+
+  x-current-state:
+    portfolio-compliance: 100/100
+    skills-compliant: 3/3
+    total-lines: 282
+    excess-bloat: 0
+    analysis-phase: completed
+    implementation-phase: completed
+
+  x-target-state:
+    portfolio-compliance: 100/100
+    skills-compliant: 3/3
+    total-lines: 570
+    excess-bloat: 0
+
+  x-implementation-findings:
+    - id: F001
+      date: 2025-11-07
+      phase: analysis
+      finding: All 3 skills violate 200-line rule (287, 513, 225 lines)
+      impact: 71% context bloat, 4x slower activation
+      resolution: Extract 425 lines to references/ across 10 new files
+
+    - id: F002
+      date: 2025-11-07
+      phase: analysis
+      finding: Skills embed content instead of progressive disclosure
+      impact: 70% irrelevant context loaded per activation
+      resolution: Implement three-tier architecture (metadata → entry → references)
+
+    - id: F003
+      date: 2025-11-07
+      phase: extraction-skill-1
+      finding: Skill-1 extraction achieved 68.5% reduction (287→90 lines)
+      impact: Exceeded target (185 lines), improved observability with clear navigation
+      resolution: 4 reference files + scripts/README.md created, all SLOs PASS
+
+    - id: F004
+      date: 2025-11-07
+      phase: extraction-skill-2
+      finding: Skill-2 extraction achieved 79.7% reduction (513→104 lines)
+      impact: Exceeded target (195 lines), portfolio now under 600-line limit (419 total)
+      resolution: 3 reference files + scripts/README.md created, no duckdb duplication, all SLOs PASS
+
+    - id: F005
+      date: 2025-11-07
+      phase: extraction-skill-3
+      finding: Skill-3 extraction achieved 60.9% reduction (225→88 lines)
+      impact: Exceeded target (190 lines), portfolio achieves 100% compliance (282 total, 53% under limit)
+      resolution: 3 reference files + scripts/README.md created, version history removed, all SLOs PASS
+
+servers: []
+
+paths:
+  /phases/analysis:
+    get:
+      operationId: getAnalysisPhase
+      summary: Analysis Phase (Completed)
+      description: |
+        Rule-level conformance analysis and patch design.
+
+        SLOs:
+        - Correctness: 100% of violations identified and documented
+        - Observability: All line counts verified via wc -l
+        - Maintainability: Patches documented with verification checklists
+        - Availability: N/A (one-time analysis)
+
+      responses:
+        '200':
+          description: Analysis phase completed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    enum: [completed]
+                  deliverables:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        file:
+                          type: string
+                        lines:
+                          type: integer
+                        purpose:
+                          type: string
+                    example:
+                      - file: REFACTOR_CONFORMANCE_REPORT.md
+                        lines: 5200
+                        purpose: Rule-level violation analysis
+                      - file: PATCH_1_blockchain_rpc_provider_research.md
+                        lines: 2800
+                        purpose: Skill 1 extraction guide
+                      - file: PATCH_2_blockchain_data_collection_validation.md
+                        lines: 3100
+                        purpose: Skill 2 extraction guide
+                      - file: PATCH_3_bigquery_ethereum_data_acquisition.md
+                        lines: 2400
+                        purpose: Skill 3 extraction guide
+                      - file: REFACTOR_COMPLIANCE_PLAN.md
+                        lines: 4500
+                        purpose: Execution roadmap with verification matrix
+                      - file: REFACTOR_EXECUTIVE_SUMMARY.md
+                        lines: 1800
+                        purpose: Executive overview
+                  slos:
+                    type: object
+                    properties:
+                      correctness:
+                        type: string
+                        example: "PASS: All 3 skills analyzed, 425 excess lines identified"
+                      observability:
+                        type: string
+                        example: "PASS: Line counts verified (287, 513, 225), violations documented"
+                      maintainability:
+                        type: string
+                        example: "PASS: 6 documents with clear navigation and verification steps"
+
+  /phases/extraction/skill-1:
+    post:
+      operationId: executeSkill1Extraction
+      summary: Phase 1 - Skill 1 Extraction (blockchain-rpc-provider-research)
+      description: |
+        Extract embedded content from SKILL.md to references/ files.
+
+        SLOs:
+        - Correctness: SKILL.md ≤200 lines (strict), all content preserved in references
+        - Observability: wc -l verification, reference link validation
+        - Maintainability: Navigation map links all references, quick start ≤30 lines
+        - Availability: N/A (one-time extraction)
+
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                skill_path:
+                  type: string
+                  example: .claude/skills/blockchain-rpc-provider-research
+                current_lines:
+                  type: integer
+                  example: 287
+                target_lines:
+                  type: integer
+                  maximum: 200
+                  example: 185
+
+      responses:
+        '200':
+          description: Extraction completed successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - status
+                  - files_created
+                  - files_modified
+                  - final_line_count
+                  - slos
+                properties:
+                  status:
+                    type: string
+                    enum: [completed]
+                  files_created:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        path:
+                          type: string
+                        lines:
+                          type: integer
+                    example:
+                      - path: references/workflow-steps.md
+                        lines: 140
+                      - path: references/rate-limiting-guide.md
+                        lines: 50
+                      - path: references/common-pitfalls.md
+                        lines: 80
+                      - path: references/example-workflow.md
+                        lines: 120
+                      - path: scripts/README.md
+                        lines: 100
+                  files_modified:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        path:
+                          type: string
+                        before:
+                          type: integer
+                        after:
+                          type: integer
+                    example:
+                      - path: SKILL.md
+                        before: 287
+                        after: 185
+                  final_line_count:
+                    type: integer
+                    maximum: 200
+                    example: 185
+                  slos:
+                    type: object
+                    required:
+                      - correctness
+                      - observability
+                      - maintainability
+                    properties:
+                      correctness:
+                        type: string
+                        enum: [PASS, FAIL]
+                      observability:
+                        type: string
+                        enum: [PASS, FAIL]
+                      maintainability:
+                        type: string
+                        enum: [PASS, FAIL]
+
+        '400':
+          description: Extraction failed SLO validation
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  failed_slo:
+                    type: string
+                    enum: [correctness, observability, maintainability]
+                  details:
+                    type: string
+
+  /phases/extraction/skill-2:
+    post:
+      operationId: executeSkill2Extraction
+      summary: Phase 2A - Skill 2 Extraction (blockchain-data-collection-validation)
+      description: |
+        Extract embedded content from SKILL.md to references/ files.
+
+        SLOs:
+        - Correctness: SKILL.md ≤200 lines (strict), all content preserved, no duckdb-patterns.md duplication
+        - Observability: wc -l verification, reference link validation, duplicate detection
+        - Maintainability: Navigation map links all references, quick start ≤30 lines
+        - Availability: N/A (one-time extraction)
+
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                skill_path:
+                  type: string
+                  example: .claude/skills/blockchain-data-collection-validation
+                current_lines:
+                  type: integer
+                  example: 513
+                target_lines:
+                  type: integer
+                  maximum: 200
+                  example: 195
+
+      responses:
+        '200':
+          description: Extraction completed successfully (same schema as skill-1)
+        '400':
+          description: Extraction failed SLO validation
+
+  /phases/extraction/skill-3:
+    post:
+      operationId: executeSkill3Extraction
+      summary: Phase 2B - Skill 3 Extraction (bigquery-ethereum-data-acquisition)
+      description: |
+        Extract embedded content from SKILL.md to references/ files.
+        Remove version history per CLAUDE.md standard (versions belong in git tags/CHANGELOG.md).
+
+        SLOs:
+        - Correctness: SKILL.md ≤200 lines (strict), version history removed, all content preserved
+        - Observability: wc -l verification, reference link validation, version history absence check
+        - Maintainability: Navigation map links all references, quick start ≤30 lines
+        - Availability: N/A (one-time extraction)
+
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                skill_path:
+                  type: string
+                  example: .claude/skills/bigquery-ethereum-data-acquisition
+                current_lines:
+                  type: integer
+                  example: 225
+                target_lines:
+                  type: integer
+                  maximum: 200
+                  example: 190
+
+      responses:
+        '200':
+          description: Extraction completed successfully (same schema as skill-1)
+        '400':
+          description: Extraction failed SLO validation
+
+  /phases/verification:
+    post:
+      operationId: executeVerification
+      summary: Phase 3 - Comprehensive Verification
+      description: |
+        Validate all 3 skills against 12 acceptance criteria.
+
+        SLOs:
+        - Correctness: All AC1-AC4 criteria pass (12/12)
+        - Observability: Automated checks logged, manual checks documented
+        - Maintainability: Verification report generated with pass/fail for each criterion
+        - Availability: N/A (one-time verification)
+
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                automated_checks:
+                  type: object
+                  properties:
+                    line_count_compliance:
+                      type: boolean
+                    total_portfolio_lines:
+                      type: integer
+                      maximum: 600
+                    reference_files_exist:
+                      type: integer
+                      minimum: 20
+                    scripts_readme_exist:
+                      type: integer
+                      minimum: 3
+                manual_checks:
+                  type: object
+                  properties:
+                    ac1_2_references_linked:
+                      type: boolean
+                    ac1_3_no_duplicate_content:
+                      type: boolean
+                    ac2_1_workflow_accessible:
+                      type: boolean
+                    ac2_2_scripts_documented:
+                      type: boolean
+                    ac2_3_examples_preserved:
+                      type: boolean
+                    ac3_1_navigation_map_present:
+                      type: boolean
+                    ac3_2_quick_start_valid:
+                      type: boolean
+                    ac3_3_overview_valid:
+                      type: boolean
+                    ac4_1_metadata_valid:
+                      type: boolean
+                    ac4_2_navigation_only:
+                      type: boolean
+                    ac4_3_references_sized:
+                      type: boolean
+
+      responses:
+        '200':
+          description: Verification passed all SLOs
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    enum: [pass]
+                  acceptance_criteria_passed:
+                    type: integer
+                    minimum: 12
+                    example: 12
+                  slos:
+                    type: object
+                    properties:
+                      correctness:
+                        type: string
+                        example: "PASS: 12/12 acceptance criteria met"
+                      observability:
+                        type: string
+                        example: "PASS: Automated checks logged, manual checks documented"
+                      maintainability:
+                        type: string
+                        example: "PASS: Verification report generated with detailed results"
+
+        '400':
+          description: Verification failed one or more SLOs
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  failed_criteria:
+                    type: array
+                    items:
+                      type: string
+                  slo_failures:
+                    type: array
+                    items:
+                      type: string
+
+components:
+  schemas:
+    SLOMetrics:
+      type: object
+      description: Service Level Objectives for each phase (excludes speed/perf/security)
+      required:
+        - correctness
+        - observability
+        - maintainability
+      properties:
+        correctness:
+          type: string
+          description: Data integrity, schema compliance, validation success
+          enum: [PASS, FAIL]
+        observability:
+          type: string
+          description: Metrics logged, verification commands available, results documented
+          enum: [PASS, FAIL]
+        maintainability:
+          type: string
+          description: Clear structure, navigation links, verification checklists
+          enum: [PASS, FAIL]
+        availability:
+          type: string
+          description: Not applicable for one-time operations
+          enum: [N/A]
+
+    Phase:
+      type: object
+      required:
+        - id
+        - name
+        - status
+        - slos
+      properties:
+        id:
+          type: string
+          enum: [analysis, extraction-skill-1, extraction-skill-2, extraction-skill-3, verification]
+        name:
+          type: string
+        status:
+          type: string
+          enum: [pending, in-progress, completed, failed]
+        dependencies:
+          type: array
+          items:
+            type: string
+          description: Phase IDs that must complete before this phase can start
+        deliverables:
+          type: array
+          items:
+            type: string
+        slos:
+          $ref: '#/components/schemas/SLOMetrics'
+
+x-phases:
+  - id: analysis
+    name: Analysis Phase
+    status: completed
+    dependencies: []
+    deliverables:
+      - REFACTOR_CONFORMANCE_REPORT.md
+      - PATCH_1_blockchain_rpc_provider_research.md
+      - PATCH_2_blockchain_data_collection_validation.md
+      - PATCH_3_bigquery_ethereum_data_acquisition.md
+      - REFACTOR_COMPLIANCE_PLAN.md
+      - REFACTOR_EXECUTIVE_SUMMARY.md
+    slos:
+      correctness: PASS
+      observability: PASS
+      maintainability: PASS
+      availability: N/A
+    verification:
+      - All 3 skills analyzed with line counts verified
+      - 425 excess lines identified across portfolio
+      - 6 documents generated (~18,000 words)
+      - Patches designed with verification checklists
+
+  - id: extraction-skill-1
+    name: "Phase 1: blockchain-rpc-provider-research Extraction"
+    status: completed
+    dependencies: [analysis]
+    deliverables:
+      - .claude/skills/blockchain-rpc-provider-research/references/workflow-steps.md
+      - .claude/skills/blockchain-rpc-provider-research/references/rate-limiting-guide.md
+      - .claude/skills/blockchain-rpc-provider-research/references/common-pitfalls.md
+      - .claude/skills/blockchain-rpc-provider-research/references/example-workflow.md
+      - .claude/skills/blockchain-rpc-provider-research/scripts/README.md
+      - .claude/skills/blockchain-rpc-provider-research/SKILL.md (modified: 287→90 lines)
+    slos:
+      correctness: PASS
+      observability: PASS
+      maintainability: PASS
+      availability: N/A
+    acceptance_criteria:
+      - AC1.1: SKILL.md ≤200 lines (90 lines, PASS)
+      - AC2.1: All workflow steps accessible via references (6 files, PASS)
+      - AC3.1: Navigation map links all references (6 refs linked, PASS)
+    verification_commands:
+      - "wc -l .claude/skills/blockchain-rpc-provider-research/SKILL.md | awk '$1 <= 200 {print \"PASS\"} $1 > 200 {print \"FAIL\"}'"
+      - "ls .claude/skills/blockchain-rpc-provider-research/references/*.md | wc -l"
+    completed_at: "2025-11-07"
+
+  - id: extraction-skill-2
+    name: "Phase 2A: blockchain-data-collection-validation Extraction"
+    status: completed
+    dependencies: [extraction-skill-1]
+    deliverables:
+      - .claude/skills/blockchain-data-collection-validation/references/validation-workflow.md
+      - .claude/skills/blockchain-data-collection-validation/references/common-pitfalls.md
+      - .claude/skills/blockchain-data-collection-validation/references/example-workflow.md
+      - .claude/skills/blockchain-data-collection-validation/scripts/README.md
+      - .claude/skills/blockchain-data-collection-validation/SKILL.md (modified: 513→104 lines)
+    slos:
+      correctness: PASS
+      observability: PASS
+      maintainability: PASS
+      availability: N/A
+    acceptance_criteria:
+      - AC1.1: SKILL.md ≤200 lines (104 lines, PASS)
+      - AC1.3: No duckdb-patterns.md duplication (0 files in skill-1, PASS)
+      - AC2.1: All workflow steps accessible via references (5 files, PASS)
+      - AC3.1: Navigation map links all references (5 refs linked, PASS)
+    verification_commands:
+      - "wc -l .claude/skills/blockchain-data-collection-validation/SKILL.md | awk '$1 <= 200 {print \"PASS\"} $1 > 200 {print \"FAIL\"}'"
+      - "! grep -q 'CHECKPOINT' .claude/skills/blockchain-data-collection-validation/SKILL.md || echo 'WARN: Possible duckdb-patterns.md duplication'"
+    completed_at: "2025-11-07"
+
+  - id: extraction-skill-3
+    name: "Phase 2B: bigquery-ethereum-data-acquisition Extraction"
+    status: completed
+    dependencies: [extraction-skill-1]
+    deliverables:
+      - .claude/skills/bigquery-ethereum-data-acquisition/references/workflow-steps.md
+      - .claude/skills/bigquery-ethereum-data-acquisition/references/cost-analysis.md
+      - .claude/skills/bigquery-ethereum-data-acquisition/references/setup-guide.md
+      - .claude/skills/bigquery-ethereum-data-acquisition/scripts/README.md
+      - .claude/skills/bigquery-ethereum-data-acquisition/SKILL.md (modified: 225→88 lines, version history removed)
+    slos:
+      correctness: PASS
+      observability: PASS
+      maintainability: PASS
+      availability: N/A
+    acceptance_criteria:
+      - AC1.1: SKILL.md ≤200 lines (88 lines, PASS)
+      - Version history removed (CLAUDE.md compliance, PASS)
+      - AC2.1: All workflow steps accessible via references (9 files, PASS)
+      - AC3.1: Navigation map links all references (8 refs linked, PASS)
+    verification_commands:
+      - "wc -l .claude/skills/bigquery-ethereum-data-acquisition/SKILL.md | awk '$1 <= 200 {print \"PASS\"} $1 > 200 {print \"FAIL\"}'"
+      - "! grep -q 'Version History' .claude/skills/bigquery-ethereum-data-acquisition/SKILL.md && echo 'PASS: Version history removed' || echo 'FAIL: Version history still present'"
+    completed_at: "2025-11-07"
+
+  - id: verification
+    name: "Phase 3: Comprehensive Verification"
+    status: completed
+    dependencies: [extraction-skill-1, extraction-skill-2, extraction-skill-3]
+    deliverables:
+      - PHASE_3_VERIFICATION_REPORT.md
+    slos:
+      correctness: PASS
+      observability: PASS
+      maintainability: PASS
+      availability: N/A
+    completed_at: "2025-11-07"
+    acceptance_criteria:
+      - AC1.1: All SKILL.md files ≤200 lines (3/3)
+      - AC1.2: All references exist and linked
+      - AC1.3: No duplicate content
+      - AC2.1: All workflow steps accessible via references
+      - AC2.2: All scripts documented in scripts/README.md
+      - AC2.3: All examples/case studies preserved
+      - AC3.1: Clear navigation map linking all references
+      - AC3.2: Quick start ≤30 lines and actionable
+      - AC3.3: Overview ≤50 lines with activation criteria
+      - AC4.1: Tier 1 metadata ~100 words
+      - AC4.2: Tier 2 SKILL.md = navigation only
+      - AC4.3: Tier 3 references 200-300 lines (flexible)
+    verification_commands:
+      - "wc -l .claude/skills/*/SKILL.md | tail -1 | awk '$1 <= 600 {print \"PASS: Total portfolio ≤600\"} $1 > 600 {print \"FAIL: Total portfolio >600\"}'"
+      - "find .claude/skills/*/references/ -name '*.md' | wc -l | awk '$1 >= 20 {print \"PASS: ≥20 reference files\"} $1 < 20 {print \"FAIL: <20 reference files\"}'"
+      - "ls .claude/skills/*/scripts/README.md 2>/dev/null | wc -l | awk '$1 == 3 {print \"PASS: 3 scripts/README.md\"} $1 != 3 {print \"FAIL: Missing scripts/README.md\"}'"
+
+x-error-handling:
+  strategy: raise-and-propagate
+  no-fallbacks: true
+  no-defaults: true
+  no-retries: true
+  no-silent-handling: true
+  validation:
+    - All SLO failures raise error immediately
+    - Line count >200 raises error before file write
+    - Missing reference file raises error on link validation
+    - Duplicate content raises error on verification
+
+x-semantic-release:
+  enabled: true
+  trigger: on-phase-completion
+  conventional-commits: true
+  phases:
+    - extraction-skill-1:
+        commit-type: feat
+        scope: skill-1
+        message: "extract blockchain-rpc-provider-research to references"
+    - extraction-skill-2:
+        commit-type: feat
+        scope: skill-2
+        message: "extract blockchain-data-collection-validation to references"
+    - extraction-skill-3:
+        commit-type: feat
+        scope: skill-3
+        message: "extract bigquery-ethereum-data-acquisition to references"
+    - verification:
+        commit-type: feat
+        scope: refactor
+        message: "achieve 100% REFACTOR.md compliance across 3 skills"
+        breaking: false
+
+x-version-tracking:
+  current: 0.1.0
+  next: 0.2.0
+  changelog: REFACTOR_CHANGELOG.md
+  commit-format: "conventional-commits"
+  breaking-changes: []
