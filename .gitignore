@@ -37,6 +37,15 @@ env/
 .pytest_cache/
 .coverage
 htmlcov/
+coverage.json
+
+# Link checking
+.lychee-results.json
+.lychee-results.txt
+.lycheecache
+
+# Scratch/temporary work
+scratch/
 
 # Node.js (for semantic-release)
 node_modules/
