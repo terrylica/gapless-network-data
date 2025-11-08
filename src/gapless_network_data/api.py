@@ -32,7 +32,7 @@ def fetch_snapshots(
                Must be within 5 minutes of current time.
         end: End timestamp (ISO 8601 format) - typically in the future
         interval: Collection interval in seconds (default: 60)
-        output_dir: Optional directory to save Parquet files
+        output_dir: Optional database path (default: ~/.cache/gapless-network-data/data.duckdb)
 
     Returns:
         DataFrame with mempool snapshots indexed by timestamp

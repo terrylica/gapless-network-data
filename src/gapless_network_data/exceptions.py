@@ -196,3 +196,47 @@ class MempoolRateLimitException(MempoolHTTPException):
         base = super().to_dict()
         base.update({"retry_after": self.retry_after})
         return base
+
+
+class DatabaseException(MempoolException):
+    """
+    Database operation failure (DuckDB).
+
+    Raised when database initialization, insert, checkpoint, or query fails.
+    Includes operation context for debugging.
+    """
+
+    def __init__(
+        self,
+        message: str,
+        context: Optional[dict[str, str | int]] = None,
+        timestamp: Optional[datetime] = None,
+    ) -> None:
+        """
+        Initialize database exception.
+
+        Args:
+            message: Human-readable error description
+            context: Additional context (operation, db_path, num_blocks, etc.)
+            timestamp: When error occurred (defaults to current UTC time)
+        """
+        super().__init__(message, timestamp)
+        self.context = context or {}
+
+    def to_dict(self) -> dict[str, str | dict | None]:
+        """
+        Convert exception to dictionary for logging/serialization.
+
+        Returns:
+            Dictionary with exception details
+        """
+        base = super().to_dict()
+        base.update({"context": self.context})
+        return base
+
+    def __str__(self) -> str:
+        """String representation with context."""
+        if self.context:
+            context_str = ", ".join(f"{k}={v}" for k, v in self.context.items())
+            return f"{self.message} [{context_str}]"
+        return self.message
