@@ -1,0 +1,470 @@
+openapi: 3.1.0
+info:
+  title: Gapless Network Data - Ethereum Collector (Phase 1)
+  version: 0.2.0
+
+  description: |
+    Ethereum network data collection via LlamaRPC with zero-gap guarantee.
+    Phase 1 focuses on implementing block-level collection (12-second intervals)
+    with basic validation (HTTP/RPC + schema).
+
+    This specification defines Ethereum as PRIMARY data source due to:
+    - High-frequency: ~12 second block intervals (300 blocks/hour)
+    - Complete history: Archive node access from 2015+
+    - Rich metrics: 26-field block schema with 20+ derived metrics
+
+  x-metadata:
+    implementation_date: 2025-11-04
+    implementation_status: planned
+    referential_implementation: /Users/terryli/eon/gapless-crypto-data
+    data_source: LlamaRPC (https://llamarpc.com)
+    last_updated: 2025-11-04T00:00:00Z
+    supersedes: []
+    priority: "P0 (PRIMARY data source for Phase 1)"
+
+  x-version-history:
+    - version: 0.2.0
+      date: 2025-11-04
+      changes:
+        - Initial specification for Ethereum collector
+        - Defined LlamaRPC integration strategy
+        - 6-field minimal schema for Phase 1
+        - Basic validation (Layer 1-2 only)
+        - Multi-chain API design
+
+  x-slos:
+    availability:
+      target: 99.5%
+      measurement: Percentage of successful RPC requests over 24-hour window
+      failure_mode: Network errors, RPC downtime, rate limit exceeded
+      mitigation: Exponential backoff retry, graceful degradation with structured exceptions
+
+    correctness:
+      target: 100%
+      measurement: All collected blocks match Ethereum block schema
+      validation: Pydantic validation on every block, sanity checks on field values
+      failure_mode: Schema mismatch, invalid field values, missing required fields
+
+    observability:
+      target: 100%
+      measurement: All RPC requests logged with timestamp, method, block number, status
+      log_format: Structured logging with ISO 8601 timestamps
+      failure_mode: Logging system unavailable
+
+    maintainability:
+      target: Configuration changes require < 5 minutes
+      measurement: Time to adjust retry parameters, rate limits, endpoints
+      documentation: Python docstrings with examples, type hints throughout
+
+  x-implementation-findings:
+    architectural_decisions:
+      - decision: Use web3.py library (not manual JSON-RPC)
+        rationale: Industry standard, mature library, handles connection management
+        alignment: LlamaRPC research recommended web3.py
+
+      - decision: Poll latest block every 12 seconds (not websocket subscription)
+        rationale: LlamaRPC does not support websockets, polling is simpler and reliable
+        alternative_considered: Alchemy websockets (requires paid tier)
+
+      - decision: 6-field minimal schema for Phase 1
+        rationale: Sufficient for gas price analysis, quick to implement
+        expansion: Phase 4 adds remaining 20 fields from 26-field schema
+
+      - decision: Forward-collection-only (like Bitcoin)
+        rationale: Historical backfill is separate concern (Phase 2 feature)
+        alignment: Matches Bitcoin collector pattern
+
+    llama_rpc_research:
+      endpoint: "https://eth.llamarpc.com"
+      rate_limits: "Not publicly documented, use conservative 1 req/sec"
+      archive_access: "Yes - can fetch blocks from genesis (2015-07-30)"
+      authentication: "No API key required (public endpoint)"
+      methods_needed:
+        - "eth_blockNumber: Get latest block number"
+        - "eth_getBlockByNumber: Fetch block by number (full transactions=false)"
+      limitations:
+        - "No websocket support (polling only)"
+        - "Rate limits unknown (conservative 1 req/sec recommended)"
+        - "No guaranteed uptime SLA (public endpoint)"
+
+components:
+  schemas:
+    EthereumBlock:
+      type: object
+      required:
+        - number
+        - timestamp
+        - baseFeePerGas
+        - gasUsed
+        - gasLimit
+        - transactions_count
+      properties:
+        number:
+          type: integer
+          description: Block number (monotonically increasing)
+          minimum: 0
+        timestamp:
+          type: integer
+          description: Unix timestamp (seconds since epoch)
+          minimum: 1438269988  # Genesis block timestamp
+        baseFeePerGas:
+          type: integer
+          description: Base fee per gas (wei) - EIP-1559
+          minimum: 0
+        gasUsed:
+          type: integer
+          description: Total gas used by all transactions in block
+          minimum: 0
+        gasLimit:
+          type: integer
+          description: Maximum gas allowed in block
+          minimum: 0
+        transactions_count:
+          type: integer
+          description: Number of transactions in block
+          minimum: 0
+
+    EthereumRPCException:
+      type: object
+      required:
+        - timestamp
+        - method
+        - message
+      properties:
+        timestamp:
+          type: string
+          format: date-time
+          description: When error occurred (ISO 8601)
+        method:
+          type: string
+          description: RPC method that failed (eth_getBlockByNumber, eth_blockNumber)
+        block_number:
+          type: integer
+          description: Block number (if applicable)
+        http_status:
+          type: integer
+          description: HTTP status code (if applicable)
+        message:
+          type: string
+          description: Human-readable error description
+        retry_count:
+          type: integer
+          description: Number of retries attempted
+
+paths:
+  /eth_blockNumber:
+    post:
+      summary: Get latest block number
+      operationId: getBlockNumber
+      responses:
+        '200':
+          description: Latest block number
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  result:
+                    type: string
+                    description: Block number (hex string)
+        '5xx':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EthereumRPCException'
+
+  /eth_getBlockByNumber:
+    post:
+      summary: Get block by number
+      operationId: getBlockByNumber
+      parameters:
+        - name: block_number
+          in: query
+          required: true
+          schema:
+            type: string
+            description: Block number (hex) or "latest"
+        - name: full_transactions
+          in: query
+          required: true
+          schema:
+            type: boolean
+            description: If true, returns full transaction objects (false for Phase 1)
+      responses:
+        '200':
+          description: Block data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EthereumBlock'
+        '5xx':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EthereumRPCException'
+
+x-phase1-tasks:
+  critical_path:
+    - id: ethereum-collector-implementation
+      title: Implement EthereumCollector class
+      description: Create collector using web3.py with LlamaRPC provider
+      status: pending
+      priority: P0
+      dependencies: []
+      acceptance_criteria:
+        - Web3 client initialization with LlamaRPC endpoint
+        - collect_block() method fetches single block
+        - collect_range() method polls latest block every 12 seconds
+        - Returns pandas DataFrame with DatetimeIndex
+        - Structured exceptions on RPC failures
+      estimated_effort: 4 hours
+      implementation_notes:
+        - Use Web3(HTTPProvider("https://eth.llamarpc.com"))
+        - Poll eth_blockNumber every 12 seconds
+        - Fetch block with eth.get_block(block_number, full_transactions=False)
+        - Extract 6 fields: number, timestamp, baseFeePerGas, gasUsed, gasLimit, len(transactions)
+        - Convert timestamp to datetime
+        - Write to DuckDB: INSERT INTO ethereum_blocks VALUES (...)
+
+    - id: ethereum-validation
+      title: Implement basic validation (Layer 1-2)
+      description: RPC call validation + schema validation
+      status: pending
+      priority: P0
+      dependencies: [ethereum-collector-implementation]
+      acceptance_criteria:
+        - Layer 1: RPC connection errors handled (HTTPError, Timeout, ConnectionError)
+        - Layer 2: Schema validation (all 6 fields present, correct types)
+        - Sanity check: gasUsed <= gasLimit
+        - Sanity check: Block numbers monotonically increasing
+        - Structured exceptions with RPC method + block number context
+      estimated_effort: 2 hours
+
+    - id: ethereum-retry-logic
+      title: Implement exponential backoff retry
+      description: Add retry logic for RPC call failures (reuse Bitcoin pattern)
+      status: pending
+      priority: P0
+      dependencies: [ethereum-collector-implementation]
+      acceptance_criteria:
+        - tenacity library integration (same as Bitcoin)
+        - Max 3 retries with exponential backoff (1s, 2s, 4s)
+        - Retry on connection errors and 5xx responses
+        - Do NOT retry on 4xx client errors
+        - Structured exceptions with retry_count
+      estimated_effort: 1 hour
+      implementation_notes:
+        - Reuse retry pattern from Bitcoin collector (already implemented)
+        - Adapt for RPC call patterns instead of REST API
+
+    - id: multi-chain-api-integration
+      title: Integrate Ethereum into multi-chain API
+      description: Update api.py to dispatch Ethereum vs Bitcoin collectors
+      status: pending
+      priority: P0
+      dependencies: [ethereum-collector-implementation, multi-chain-api-design]
+      acceptance_criteria:
+        - fetch_snapshots(chain="ethereum", ...) calls EthereumCollector
+        - fetch_snapshots(chain="bitcoin", ...) calls MempoolCollector
+        - Chain-specific default intervals (12s Ethereum, 300s Bitcoin)
+        - Both chains write to same data.duckdb (ethereum_blocks table, bitcoin_mempool table)
+        - Validation errors include chain name in context
+      estimated_effort: 2 hours
+
+    - id: ethereum-tests
+      title: Write comprehensive tests for Ethereum collector
+      description: Unit tests + integration tests for EthereumCollector
+      status: pending
+      priority: P0
+      dependencies: [ethereum-collector-implementation, ethereum-validation, ethereum-retry-logic]
+      acceptance_criteria:
+        - test_ethereum_collector.py with mock RPC responses
+        - Test block fetching (mock web3.py eth.get_block)
+        - Test schema validation (valid + invalid blocks)
+        - Test retry logic (connection errors, 5xx responses)
+        - Test sanity checks (gasUsed > gasLimit should fail)
+        - Integration test: collect 10 blocks from LlamaRPC (real API call)
+        - Coverage: 70%+ on ethereum_collector.py
+      estimated_effort: 3 hours
+
+    - id: cli-multi-chain-support
+      title: Add multi-chain support to CLI
+      description: CLI commands accept --chain parameter
+      status: pending
+      priority: P1
+      dependencies: [multi-chain-api-integration]
+      acceptance_criteria:
+        - gapless-network-data collect --chain ethereum --start ... --end ...
+        - gapless-network-data collect --chain bitcoin --start ... --end ...
+        - gapless-network-data stream --chain ethereum (real-time block collection)
+        - gapless-network-data stream --chain bitcoin (real-time mempool snapshots)
+        - CLI help text documents both chains
+        - Error messages helpful (e.g., "Invalid chain: xyz. Supported: ethereum, bitcoin")
+      estimated_effort: 2 hours
+
+  supporting_tasks:
+    - id: multi-chain-api-design
+      title: Design multi-chain API architecture
+      description: Define function signatures, parameter validation, dispatch logic
+      status: pending
+      priority: P0
+      dependencies: []
+      acceptance_criteria:
+        - Design document: specifications/multi-chain-api-design.md
+        - Function signature: fetch_snapshots(chain, start, end, interval, output_dir)
+        - Chain parameter: Literal["ethereum", "bitcoin"] with type validation
+        - Dispatch logic: if-elif chain switcher or factory pattern
+        - Backward compatibility: No breaking changes to existing code
+        - Error handling: ValueError for unsupported chains
+      estimated_effort: 2 hours
+      deliverable: specifications/multi-chain-api-design.md
+
+    - id: ethereum-schema-documentation
+      title: Document Ethereum 6-field schema
+      description: Update docs/architecture/DATA_FORMAT.md with Ethereum schema
+      status: pending
+      priority: P1
+      dependencies: [ethereum-collector-implementation]
+      acceptance_criteria:
+        - Schema table with 6 fields (number, timestamp, baseFeePerGas, gasUsed, gasLimit, transactions_count)
+        - Data types documented (BIGINT, TIMESTAMP, INTEGER)
+        - Value ranges documented (min/max constraints)
+        - DuckDB storage (ethereum_blocks table in data.duckdb)
+        - Example SQL queries for common operations
+      estimated_effort: 1 hour
+
+  validation_gates:
+    - gate: ethereum_collector_works
+      description: EthereumCollector successfully collects 10 blocks from LlamaRPC
+      required_before: v0.2.0 release
+      validation: Integration test with real API call
+
+    - gate: multi_chain_api_works
+      description: fetch_snapshots(chain="ethereum") and fetch_snapshots(chain="bitcoin") both work
+      required_before: v0.2.0 release
+      validation: Integration tests for both chains
+
+    - gate: unit_tests_pass
+      description: All unit tests pass with 70%+ coverage
+      required_before: v0.2.0 release
+      validation: pytest --cov with coverage report
+
+    - gate: no_silent_failures
+      description: All error paths raise structured exceptions
+      validation: Code review + tests for error scenarios
+      required_before: v0.2.0 release
+
+x-ethereum-schema:
+  phase_1_minimal_schema:
+    description: "6 fields sufficient for gas price analysis and network congestion metrics"
+    fields:
+      - name: number
+        type: integer
+        purpose: "Block identifier (monotonically increasing)"
+      - name: timestamp
+        type: datetime
+        purpose: "Block creation time (for DatetimeIndex)"
+      - name: baseFeePerGas
+        type: integer
+        purpose: "EIP-1559 base fee (wei) - core gas price metric"
+      - name: gasUsed
+        type: integer
+        purpose: "Total gas used in block - congestion indicator"
+      - name: gasLimit
+        type: integer
+        purpose: "Maximum gas allowed - capacity metric"
+      - name: transactions_count
+        type: integer
+        purpose: "Number of transactions - activity metric"
+
+  phase_4_expanded_schema:
+    description: "Full 26-field schema from LlamaRPC research (deferred to Phase 4)"
+    additional_fields: 20
+    reference: "/Users/terryli/eon/gapless-network-data/docs/llamarpc/schema/"
+
+x-llama-rpc-integration:
+  endpoint: "https://eth.llamarpc.com"
+  authentication: "None (public endpoint)"
+  rate_limiting:
+    conservative_estimate: "1 request per second"
+    rationale: "Rate limits not publicly documented, use conservative estimate"
+    implementation: "12-second polling interval (1 block per 12s = 0.083 req/s) well within limit"
+
+  error_handling:
+    connection_errors:
+      - "requests.exceptions.ConnectionError: Network failure"
+      - "requests.exceptions.Timeout: Request timeout (30s default)"
+      - "web3.exceptions.ProviderConnectionError: RPC connection failed"
+      strategy: "Retry with exponential backoff (max 3 attempts)"
+
+    rpc_errors:
+      - "Block not found (invalid block number)"
+      - "Invalid method (should not happen)"
+      - "Rate limit exceeded (429 response)"
+      strategy: "Raise structured exception immediately (no retry for client errors)"
+
+    data_quality_errors:
+      - "Missing required fields (schema validation)"
+      - "Invalid field values (gasUsed > gasLimit)"
+      - "Non-monotonic block numbers"
+      strategy: "Raise ValidationException with field details"
+
+  fallback_strategy:
+    note: "Phase 1 has no fallback RPC provider (single source: LlamaRPC)"
+    future: "Phase 4 may add Alchemy/Infura as fallback (requires API key)"
+
+x-multi-chain-architecture:
+  collector_dispatch:
+    pattern: "Factory pattern with chain-based dispatch"
+    implementation: |
+      def fetch_snapshots(chain: Literal["ethereum", "bitcoin"], ...) -> pd.DataFrame:
+          if chain == "ethereum":
+              collector = EthereumCollector(db_path="~/.cache/gapless-network-data/data.duckdb")
+              interval = interval or 12  # 12-second default
+          elif chain == "bitcoin":
+              collector = MempoolCollector(db_path="~/.cache/gapless-network-data/data.duckdb")
+              interval = interval or 300  # 5-minute default
+          else:
+              raise ValueError(f"Unsupported chain: {chain}. Supported: ethereum, bitcoin")
+
+          return collector.collect_range(start, end, interval)
+
+  storage_organization:
+    duckdb_location: "~/.cache/gapless-network-data/data.duckdb"
+    ethereum_table: "ethereum_blocks (BIGINT PRIMARY KEY, TIMESTAMP, ...)"
+    bitcoin_table: "bitcoin_mempool (INTEGER PRIMARY KEY, TIMESTAMP, ...)"
+    rationale: "Single database file, separate tables per chain"
+
+  validation_organization:
+    validation_reports: "validation/validation_YYYYMMDD.parquet (Parquet-backed)"
+    query_interface: "DuckDB queries against Parquet files"
+    rationale: "Queryable validation history with 110x storage savings"
+
+x-release-plan:
+  v0.2.0:
+    target_date: "2 weeks from 2025-11-04"
+    scope: Phase 1 - Multi-Chain Collection (Ethereum PRIMARY + Bitcoin SECONDARY)
+    deliverables:
+      - "EthereumCollector implementation with web3.py + LlamaRPC"
+      - "Multi-chain API: fetch_snapshots(chain='ethereum'|'bitcoin')"
+      - "DuckDB storage: Single data.duckdb with ethereum_blocks and bitcoin_mempool tables"
+      - "Basic validation (Layer 1-2) for both chains"
+      - "70%+ test coverage for both collectors"
+      - "CLI with multi-chain support (--chain parameter)"
+      - "Documentation: DuckDB schema specification (duckdb-schema-specification.yaml)"
+    success_gates:
+      - All tasks in critical_path complete
+      - All validation_gates pass
+      - Integration tests pass for both chains
+      - DuckDB tables created with correct schema
+      - CHANGELOG.md updated
+      - Git tag v0.2.0 created
+      - GitHub Release published
+    rollback_criteria:
+      - Integration test fails (cannot collect 10 blocks from LlamaRPC)
+      - Multi-chain API does not work for both chains
+      - DuckDB INSERT operations fail
+      - Coverage below 70%
+      - Silent failures detected

@@ -1,0 +1,308 @@
+openapi: 3.1.0
+info:
+  title: Phase 1 Implementation Checklist - v0.2.0
+  version: 0.2.0
+  description: |
+    Implementation checklist synced with SSoT (master-project-roadmap.yaml).
+    Tracks tasks from Phase 1: Historical Data Collection (5-Year Backfill).
+
+  x-metadata:
+    sso_source: "/Users/terryli/eon/gapless-network-data/specifications/master-project-roadmap.yaml"
+    detailed_spec: "/Users/terryli/eon/gapless-network-data/specifications/ethereum-collector-phase1.yaml"
+    strategy_doc: "/Users/terryli/eon/gapless-network-data/HISTORICAL_COLLECTION_STRATEGY.md"
+    target_version: "v0.2.0"
+    current_version: "v0.1.0"
+    last_updated: "2025-11-04"
+
+  x-slos:
+    availability:
+      target: "Data collection operations complete without manual intervention"
+      error_handling: "Raise and propagate exceptions, no fallbacks/defaults/silent handling"
+
+    correctness:
+      target: "100% data accuracy"
+      error_handling: "Structured exceptions with context, no silent data corruption"
+
+    observability:
+      target: "100% operation tracking"
+      failure_mode: "Silent failures, missing audit trail"
+
+    maintainability:
+      target: "<30 minutes for common operations"
+      documentation: "Hub-and-spoke with progressive disclosure"
+
+x-implementation-tasks:
+  ethereum_historical_backfill:
+    priority: "P0 (PRIMARY)"
+    effort: "20-30 hours development + 530-650 hours machine runtime (22-27 days, empirically validated)"
+    validation_reference: "scratch/README.md - All Ethereum-critical validations passed"
+
+    tasks:
+      - id: eth-collector-base
+        title: "Implement EthereumCollector base class (web3.py + LlamaRPC)"
+        status: pending
+        effort: 4 hours
+        source: ethereum-collector-phase1.yaml lines 210-229
+        dependencies: []
+        acceptance_criteria:
+          - "Web3 client initialization with LlamaRPC endpoint"
+          - "collect_block() method fetches single block"
+          - "Returns pandas DataFrame with DatetimeIndex"
+          - "Structured exceptions on RPC failures"
+
+      - id: eth-historical-mode
+        title: "Add historical backfill mode (batch fetching, checkpoint/resume)"
+        status: pending
+        effort: 6 hours
+        source: HISTORICAL_COLLECTION_STRATEGY.md lines 94-143
+        dependencies: [eth-collector-base]
+        acceptance_criteria:
+          - "Batch fetching (100 blocks at a time, parallel requests)"
+          - "Checkpoint-based resume (survive crashes, 22-27 day runtime, empirically crash-tested)"
+          - "DuckDB batch INSERT (1000 blocks per transaction) + CHECKPOINT for durability"
+          - "Memory-efficient (write every 1000 blocks, clear buffer)"
+          - "Performance: 5.5-6.85 blocks/sec sustained (empirically validated: scratch/llamarpc-archive-validation/)"
+
+      - id: eth-block-resolution
+        title: "Implement block number resolution (timestamp → block via binary search)"
+        status: pending
+        effort: 2 hours
+        source: HISTORICAL_COLLECTION_STRATEGY.md lines 153-164
+        validation_reference: "scratch/block-resolution-validation/ - Binary search validated (20-24 RPC calls)"
+        dependencies: [eth-collector-base]
+        acceptance_criteria:
+          - "Convert timestamps to block numbers (binary search, 20-24 RPC calls empirically validated)"
+          - "Cache timestamp→block mapping for performance (99.97% reduction with checkpoint cache)"
+          - "Accuracy: 1-37 seconds (within 60s tolerance)"
+
+      - id: eth-progress-tracking
+        title: "Add progress tracking UI (CLI with ETA, blocks/sec)"
+        status: pending
+        effort: 2 hours
+        source: HISTORICAL_COLLECTION_STRATEGY.md lines 166-178
+        dependencies: [eth-historical-mode]
+        acceptance_criteria:
+          - "CLI progress bar (blocks/sec, ETA, % complete)"
+          - "Checkpoint logging (last block processed, timestamp)"
+
+      - id: eth-error-handling
+        title: "Implement retry & error handling (exponential backoff, skip failed blocks)"
+        status: pending
+        effort: 3 hours
+        source: HISTORICAL_COLLECTION_STRATEGY.md lines 180-185
+        dependencies: [eth-collector-base]
+        acceptance_criteria:
+          - "Exponential backoff for failed blocks"
+          - "Skip blocks that consistently fail (log to errors table)"
+          - "Handle rate limit 429 errors (back off 60 seconds)"
+          - "Connection errors (retry 3 times)"
+          - "Raise and propagate exceptions, no silent failures"
+
+      - id: eth-validation
+        title: "Add basic validation (Layer 1-2: RPC + schema)"
+        status: pending
+        effort: 2 hours
+        source: ethereum-collector-phase1.yaml lines 231-243
+        dependencies: [eth-collector-base]
+        acceptance_criteria:
+          - "Layer 1: RPC connection errors handled (HTTPError, Timeout, ConnectionError)"
+          - "Layer 2: Schema validation (all 6 fields present, correct types)"
+          - "Sanity check: gasUsed <= gasLimit"
+          - "Structured exceptions with RPC method + block number context"
+
+  multi_chain_integration:
+    priority: "P0"
+    effort: "4 hours"
+
+    tasks:
+      - id: multi-chain-api
+        title: "Implement multi-chain API (chain parameter dispatch)"
+        status: pending
+        effort: 2 hours
+        source: ethereum-collector-phase1.yaml lines 262-274
+        dependencies: [eth-collector-base]
+        acceptance_criteria:
+          - "fetch_snapshots(chain='ethereum', ...) calls EthereumCollector"
+          - "fetch_snapshots(chain='bitcoin', ...) calls MempoolCollector"
+          - "Chain-specific default intervals (12s Ethereum, 300s Bitcoin)"
+          - "Both chains write to same data.duckdb"
+          - "Validation errors include chain name in context"
+
+      - id: cli-multi-chain
+        title: "Add CLI multi-chain support (--chain parameter)"
+        status: pending
+        effort: 2 hours
+        source: ethereum-collector-phase1.yaml lines 292-305
+        dependencies: [multi-chain-api]
+        acceptance_criteria:
+          - "gapless-network-data collect --chain ethereum --start ... --end ..."
+          - "gapless-network-data collect --chain bitcoin --start ... --end ..."
+          - "CLI help text documents both chains"
+          - "ValueError for unsupported chains (raise and propagate)"
+
+  bitcoin_historical_collection:
+    priority: "P1 (SECONDARY - DEFERRED TO PHASE 2+)"
+    effort: "8-12 hours"
+    note: "Bitcoin collection deferred after Ethereum PRIMARY collection complete"
+    validation_reference: "scratch/bitcoin-historical-validation/ - H24 confirmed (not H12)"
+
+    tasks:
+      - id: btc-historical-collector
+        title: "Add Bitcoin historical collector (H24 granularity, NOT H12)"
+        status: deferred
+        effort: 8 hours
+        source: master-project-roadmap.yaml lines 213-264
+        dependencies: []
+        acceptance_criteria:
+          - "Fetch historical snapshots from mempool.space API"
+          - "Parse H24 (24-hour, NOT 12-hour) granularity data (empirically validated)"
+          - "Extract 9 fields from JSON response"
+          - "DuckDB batch INSERT (100 snapshots per transaction) + CHECKPOINT"
+          - "5 years of Bitcoin mempool data (1,825 snapshots, NOT 3,650)"
+          - "H24 granularity limitation documented (99.65% data loss: 5-min → 24-hour)"
+
+  testing_and_validation:
+    priority: "P0"
+    effort: "7-9 hours"
+
+    tasks:
+      - id: comprehensive-tests
+        title: "Write comprehensive tests (70%+ coverage for both chains)"
+        status: pending
+        effort: 4 hours
+        source: ethereum-collector-phase1.yaml lines 276-290
+        dependencies: [eth-collector-base, eth-validation, eth-error-handling]
+        acceptance_criteria:
+          - "test_ethereum_collector.py with mock RPC responses"
+          - "Test block fetching (mock web3.py eth.get_block)"
+          - "Test schema validation (valid + invalid blocks)"
+          - "Test retry logic (connection errors, 5xx responses)"
+          - "Test sanity checks (gasUsed > gasLimit should fail)"
+          - "Coverage: 70%+ on ethereum_collector.py"
+
+      - id: integration-tests
+        title: "Run integration tests (10 blocks Ethereum, 100 snapshots Bitcoin)"
+        status: pending
+        effort: 2 hours
+        source: ethereum-collector-phase1.yaml lines 338-357
+        dependencies: [comprehensive-tests]
+        acceptance_criteria:
+          - "Integration test: collect 10 blocks from LlamaRPC (real API call)"
+          - "Integration test: collect 100 historical Bitcoin snapshots"
+          - "All error paths raise structured exceptions (no silent failures)"
+
+      - id: verify-success-gates
+        title: "Verify success gates (all 4 gates must pass)"
+        status: pending
+        effort: 1 hour
+        source: ethereum-collector-phase1.yaml lines 338-357
+        dependencies: [integration-tests]
+        gates:
+          - "ethereum_collector_works: Collect 10 blocks from LlamaRPC successfully"
+          - "multi_chain_api_works: Both chains work with chain parameter"
+          - "unit_tests_pass: 70%+ coverage achieved"
+          - "no_silent_failures: All errors raise structured exceptions"
+
+  documentation:
+    priority: "P1"
+    effort: "2 hours"
+
+    tasks:
+      - id: update-docs
+        title: "Update documentation (DATA_FORMAT.md, schema docs)"
+        status: pending
+        effort: 1 hour
+        source: ethereum-collector-phase1.yaml lines 324-336
+        dependencies: [eth-collector-base]
+        acceptance_criteria:
+          - "Schema table with 6 fields documented"
+          - "Data types documented (BIGINT, TIMESTAMP, INTEGER)"
+          - "DuckDB storage (ethereum_blocks table in data.duckdb)"
+          - "Example SQL queries for common operations"
+
+      - id: update-changelog
+        title: "Update CHANGELOG.md for v0.2.0"
+        status: pending
+        effort: 1 hour
+        dependencies: [verify-success-gates]
+        acceptance_criteria:
+          - "Move [Unreleased] items to [0.2.0] section"
+          - "Document all added features"
+          - "Document any changed behavior"
+          - "Follow Keep a Changelog format"
+
+  release:
+    priority: "P0"
+    effort: "1 hour"
+
+    tasks:
+      - id: version-bump
+        title: "Bump version to v0.2.0, create git tag"
+        status: pending
+        effort: 1 hour
+        dependencies: [update-changelog, verify-success-gates]
+        acceptance_criteria:
+          - "Update pyproject.toml version: 0.1.0 → 0.2.0"
+          - "Git commit: 'Release v0.2.0: Historical data collection complete'"
+          - "Git tag: v0.2.0"
+          - "GitHub Release with CHANGELOG.md content"
+
+x-success-criteria:
+  phase_1_complete:
+    gates:
+      - "5 years of Ethereum blocks collected (~13M blocks, ~1.5 GB storage)"
+      - "< 0.01% missing blocks (allow ~1,300 failures)"
+      - "Data stored in DuckDB ethereum_blocks table (76-100 bytes/block empirically validated)"
+      - "Checkpoint/resume works (crash-tested with 0 data loss)"
+      - "Performance: 5.5-6.85 blocks/sec sustained (empirically validated)"
+      - "Bitcoin collection DEFERRED to Phase 2+ (SECONDARY priority)"
+      - "Multi-chain API architecture established (chain parameter dispatch)"
+      - "70%+ test coverage achieved"
+      - "All error paths raise structured exceptions (no silent failures)"
+      - "CHANGELOG.md updated"
+      - "Version bumped to v0.2.0"
+      - "Git tag created"
+
+    empirical_validation:
+      status: "PASSED - All Ethereum-critical validations complete (2025-11-04)"
+      reference: "scratch/README.md - LlamaRPC, DuckDB, Block Resolution validated"
+
+  error_handling_policy:
+    principle: "Exception-only failures"
+    rules:
+      - "Raise and propagate all errors (no fallbacks, no defaults, no retries at wrong level)"
+      - "Structured exceptions with context (timestamp, operation, chain, block number)"
+      - "No silent failures or data corruption"
+      - "Retry logic only for transient network errors (max 3 attempts, exponential backoff)"
+      - "Log all errors with full context before raising"
+
+  version_tracking:
+    current: "v0.1.0"
+    target: "v0.2.0"
+    next: "v0.3.0 (Real-time collection + advanced validation)"
+    semver_rules:
+      - "MAJOR: Breaking API changes"
+      - "MINOR: New features (backward compatible)"
+      - "PATCH: Bug fixes (backward compatible)"
+    tag_format: "v{MAJOR}.{MINOR}.{PATCH}"
+    changelog: "Keep a Changelog 1.0.0 format"
+
+x-task-summary:
+  total_tasks: 15
+  estimated_effort: "46-63 hours development + 530-650 hours machine runtime (22-27 days)"
+  empirical_validation: "Timeline and performance empirically validated (2025-11-04)"
+  breakdown:
+    ethereum_historical_backfill: "6 tasks, 20-30 hours development"
+    multi_chain_integration: "2 tasks, 4 hours"
+    bitcoin_historical_collection: "1 task, 8-12 hours (DEFERRED TO PHASE 2+)"
+    testing_and_validation: "3 tasks, 7-9 hours"
+    documentation: "2 tasks, 2 hours"
+    release: "1 task, 1 hour"
+
+  timeline:
+    week_1: "Ethereum collector base + historical mode (14 hours)"
+    week_2: "Multi-chain API + validation (8-12 hours)"
+    week_3: "Testing + documentation (9-11 hours)"
+    week_4: "Integration tests + release (2 hours)"
+    continuous: "Ethereum backfill machine runtime (530-650 hours = 22-27 days at 5.5-6.85 blocks/sec, empirically validated)"
+    note: "Bitcoin collection deferred to Phase 2+ (SECONDARY priority)"

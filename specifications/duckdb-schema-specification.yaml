@@ -1,0 +1,450 @@
+openapi: 3.1.0
+info:
+  title: DuckDB Schema Specification - Raw Data Storage
+  version: 0.2.0
+  
+  description: |
+    DuckDB PRIMARY storage architecture for historical blockchain network data.
+
+    **Architecture**: Single DuckDB file for all raw data
+    - Storage: ~/.cache/gapless-network-data/data.duckdb
+    - Size: ~1.5 GB for 5 years Ethereum (76-100 bytes/block empirically validated)
+    - Tables: ethereum_blocks, bitcoin_mempool (deferred), metadata
+    - Backup: Daily export to Parquet files
+
+    **Empirical Validation**: 2025-11-04 (scratch/README.md)
+    - DuckDB batch operations: 124K blocks/sec, CHECKPOINT required for durability
+    - Storage: 76-100 bytes/block → 1.0-1.2 GB for 13M blocks
+    
+    **Rationale**: Maximum flexibility for feature engineering
+    - Direct SQL resampling (time_bucket)
+    - Temporal joins (ASOF JOIN with OHLCV)
+    - Window functions (rolling averages, z-scores)
+    - Ad-hoc exploration (SQL console)
+  
+  x-metadata:
+    decision_date: "2025-11-04"
+    supersedes: "Parquet-first architecture (2025-11-03)"
+    storage_location: "~/.cache/gapless-network-data/data.duckdb"
+    backup_location: "~/.cache/gapless-network-data/backups/"
+    estimated_size: "500-600 MB (5 years Ethereum + Bitcoin)"
+
+components:
+  schemas:
+    EthereumBlocksTable:
+      type: object
+      description: Ethereum block data (12-second granularity)
+      properties:
+        block_number:
+          type: integer
+          description: Block number (PRIMARY KEY)
+          constraints:
+            - PRIMARY KEY
+            - NOT NULL
+            - UNIQUE
+        timestamp:
+          type: timestamp
+          description: Block timestamp (UTC)
+          constraints:
+            - NOT NULL
+            - Indexed for time-range queries
+        baseFeePerGas:
+          type: bigint
+          description: EIP-1559 base fee (wei)
+          constraints:
+            - ">= 0"
+        gasUsed:
+          type: bigint
+          description: Total gas used in block
+          constraints:
+            - ">= 0"
+            - "CHECK (gasUsed <= gasLimit)"
+        gasLimit:
+          type: bigint
+          description: Maximum gas allowed
+          constraints:
+            - ">= 0"
+        transactions_count:
+          type: integer
+          description: Number of transactions in block
+          constraints:
+            - ">= 0"
+      
+      indexes:
+        - name: idx_ethereum_timestamp
+          columns: [timestamp]
+          type: BTREE
+        - name: idx_ethereum_block_number
+          columns: [block_number]
+          type: PRIMARY KEY
+    
+    BitcoinMempoolTable:
+      type: object
+      description: Bitcoin mempool snapshots (5-min recent, 24-hour historical - empirically validated)
+      properties:
+        snapshot_id:
+          type: integer
+          description: Auto-increment ID (PRIMARY KEY)
+          constraints:
+            - PRIMARY KEY
+            - AUTO INCREMENT
+        timestamp:
+          type: timestamp
+          description: Snapshot timestamp (UTC)
+          constraints:
+            - NOT NULL
+            - UNIQUE
+            - Indexed
+        unconfirmed_count:
+          type: integer
+          description: Number of unconfirmed transactions
+          constraints:
+            - ">= 0"
+        vsize_mb:
+          type: double
+          description: Mempool virtual size (MB)
+          constraints:
+            - ">= 0"
+        total_fee_btc:
+          type: double
+          description: Total fees (BTC)
+          constraints:
+            - ">= 0"
+        fastest_fee:
+          type: double
+          description: Fee rate for next block (sat/vB)
+          constraints:
+            - ">= 1"
+            - "<= 10000"
+        half_hour_fee:
+          type: double
+          description: Fee rate ~30min (sat/vB)
+          constraints:
+            - ">= 1"
+            - "<= 10000"
+        hour_fee:
+          type: double
+          description: Fee rate ~1hr (sat/vB)
+          constraints:
+            - ">= 1"
+            - "<= 10000"
+        economy_fee:
+          type: double
+          description: Low-priority fee (sat/vB)
+          constraints:
+            - ">= 1"
+            - "<= 10000"
+        minimum_fee:
+          type: double
+          description: Minimum relay fee (sat/vB)
+          constraints:
+            - ">= 1"
+        granularity:
+          type: varchar
+          description: Data granularity (M5 or H12)
+          constraints:
+            - "IN ('M5', 'H12')"
+      
+      indexes:
+        - name: idx_bitcoin_timestamp
+          columns: [timestamp]
+          type: BTREE
+        - name: idx_bitcoin_snapshot_id
+          columns: [snapshot_id]
+          type: PRIMARY KEY
+    
+    MetadataTable:
+      type: object
+      description: Collection metadata and checkpoints
+      properties:
+        key:
+          type: varchar
+          description: Metadata key (PRIMARY KEY)
+          constraints:
+            - PRIMARY KEY
+        value:
+          type: varchar
+          description: Metadata value (JSON string)
+        updated_at:
+          type: timestamp
+          description: Last update timestamp
+          constraints:
+            - DEFAULT CURRENT_TIMESTAMP
+
+x-ddl-statements:
+  create_ethereum_blocks:
+    sql: |
+      CREATE TABLE IF NOT EXISTS ethereum_blocks (
+          block_number BIGINT PRIMARY KEY,
+          timestamp TIMESTAMP NOT NULL,
+          baseFeePerGas BIGINT CHECK (baseFeePerGas >= 0),
+          gasUsed BIGINT CHECK (gasUsed >= 0),
+          gasLimit BIGINT CHECK (gasLimit >= 0),
+          transactions_count INTEGER CHECK (transactions_count >= 0),
+          CHECK (gasUsed <= gasLimit)
+      );
+      
+      CREATE INDEX IF NOT EXISTS idx_ethereum_timestamp 
+      ON ethereum_blocks(timestamp);
+    
+    description: "Ethereum blocks table with constraints and indexes"
+    estimated_rows: "13,000,000 (5 years)"
+    estimated_size: "~1.5 GB (76-100 bytes/block empirically validated)"
+  
+  create_bitcoin_mempool:
+    sql: |
+      CREATE TABLE IF NOT EXISTS bitcoin_mempool (
+          snapshot_id INTEGER PRIMARY KEY,
+          timestamp TIMESTAMP NOT NULL UNIQUE,
+          unconfirmed_count INTEGER CHECK (unconfirmed_count >= 0),
+          vsize_mb DOUBLE CHECK (vsize_mb >= 0),
+          total_fee_btc DOUBLE CHECK (total_fee_btc >= 0),
+          fastest_fee DOUBLE CHECK (fastest_fee >= 1 AND fastest_fee <= 10000),
+          half_hour_fee DOUBLE CHECK (half_hour_fee >= 1 AND half_hour_fee <= 10000),
+          hour_fee DOUBLE CHECK (hour_fee >= 1 AND hour_fee <= 10000),
+          economy_fee DOUBLE CHECK (economy_fee >= 1 AND economy_fee <= 10000),
+          minimum_fee DOUBLE CHECK (minimum_fee >= 1),
+          granularity VARCHAR CHECK (granularity IN ('M5', 'H24'))
+      );
+      
+      CREATE INDEX IF NOT EXISTS idx_bitcoin_timestamp 
+      ON bitcoin_mempool(timestamp);
+    
+    description: "Bitcoin mempool snapshots with granularity tracking (DEFERRED TO PHASE 2+)"
+    estimated_rows: "1,825 (5 years H24 historical, empirically validated - NOT H12)"
+    estimated_size: "~5 MB"
+    note: "Bitcoin collection deferred to Phase 2+ (SECONDARY priority)"
+  
+  create_metadata:
+    sql: |
+      CREATE TABLE IF NOT EXISTS metadata (
+          key VARCHAR PRIMARY KEY,
+          value VARCHAR,
+          updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      );
+      
+      -- Initialize collection progress checkpoints
+      INSERT OR IGNORE INTO metadata VALUES 
+          ('ethereum_last_block', '0', CURRENT_TIMESTAMP),
+          ('bitcoin_last_snapshot', '0', CURRENT_TIMESTAMP),
+          ('ethereum_start_date', '', CURRENT_TIMESTAMP),
+          ('ethereum_end_date', '', CURRENT_TIMESTAMP),
+          ('collection_version', '0.2.0', CURRENT_TIMESTAMP);
+    
+    description: "Metadata and checkpoint tracking"
+
+x-common-queries:
+  resample_ethereum_1min:
+    description: "Resample 12-second blocks to 1-minute OHLC"
+    sql: |
+      SELECT 
+          time_bucket(INTERVAL '1 minute', timestamp) as timestamp,
+          AVG(baseFeePerGas) as avg_base_fee,
+          MAX(baseFeePerGas) as max_base_fee,
+          MIN(baseFeePerGas) as min_base_fee,
+          FIRST(baseFeePerGas) as open_base_fee,
+          LAST(baseFeePerGas) as close_base_fee,
+          SUM(gasUsed) as total_gas_used,
+          SUM(transactions_count) as total_transactions,
+          COUNT(*) as num_blocks
+      FROM ethereum_blocks
+      WHERE timestamp BETWEEN ? AND ?
+      GROUP BY 1
+      ORDER BY 1;
+    
+    use_case: "Generate 1-minute candles for ML features"
+    performance: "~1 second for 1 month of data (2.6M blocks)"
+  
+  temporal_join_ohlcv:
+    description: "Join Ethereum data with OHLCV at exact timestamps (ASOF JOIN)"
+    sql: |
+      SELECT 
+          ohlcv.timestamp,
+          ohlcv.open,
+          ohlcv.high,
+          ohlcv.low,
+          ohlcv.close,
+          ohlcv.volume,
+          eth.baseFeePerGas,
+          eth.gasUsed,
+          eth.gasLimit,
+          eth.transactions_count,
+          eth.gasUsed::DOUBLE / eth.gasLimit as block_utilization
+      FROM read_parquet('~/.cache/gapless-crypto-data/ohlcv/*.parquet') as ohlcv
+      ASOF LEFT JOIN ethereum_blocks eth
+      ON ohlcv.timestamp >= eth.timestamp
+      ORDER BY ohlcv.timestamp;
+    
+    use_case: "Feature engineering with price + network data"
+    performance: "~2-3 seconds for 525K rows (1 year)"
+  
+  rolling_average_gas:
+    description: "Calculate rolling average gas price with z-score anomaly detection"
+    sql: |
+      SELECT 
+          timestamp,
+          baseFeePerGas,
+          AVG(baseFeePerGas) OVER w as ma_60,
+          STDDEV(baseFeePerGas) OVER w as stddev_60,
+          (baseFeePerGas - AVG(baseFeePerGas) OVER w) / 
+            (STDDEV(baseFeePerGas) OVER w + 1e-10) as z_score
+      FROM ethereum_blocks
+      WINDOW w AS (ORDER BY timestamp ROWS BETWEEN 60 PRECEDING AND CURRENT ROW)
+      QUALIFY ABS(z_score) > 3
+      ORDER BY timestamp;
+    
+    use_case: "Detect gas price anomalies (>3σ from 60-block mean)"
+    performance: "~500ms for full 5-year dataset"
+  
+  export_to_parquet:
+    description: "Export Ethereum data to Parquet for backup"
+    sql: |
+      COPY (
+          SELECT * FROM ethereum_blocks
+          WHERE timestamp BETWEEN ? AND ?
+      ) TO '/path/to/ethereum_20250101.parquet' 
+      (FORMAT PARQUET, COMPRESSION ZSTD);
+    
+    use_case: "Daily backup, data portability"
+    schedule: "Daily cron job"
+
+x-backup-strategy:
+  daily_export:
+    description: "Export new data to Parquet daily"
+    implementation: |
+      # Cron job runs daily at 2 AM
+      duckdb ~/.cache/gapless-network-data/data.duckdb <<SQL
+      COPY (
+          SELECT * FROM ethereum_blocks
+          WHERE timestamp >= CURRENT_DATE - INTERVAL '1 day'
+      ) TO '~/.cache/gapless-network-data/backups/ethereum_$(date +%Y%m%d).parquet'
+      (FORMAT PARQUET, COMPRESSION ZSTD);
+      SQL
+    
+    retention: "Keep 30 days of daily Parquet files, compress older data monthly"
+  
+  weekly_full_backup:
+    description: "Copy entire data.duckdb file weekly"
+    implementation: |
+      # Cron job runs weekly on Sunday at 3 AM
+      cp ~/.cache/gapless-network-data/data.duckdb \
+         ~/.cache/gapless-network-data/backups/data_$(date +%Y%m%d).duckdb
+      
+      # Compress backups older than 4 weeks
+      find ~/.cache/gapless-network-data/backups -name "data_*.duckdb" -mtime +28 -exec gzip {} \;
+    
+    retention: "Keep 8 weeks of weekly backups (2 months)"
+  
+  restore_from_backup:
+    description: "Restore from Parquet backup if DuckDB corrupted"
+    implementation: |
+      # Step 1: Create new DuckDB
+      duckdb ~/.cache/gapless-network-data/data_restored.duckdb <<SQL
+      
+      -- Recreate schema
+      CREATE TABLE ethereum_blocks (...);
+      
+      -- Import from Parquet backups
+      INSERT INTO ethereum_blocks 
+      SELECT * FROM read_parquet('backups/ethereum_*.parquet');
+      
+      SQL
+      
+      # Step 2: Verify row count
+      # Step 3: Replace corrupted file
+      mv data.duckdb data_corrupted.duckdb
+      mv data_restored.duckdb data.duckdb
+
+x-data-integrity:
+  constraints:
+    - "CHECK constraints prevent invalid data (gasUsed <= gasLimit)"
+    - "PRIMARY KEY prevents duplicate blocks"
+    - "UNIQUE timestamp prevents duplicate snapshots"
+    - "NOT NULL ensures required fields present"
+  
+  validation_queries:
+    check_gaps:
+      sql: |
+        WITH gaps AS (
+            SELECT 
+                block_number,
+                LAG(block_number) OVER (ORDER BY block_number) as prev_block,
+                block_number - LAG(block_number) OVER (ORDER BY block_number) - 1 as gap_size
+            FROM ethereum_blocks
+        )
+        SELECT * FROM gaps WHERE gap_size > 0;
+      
+      description: "Detect missing block numbers (gaps in sequence)"
+    
+    check_duplicates:
+      sql: |
+        SELECT block_number, COUNT(*) as count
+        FROM ethereum_blocks
+        GROUP BY block_number
+        HAVING COUNT(*) > 1;
+      
+      description: "Detect duplicate blocks (should return 0 rows)"
+    
+    check_invalid_gas:
+      sql: |
+        SELECT block_number, gasUsed, gasLimit
+        FROM ethereum_blocks
+        WHERE gasUsed > gasLimit;
+      
+      description: "Detect invalid gas usage (should return 0 rows)"
+    
+    check_data_freshness:
+      sql: |
+        SELECT 
+            MAX(timestamp) as latest_block,
+            CURRENT_TIMESTAMP - MAX(timestamp) as data_age,
+            CASE 
+                WHEN CURRENT_TIMESTAMP - MAX(timestamp) > INTERVAL '1 hour' 
+                THEN 'STALE' 
+                ELSE 'FRESH' 
+            END as status
+        FROM ethereum_blocks;
+      
+      description: "Check if data collection is running (latest block < 1 hour old)"
+
+x-performance-tuning:
+  indexes:
+    - "PRIMARY KEY on block_number (automatic index)"
+    - "INDEX on timestamp (for time-range queries)"
+    - "Consider INDEX on baseFeePerGas if filtering by gas price"
+  
+  query_optimization:
+    - "Use time_bucket for aggregations (faster than GROUP BY date_trunc)"
+    - "Use ASOF JOIN instead of manual merge_asof (16x faster)"
+    - "Use QUALIFY for filtering window function results (more efficient)"
+    - "Use read_parquet() for cross-package queries (gapless-crypto-data)"
+  
+  memory_management:
+    - "Batch INSERT (1000 rows at a time) for collection"
+    - "Use prepared statements to avoid SQL parsing overhead"
+    - "VACUUM periodically to reclaim space from DELETEs"
+    - "Consider partitioning if dataset exceeds 100 GB (not needed for 500 MB)"
+
+x-migration-from-parquet:
+  description: "Migration path if user has existing Parquet files"
+  steps:
+    - step: 1
+      action: "Create DuckDB database with schema"
+      command: "duckdb data.duckdb < create_schema.sql"
+    
+    - step: 2
+      action: "Import existing Parquet files"
+      command: |
+        duckdb data.duckdb <<SQL
+        INSERT INTO ethereum_blocks 
+        SELECT * FROM read_parquet('ethereum_*.parquet');
+        SQL
+    
+    - step: 3
+      action: "Verify import"
+      command: |
+        duckdb data.duckdb "SELECT COUNT(*) FROM ethereum_blocks"
+    
+    - step: 4
+      action: "Remove old Parquet files (optional)"
+      note: "Keep as backup until DuckDB verified working"
