@@ -1,3 +1,49 @@
+# 1.0.0 (2025-11-08)
+
+
+### Bug Fixes
+
+* **ci:** include package-lock.json for reproducible semantic-release builds ([d03d8be](https://github.com/terrylica/gapless-network-data/commit/d03d8be0da1c714e5ad7326d9041c4380da3a9c1))
+
+
+### Features
+
+* add GitHub Actions workflow for automated releases ([8b7af4c](https://github.com/terrylica/gapless-network-data/commit/8b7af4c9c125870a17a2e89680e0e37fefaa6f93))
+* migrate to semantic-release v25 (Node.js) for future-proofing ([bb1164e](https://github.com/terrylica/gapless-network-data/commit/bb1164e96f040ac961faabc73ee014b50fa3651e))
+* **refactor:** achieve 100% REFACTOR.md compliance across all skills ([17e867d](https://github.com/terrylica/gapless-network-data/commit/17e867dd9f200439571d3732cee9dfa0bf940367))
+
+
+### BREAKING CHANGES
+
+* **refactor:** None (backward compatible, pure extraction)
+* Switched from python-semantic-release to semantic-release (Node.js) v25.0.2
+
+Rationale:
+- 23.5x larger community (22,900 vs 975 GitHub stars)
+- 100x+ more adoption (1.9M weekly npm downloads)
+- Used by 126,000 projects (vs unknown for python-semantic-release)
+- Better future-proofing with larger maintainer team
+- More robust plugin ecosystem (35+ official plugins)
+- Multi-language support for potential monorepo expansion
+
+Changes:
+- Remove python-semantic-release from pyproject.toml dependencies
+- Remove [tool.semantic_release] configuration from pyproject.toml
+- Add package.json with semantic-release v25.0.2 and plugins
+- Add .releaserc.yml configuration for Python project
+- Update GitHub Actions workflow to use Node.js semantic-release
+- Add .gitignore for node_modules/
+
+Configuration:
+- @semantic-release/commit-analyzer: Analyze conventional commits
+- @semantic-release/release-notes-generator: Generate release notes
+- @semantic-release/changelog: Update CHANGELOG.md
+- @semantic-release/exec: Update pyproject.toml version and build with uv
+- @semantic-release/git: Commit version changes
+- @semantic-release/github: Create GitHub releases with wheel/tarball assets
+
+Verified working locally with dry-run mode.
+
 # Changelog
 
 All notable changes to this project will be documented in this file.
