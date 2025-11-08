@@ -7,13 +7,52 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-### Planned
+### In Progress (v0.2.0 - Historical Data Collection)
 
-- Ethereum block data collection via LlamaRPC (Phase 1)
+**Phase 1: 5-Year Historical Backfill (2020-2025)**
+
+**Ethereum Historical Backfill (PRIMARY)**:
+
+- LlamaRPC integration with archive node access (web3.py)
+- 5-year Ethereum block collection (~13M blocks, 2020-2025)
+- Batch fetching with checkpoint/resume capability
+- Block number resolution (timestamp → block number via binary search)
+- Progress tracking UI (CLI with ETA, blocks/sec)
+- DuckDB storage: ethereum_blocks table (~500 MB)
+
+**Bitcoin Historical Collection (SECONDARY)**:
+
+- mempool.space historical API integration
+- 5-year Bitcoin mempool data (H12 granularity, 3,650 snapshots)
+- DuckDB storage: bitcoin_mempool table (~5 MB)
+
+**Multi-Chain Architecture**:
+
+- Multi-chain API: fetch_snapshots(chain='ethereum'|'bitcoin', mode='historical')
+- Single DuckDB database: data.duckdb with separate tables per chain
+- Chain-specific collectors with dispatch logic
+
+**Data Quality**:
+
+- Basic validation (Layer 1-2: RPC/HTTP + schema validation)
+- DuckDB CHECK constraints (fee ordering, non-negative values)
+- Retry & error handling (exponential backoff, skip failed blocks)
+
+**Testing & Documentation**:
+
+- 70%+ test coverage for both Ethereum and Bitcoin collectors
+- Integration tests (10 blocks Ethereum, 100 snapshots Bitcoin)
+- Schema documentation (duckdb-schema-specification.yaml)
+- Updated DATA_FORMAT.md with DuckDB tables
+
+**Timeline**: 3-4 weeks development + 7 days machine runtime (150 hours for Ethereum at 1 req/sec)
+
+### Deferred to Phase 2+
+
+- Forward-only collection (real-time block/mempool streaming)
+- Complete 5-layer validation pipeline (Layers 3-5: sanity, gaps, anomalies)
+- Gap detection for real-time mode
 - ETag caching for mempool.space API
-- 5-layer validation pipeline (HTTP/RPC, Schema, Sanity, Gaps, Anomalies)
-- Gap detection and automated backfill
-- DuckDB query engine integration
 - Multi-chain expansion (Solana, Avalanche, Polygon)
 
 ## [0.1.0] - 2025-11-04
