@@ -1,3 +1,16 @@
+# [1.1.0](https://github.com/terrylica/gapless-network-data/compare/v1.0.0...v1.1.0) (2025-11-09)
+
+
+### Bug Fixes
+
+* update Node.js engine requirement to v22.14.0 minimum ([81f0281](https://github.com/terrylica/gapless-network-data/commit/81f02814f1c46182964b1f2b076df10037fa7b0f))
+
+
+### Features
+
+* add DuckDB integration for Phase 1 historical collection ([e32dc48](https://github.com/terrylica/gapless-network-data/commit/e32dc48b0b95e1b207a82f2e96bfebfb1bbd661a))
+* add MotherDuck integration with dual-pipeline architecture ([c0b8fd3](https://github.com/terrylica/gapless-network-data/commit/c0b8fd3293408a5cd5386cdf90932e89a8fc627b))
+
 # 1.0.0 (2025-11-08)
 
 ### Bug Fixes
