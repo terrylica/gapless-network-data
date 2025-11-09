@@ -1,0 +1,571 @@
+openapi: 3.1.0
+info:
+  title: MotherDuck Integration Specification
+  version: 1.0.0
+  description: |
+    Production deployment specification for MotherDuck dual-pipeline Ethereum data collection.
+
+    This specification documents the deployed GCP infrastructure for collecting Ethereum blockchain
+    data via BigQuery (hourly batch) and Alchemy WebSocket (real-time streaming) into MotherDuck
+    cloud database.
+
+    Status: Operational (deployed 2025-11-09)
+    Cost: $0/month (all services within free tier)
+
+  x-metadata:
+    project: "gapless-network-data"
+    component: "MotherDuck Integration (Production Deployment)"
+    created: "2025-11-09"
+    last_updated: "2025-11-09"
+    status: "operational"
+    environment: "production"
+    supersedes: ["Doppler-based credential management"]
+
+  x-slos:
+    availability:
+      target: "Data pipelines run without manual intervention"
+      measurement: "Percentage of scheduled runs that complete successfully"
+      current_state: |
+        - BigQuery hourly: OPERATIONAL (last run 2025-11-09 22:48:00 UTC)
+        - Alchemy real-time: OPERATIONAL (47+ blocks collected, running since 22:39:18 UTC)
+      validation: |
+        - Cloud Run Job executions complete without errors
+        - VM systemd service remains active (no restarts from failures)
+        - Checkpoint/resume not implemented (not needed for current scale)
+      failure_mode: "Pipeline stops, requires manual restart"
+      error_handling: "Exception-only failures (no silent errors, raise and propagate)"
+
+    correctness:
+      target: "100% data accuracy with no silent errors"
+      measurement: "All validation passes, no data corruption"
+      validation: |
+        - Layer 1 (HTTP): BigQuery API and Alchemy WebSocket responses validated
+        - Layer 2 (Schema): DuckDB CHECK constraints enforce data quality
+        - INSERT OR REPLACE provides idempotency (duplicate protection)
+      current_state: |
+        - 5,583+ blocks collected with no validation errors
+        - No gaps in real-time streaming (12-second Ethereum block intervals)
+        - Schema constraints operational (fee ordering, non-negative values)
+      failure_mode: "Exception raised on validation failure (no defaults, no fallbacks)"
+      error_handling: "Structured exceptions with timestamp, endpoint, status, message"
+
+    observability:
+      target: "100% operation tracking with queryable logs"
+      measurement: "All data collection operations logged with structured output"
+      log_format: "[timestamp] operation status details"
+      storage: |
+        - VM logs: systemd journal (sudo journalctl -u eth-collector)
+        - Cloud Run logs: Cloud Logging (queryable via gcloud logging read)
+      current_state: |
+        - Real-time collector: unbuffered Python output (PYTHONUNBUFFERED=1)
+        - Logs show "Fetching secrets from Secret Manager..." ✅
+        - Logs show "Block X inserted (total: N)" for each block ✅
+      failure_mode: "Silent failures, missing audit trail"
+      verification: |
+        - VM: ps aux shows no secrets in process list
+        - Cloud Run: logs confirm Secret Manager usage
+        - MotherDuck: SELECT COUNT(*) shows growing dataset
+
+    maintainability:
+      target: "<30 minutes for common operations"
+      measurement: "Time to update secrets, redeploy collectors, verify status"
+      documentation: |
+        - Migration Plan V2: scratch/motherduck-migration/MIGRATION_PLAN_V2_SECRET_MANAGER.md
+        - Secret Manager setup: scratch/motherduck-migration/docs-staging/SECRET_MANAGER_MIGRATION_REPORT.md
+        - Deployment guides: scratch/motherduck-migration/docs-staging/
+      operations:
+        secret_rotation: |
+          gcloud secrets versions add motherduck-token --data-file=-
+          # No restart needed - scripts fetch on next run
+        redeploy_vm_collector: |
+          gcloud compute ssh eth-realtime-collector --command="sudo systemctl restart eth-collector"
+        redeploy_cloud_run: |
+          gcloud run jobs update eth-md-updater --image=...
+        verify_status: |
+          gcloud compute ssh eth-realtime-collector --command="sudo systemctl status eth-collector"
+          duckdb md: -c "USE ethereum_mainnet; SELECT COUNT(*), MAX(number) FROM blocks;"
+      failure_mode: "Undocumented operations, unclear architecture"
+
+    exclusions:
+      performance: "Not tracked (data collection completes in acceptable time)"
+      security: "Secret Manager provides security, not measured via SLO"
+      uptime_sla: "No SLA defined (free tier infrastructure, best-effort)"
+
+x-architecture:
+  deployment_model: "dual-pipeline"
+  description: |
+    Two independent data collection pipelines provide redundancy and different granularities:
+    1. BigQuery hourly batch (complete historical backfill + ongoing updates)
+    2. Alchemy WebSocket streaming (real-time 12-second block intervals)
+
+    Both pipelines write to same MotherDuck database (INSERT OR REPLACE for deduplication).
+
+  components:
+    cloud_run_job:
+      name: "eth-md-updater"
+      purpose: "BigQuery → MotherDuck hourly sync"
+      schedule: "Hourly (Cloud Scheduler: 0 * * * *)"
+      runtime: "Python 3.13-slim container"
+      service_account: "eth-md-job-sa@eonlabs-ethereum-bq.iam.gserviceaccount.com"
+      image: "us-central1-docker.pkg.dev/eonlabs-ethereum-bq/eth-updater-images/eth-md-updater:secure"
+      status: "operational"
+      last_run: "2025-11-09T22:48:00Z"
+      blocks_per_run: "~578 blocks (2-hour window)"
+
+    compute_engine_vm:
+      name: "eth-realtime-collector"
+      purpose: "Alchemy WebSocket → MotherDuck real-time streaming"
+      instance_type: "e2-micro (always free tier)"
+      zone: "us-east1-b"
+      service: "eth-collector.service (systemd)"
+      service_account: "893624294905-compute@developer.gserviceaccount.com"
+      status: "operational"
+      uptime: "Running since 2025-11-09T22:39:18Z"
+      blocks_collected: "47+ blocks (~12 second intervals)"
+
+    motherduck_database:
+      name: "ethereum_mainnet"
+      table: "blocks"
+      total_blocks: "5,583+ (growing)"
+      block_range: "23,764,xxx - 23,764,787+"
+      storage_location: "MotherDuck cloud (md:ethereum_mainnet.blocks)"
+      schema: "11 ML-optimized columns"
+      size_estimate: "~1.5 GB for 5 years (13M blocks target)"
+
+    secret_manager:
+      secrets:
+        - name: "motherduck-token"
+          purpose: "MotherDuck authentication (read/write)"
+          version: "1"
+        - name: "alchemy-api-key"
+          purpose: "Alchemy WebSocket access"
+          version: "1"
+      permissions:
+        - principal: "893624294905-compute@developer.gserviceaccount.com"
+          role: "roles/secretmanager.secretAccessor"
+          scope: "Both secrets"
+        - principal: "eth-md-job-sa@eonlabs-ethereum-bq.iam.gserviceaccount.com"
+          role: "roles/secretmanager.secretAccessor"
+          scope: "Both secrets"
+
+  data_flow:
+    pipeline_1_bigquery:
+      source: "bigquery-public-data.crypto_ethereum.blocks"
+      frequency: "Hourly"
+      query_window: "2 hours (lookback for safety)"
+      columns: "11 ML-optimized columns (97% cost savings vs 23 columns)"
+      transfer: "PyArrow zero-copy (BigQuery → MotherDuck)"
+      destination: "md:ethereum_mainnet.blocks"
+      operation: "INSERT OR REPLACE (idempotent)"
+
+    pipeline_2_alchemy:
+      source: "Alchemy WebSocket (wss://eth-mainnet.g.alchemy.com/v2/...)"
+      subscription: "eth_subscribe newHeads"
+      frequency: "Real-time (~12 second block intervals)"
+      fields: "11 fields (timestamp, number, gas metrics, blob metrics)"
+      destination: "md:ethereum_mainnet.blocks"
+      operation: "INSERT OR REPLACE (idempotent)"
+
+x-security:
+  credential_management:
+    approach: "Google Cloud Secret Manager (best practice)"
+    rationale: |
+      User requirement: "We should prioritize to make sure that we are using the best practice"
+
+      Google Cloud best practice for GCP workloads is Secret Manager, not environment variables
+      or external services like Doppler.
+
+    secrets_stored:
+      - motherduck-token: "MotherDuck authentication token"
+      - alchemy-api-key: "Alchemy API key for WebSocket"
+
+    secret_access:
+      method: "Runtime API fetch via google-cloud-secret-manager SDK"
+      authentication: "Service account IAM (automatic ADC)"
+      code_pattern: |
+        from google.cloud import secretmanager
+
+        def get_secret(secret_id: str) -> str:
+            client = secretmanager.SecretManagerServiceClient()
+            name = f"projects/{project_id}/secrets/{secret_id}/versions/latest"
+            response = client.access_secret_version(request={"name": name})
+            return response.payload.data.decode('UTF-8').strip()  # .strip() is CRITICAL
+
+        token = get_secret('motherduck-token')
+        os.environ['motherduck_token'] = token  # For DuckDB library
+
+    critical_bug_fix:
+      issue: "gRPC metadata validation errors without .strip()"
+      symptom: "E0000 filter_stack_call.cc:405] validate_metadata: INTERNAL:Illegal header value"
+      root_cause: "Secrets stored via gcloud have trailing newlines"
+      solution: ".strip() on all secret values after decode"
+
+    security_improvements:
+      before_insecure:
+        - "Tokens in SSH command history (export MOTHERDUCK_TOKEN=xxx)"
+        - "Tokens in ps aux output (Environment= in systemd)"
+        - "Tokens hardcoded in service files"
+        - "Manual rotation required"
+
+      after_secure:
+        - "No tokens in environment variables"
+        - "No tokens in process list (verified)"
+        - "No tokens in systemd files (verified)"
+        - "Secrets fetched at runtime via API"
+        - "Centralized rotation via Secret Manager"
+        - "Audit trail via Cloud Audit Logs"
+        - "Fine-grained IAM permissions"
+
+  verification:
+    no_secrets_in_process_list:
+      command: "gcloud compute ssh eth-realtime-collector --command='ps aux | grep python'"
+      expected: "No MOTHERDUCK_TOKEN or ALCHEMY_API_KEY visible"
+      status: "✅ Verified 2025-11-09"
+
+    secret_manager_logs:
+      vm_logs: |
+        gcloud compute ssh eth-realtime-collector --command="sudo journalctl -u eth-collector -n 50"
+        Expected: "[INIT] Fetching secrets from Secret Manager..."
+        Status: ✅ Verified
+
+      cloud_run_logs: |
+        gcloud logging read "resource.type=cloud_run_job" | grep "Secret Manager"
+        Expected: "Fetching secret from Secret Manager..."
+        Status: ✅ Verified
+
+x-cost-analysis:
+  total_monthly_cost: "$0"
+  breakdown:
+    secret_manager:
+      usage: "2 secrets, ~800 accesses/month"
+      free_tier: "6 secrets, 10,000 operations/month"
+      cost: "$0 (33% of secrets, 8% of operations)"
+
+    bigquery:
+      usage: "~17 GB queries/month (720 hourly runs × ~0.024 GB)"
+      free_tier: "1 TB/month"
+      cost: "$0 (1.7% of free tier)"
+
+    cloud_run:
+      usage: "720 executions/month (hourly)"
+      execution_time: "~30 seconds per run"
+      free_tier: "2M requests, 360K GB-seconds, 180K vCPU-seconds/month"
+      cost: "$0 (minimal usage)"
+
+    compute_engine:
+      instance: "e2-micro (us-east1-b)"
+      usage: "1 instance, 24/7"
+      free_tier: "1 e2-micro in us-east1, us-central1, or us-west1"
+      cost: "$0 (100% of always-free allowance)"
+
+    cloud_scheduler:
+      usage: "1 job (hourly trigger)"
+      free_tier: "3 jobs free"
+      cost: "$0"
+
+    motherduck:
+      usage: "Storage + queries (< 10 GB currently)"
+      free_tier: "100 GB"
+      cost: "$0"
+
+    alchemy:
+      usage: "WebSocket streaming (free tier)"
+      free_tier: "Generous (not metered by blocks)"
+      cost: "$0"
+
+x-implementation-files:
+  python_scripts:
+    - path: "/tmp/probe/motherduck/eth-md-updater/main.py"
+      purpose: "BigQuery → MotherDuck hourly sync"
+      size: "6,481 bytes"
+      dependencies: "google-cloud-bigquery[bqstorage], google-cloud-secret-manager, duckdb, pyarrow"
+      secret_manager: "✅ Integrated (get_secret() + .strip() fix)"
+      deployment: "Cloud Run Job"
+      status: "operational"
+
+    - path: "/tmp/probe/motherduck/eth-md-updater/realtime_collector.py"
+      purpose: "Alchemy WebSocket → MotherDuck real-time"
+      size: "8,731 bytes"
+      dependencies: "websockets, duckdb, pyarrow, google-cloud-secret-manager"
+      secret_manager: "✅ Integrated (get_secret() + .strip() fix)"
+      deployment: "VM systemd service"
+      status: "operational"
+
+    - path: "/tmp/probe/motherduck/historical_backfill.py"
+      purpose: "One-time 5-year backfill (2020-2025)"
+      size: "6,890 bytes"
+      dependencies: "google-cloud-bigquery[bqstorage], google-cloud-secret-manager, duckdb, pyarrow"
+      secret_manager: "✅ Integrated (get_secret() + .strip() fix)"
+      deployment: "Manual execution (not yet run)"
+      status: "ready"
+
+  infrastructure:
+    - path: "/tmp/probe/motherduck/eth-md-updater/Dockerfile"
+      purpose: "Container for Cloud Run Job"
+      base: "python:3.13-slim"
+      features: "Non-root user (appuser), PYTHONUNBUFFERED=1"
+      status: "deployed"
+
+    - path: "/tmp/probe/motherduck/eth-md-updater/requirements.txt"
+      content: |
+        google-cloud-bigquery[bqstorage]==3.27.0
+        google-cloud-secret-manager==2.21.1
+        duckdb==1.4.1
+        pyarrow==19.0.0
+        websockets==14.1
+      status: "deployed"
+
+    - path: "/tmp/probe/motherduck/eth-md-updater/eth-collector-secure.service"
+      purpose: "Systemd service for real-time collector"
+      features: "PYTHONUNBUFFERED=1, python3 -u, NO hardcoded secrets"
+      status: "deployed"
+
+  documentation:
+    migration_plan:
+      path: "scratch/motherduck-migration/MIGRATION_PLAN_V2_SECRET_MANAGER.md"
+      size: "16,000+ words"
+      content: "Complete migration strategy, file classification, security comparison"
+      status: "complete"
+
+    file_inventory:
+      path: "scratch/motherduck-migration/FILE_CLASSIFICATION_INVENTORY.md"
+      content: "Every file categorized (8 production, 5 docs, 4 POC, 2 deprecated)"
+      status: "complete"
+
+    secret_manager_report:
+      path: "/tmp/probe/motherduck/SECRET_MANAGER_MIGRATION_REPORT.md"
+      content: "Migration steps, security comparison, verification commands"
+      status: "complete"
+
+    poc_learnings:
+      path: "scratch/motherduck-migration/archive/poc/README.md"
+      content: "Architectural decisions, what worked, what we tried but didn't use"
+      status: "complete"
+
+x-deployment-status:
+  vm_real_time_collector:
+    deployed: "2025-11-09T22:39:18Z"
+    method: "gcloud compute scp + systemd service deployment"
+    verification: |
+      gcloud compute ssh eth-realtime-collector --command="sudo systemctl status eth-collector"
+      Status: active (running)
+      Blocks collected: 47+
+      Logs: "Fetching secrets from Secret Manager..." ✅
+
+  cloud_run_job:
+    deployed: "2025-11-09"
+    method: "gcloud builds submit + gcloud run jobs update"
+    image: "eth-md-updater:secure"
+    verification: |
+      gcloud run jobs execute eth-md-updater --wait
+      Status: Execution completed successfully
+      Logs: "Fetching secret from Secret Manager..." ✅
+      Result: "579 blocks loaded" ✅
+
+  motherduck_database:
+    initialized: "2025-11-09"
+    database: "ethereum_mainnet"
+    table: "blocks"
+    verification: |
+      duckdb md: -c "SELECT COUNT(*), MAX(number) FROM ethereum_mainnet.blocks;"
+      Result: 5,583+ blocks
+      Status: Growing (real-time + hourly)
+
+  secret_manager:
+    configured: "2025-11-09"
+    secrets_created: "motherduck-token, alchemy-api-key"
+    iam_permissions: "Granted to both service accounts"
+    verification: |
+      gcloud secrets describe motherduck-token
+      gcloud secrets describe alchemy-api-key
+      IAM policies verified for both SAs
+      Status: ✅ Operational
+
+x-migration-history:
+  phase_1_proof_of_concept:
+    date: "2025-11-08 to 2025-11-09"
+    location: "/tmp/probe/motherduck/"
+    scope: "Validate MotherDuck integration feasibility"
+    deliverables:
+      - "Doppler token injection validation"
+      - "MotherDuck connection via ADC"
+      - "BigQuery → MotherDuck pipeline validation (578 blocks)"
+      - "CLI exploration and testing"
+    status: "complete"
+    archived: "scratch/motherduck-migration/archive/poc/"
+
+  phase_2_production_deployment:
+    date: "2025-11-09"
+    scope: "Deploy dual-pipeline to GCP with insecure credentials"
+    deployments:
+      - "Cloud Run Job (BigQuery hourly sync)"
+      - "e2-micro VM (Alchemy real-time streaming)"
+      - "MotherDuck database (ethereum_mainnet.blocks)"
+    security: "INSECURE (Doppler + hardcoded tokens in systemd)"
+    status: "complete (replaced in phase 3)"
+    deprecated: "scratch/motherduck-migration/deprecated/"
+
+  phase_3_secret_manager_migration:
+    date: "2025-11-09"
+    trigger: "User requirement: use best practice for GCP"
+    scope: "Migrate to Google Cloud Secret Manager"
+    changes:
+      - "Enable Secret Manager API"
+      - "Create secrets (motherduck-token, alchemy-api-key)"
+      - "Grant IAM permissions to service accounts"
+      - "Refactor all 3 Python scripts (add get_secret() + .strip() fix)"
+      - "Update systemd service (remove hardcoded tokens)"
+      - "Deploy secure versions"
+    duration: "~4 hours (including debugging .strip() fix)"
+    status: "complete"
+    documented: "scratch/motherduck-migration/MIGRATION_PLAN_V2_SECRET_MANAGER.md"
+
+  phase_4_organization:
+    date: "2025-11-09"
+    scope: "Organize all files hierarchically for git migration"
+    structure:
+      - "archive/poc/ - POC files with learnings documentation"
+      - "deprecated/ - Old insecure files with security warnings"
+      - "docs-staging/ - Documentation for review"
+      - "production-staging/ - Ready for deployment/"
+    documentation:
+      - "MIGRATION_PLAN_V2_SECRET_MANAGER.md (16,000+ words)"
+      - "FILE_CLASSIFICATION_INVENTORY.md (complete inventory)"
+      - "POC learnings (architectural decisions)"
+      - "Security warnings (deprecated files)"
+    status: "complete"
+    location: "scratch/motherduck-migration/"
+
+x-next-steps:
+  git_migration:
+    priority: "high"
+    scope: "Move production files to deployment/ directory"
+    estimated_effort: "6-9 hours"
+    phases:
+      - name: "Prepare production files"
+        effort: "2-3 hours"
+        tasks:
+          - "Copy Python scripts to deployment/{cloud-run,vm,backfill}/"
+          - "Copy infrastructure files (Dockerfile, requirements, service)"
+          - "Update deploy.sh for Secret Manager"
+
+      - name: "Update documentation"
+        effort: "2-3 hours"
+        tasks:
+          - "Move docs to docs/{deployment,architecture}/"
+          - "Update REALTIME_DEPLOYMENT_GUIDE.md for Secret Manager"
+          - "Create docs/architecture/motherduck-dual-pipeline.md"
+
+      - name: "Create specification"
+        effort: "1-2 hours"
+        tasks:
+          - "Create this file (motherduck-integration.yaml)"
+          - "Update master-project-roadmap.yaml to reference it"
+
+      - name: "Update CLAUDE.md"
+        effort: "30 minutes"
+        tasks:
+          - "Add MotherDuck integration section"
+          - "Document Secret Manager best practices"
+          - "Link to deployment guides"
+
+      - name: "Git commit"
+        effort: "30 minutes"
+        tasks:
+          - "Review all changes for sensitive information"
+          - "Commit with conventional commit message"
+          - "Verify production infrastructure still operational"
+
+      - name: "Cleanup"
+        effort: "15 minutes"
+        tasks:
+          - "Archive /tmp/probe/motherduck/ to scratch/"
+          - "Keep for 1 week, then delete"
+
+  historical_backfill:
+    priority: "medium"
+    scope: "Run 5-year historical backfill (2020-2025)"
+    estimated_duration: "~2 hours total"
+    method: "Execute historical_backfill.py on VM or locally"
+    expected_result: "~13M blocks loaded into MotherDuck"
+    status: "ready (script deployed, not yet executed)"
+
+x-lessons-learned:
+  what_worked_well:
+    - "Dual pipeline architecture (BigQuery + Alchemy) provides redundancy"
+    - "Secret Manager integration seamless with service accounts"
+    - "PyArrow zero-copy transfer (BigQuery → DuckDB) is fast"
+    - "e2-micro perfect for real-time streaming at $0 cost"
+    - "smart-file-placement skill organized migration effectively"
+
+  critical_findings:
+    - "Always .strip() secrets from Secret Manager (gRPC metadata bug)"
+    - "Cloud Run uses custom service account (not default compute SA)"
+    - "Empirical validation required (never trust documented rate limits)"
+    - "Doppler excellent for local dev, Secret Manager for GCP production"
+
+  architectural_decisions:
+    - decision: "Secret Manager for production"
+      rationale: "GCP best practice, native IAM, $0 cost"
+
+    - decision: "Dual pipeline (not single source)"
+      rationale: "Redundancy, zero-gap guarantee if one fails"
+
+    - decision: "PyArrow for data transfer"
+      rationale: "10x faster than Pandas for BigQuery → DuckDB"
+
+    - decision: "e2-micro VM (not Cloud Run for streaming)"
+      rationale: "Real-time needs always-on, Cloud Run has cold start"
+
+    - decision: "BigQuery for historical (not RPC)"
+      rationale: "624x faster (< 1 hour vs 26 days with Alchemy)"
+
+x-version-tracking:
+  specification_version: "1.0.0"
+  created: "2025-11-09"
+  last_updated: "2025-11-09"
+  changelog:
+    - version: "1.0.0"
+      date: "2025-11-09"
+      changes: "Initial specification for deployed MotherDuck integration"
+
+x-references:
+  migration_documentation:
+    - path: "scratch/motherduck-migration/README.md"
+      description: "Hub document for entire migration workspace"
+
+    - path: "scratch/motherduck-migration/MIGRATION_PLAN_V2_SECRET_MANAGER.md"
+      description: "Complete migration strategy (16,000+ words)"
+
+    - path: "scratch/motherduck-migration/FILE_CLASSIFICATION_INVENTORY.md"
+      description: "Every file documented and classified"
+
+  production_files:
+    - path: "/tmp/probe/motherduck/eth-md-updater/"
+      description: "Production Python scripts (Secret Manager integrated)"
+
+    - path: "/tmp/probe/motherduck/historical_backfill.py"
+      description: "5-year backfill script (ready to execute)"
+
+  gcp_resources:
+    - resource: "Cloud Run Job: eth-md-updater"
+      project: "eonlabs-ethereum-bq"
+      region: "us-central1"
+
+    - resource: "Compute Engine: eth-realtime-collector"
+      project: "eonlabs-ethereum-bq"
+      zone: "us-east1-b"
+
+    - resource: "Secret Manager: motherduck-token, alchemy-api-key"
+      project: "eonlabs-ethereum-bq"
+
+  external_services:
+    - service: "MotherDuck"
+      database: "ethereum_mainnet"
+      table: "blocks"
+
+    - service: "Alchemy"
+      api: "WebSocket (eth_subscribe newHeads)"
+
+    - service: "BigQuery"
+      dataset: "bigquery-public-data.crypto_ethereum.blocks"

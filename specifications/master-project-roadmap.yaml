@@ -796,6 +796,34 @@ x-sub-specifications:
       bitcoin: "Deferred to Phase 2+"
     reference: "Defines Phase 1 collection mode (BigQuery bulk download, NOT RPC streaming)"
 
+  motherduck_integration:
+    file: "/Users/terryli/eon/gapless-network-data/specifications/motherduck-integration.yaml"
+    status: "operational"
+    created_date: "2025-11-09"
+    scope: "Production deployment of MotherDuck dual-pipeline Ethereum data collection"
+    priority: "P0"
+    environment: "production"
+    deployment_status: "operational (deployed 2025-11-09)"
+    components:
+      - "Cloud Run Job: eth-md-updater (BigQuery → MotherDuck hourly sync)"
+      - "Compute Engine: eth-realtime-collector (Alchemy WebSocket streaming)"
+      - "MotherDuck: ethereum_mainnet.blocks (5,583+ blocks)"
+      - "Secret Manager: motherduck-token, alchemy-api-key"
+    slos:
+      availability: "Data pipelines run without manual intervention"
+      correctness: "100% data accuracy with no silent errors"
+      observability: "100% operation tracking with queryable logs"
+      maintainability: "<30 minutes for common operations"
+    cost: "$0/month (all services within free tier)"
+    migration_history:
+      - "Phase 1: POC (Doppler validation, MotherDuck connection, BigQuery pipeline)"
+      - "Phase 2: Production deployment (insecure Doppler credentials)"
+      - "Phase 3: Secret Manager migration (best practice security)"
+      - "Phase 4: Organization (hierarchical file structure, documentation)"
+    next_steps:
+      - "Git migration (6-9 hours, move production files to deployment/)"
+      - "Historical backfill execution (2 hours, 13M blocks)"
+
 x-implementation-findings:
   finding_1:
     date: "2025-11-03"

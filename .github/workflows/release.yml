@@ -1,51 +1,42 @@
-name: Semantic Release
+name: Release
 
 on:
   push:
     branches:
       - main
+      - beta
+
+permissions:
+  contents: write
+  issues: write
+  pull-requests: write
+  id-token: write  # Required for OIDC trusted publishing (2025 standard)
 
 jobs:
   release:
+    name: Automated Release
     runs-on: ubuntu-latest
-    concurrency: release
-    permissions:
-      id-token: write
-      contents: write
-      issues: write
-      pull-requests: write
 
     steps:
-      - name: Checkout code
+      - name: Checkout
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
-          token: ${{ secrets.GITHUB_TOKEN }}
+          persist-credentials: false
 
-      - name: Set up Node.js
+      - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '24'
+          node-version: '24'  # semantic-release v25+ requires Node 22.14+ (v24.10.0+ for v24 range)
 
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.12'
-
-      - name: Install uv
-        uses: astral-sh/setup-uv@v5
-        with:
-          enable-cache: true
-
-      - name: Install Node.js dependencies
+      - name: Install dependencies
         run: npm ci
 
-      - name: Verify repository configuration
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
+      - name: Verify dependency signatures
+        run: npm audit signatures
 
-      - name: Run semantic-release
+      - name: Release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # NPM_TOKEN not needed with OIDC trusted publishing
         run: npm run release
