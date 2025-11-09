@@ -187,6 +187,40 @@ Project-specific skills that capture validated workflows from scratch investigat
 
 **Package**: Available as `/Users/terryli/eon/gapless-network-data/blockchain-data-collection-validation.zip ` for distribution
 
+### bigquery-ethereum-data-acquisition
+
+**Description**: Workflow for acquiring historical Ethereum blockchain data using Google BigQuery free tier. Empirically validated for cost estimation, streaming downloads, and DuckDB integration. Use when planning bulk historical data acquisition or comparing data source options.
+
+**Key Principle**: BigQuery public datasets provide 624x speedup over RPC polling for historical backfills (< 1 hour vs 26 days).
+
+**What This Skill Provides**:
+
+- 5-step workflow (Free Tier → Column Selection → Cost Validation → Stream Download → DuckDB Import)
+- Column selection analysis: 11 columns optimized for ML/time-series (97% cost savings vs all 23 columns)
+- Scripts: `test_bigquery_cost.py`, `download_bigquery_to_parquet.py`
+- References: `ethereum_columns_ml_evaluation.md` (all 23 columns analyzed), `cost-analysis.md` (BigQuery vs RPC comparison)
+- Empirical validation: 0.97 GB cost (0.1% free tier), 62 bytes/row, DuckDB <100ms queries
+
+**When to Use**:
+
+- Acquiring 5 years of Ethereum historical data (2020-2025, ~13M blocks)
+- Evaluating BigQuery vs RPC polling approaches
+- Optimizing column selection for feature engineering
+- Planning free tier utilization and cost optimization
+- Comparing data source options for blockchain network metrics
+
+**Key Finding**: 11-column selection provides complete ML/forecasting capability while discarding 12 columns (hash fields, Merkle roots) with zero predictive value. Reduces query cost from 34.4 GB → 0.97 GB (97% savings).
+
+**Column Selection Rationale**:
+- ✅ KEEP (11): timestamp, number, gas_limit, gas_used, base_fee_per_gas, transaction_count, difficulty, total_difficulty, size, blob_gas_used, excess_blob_gas
+- ❌ DISCARD (12): Cryptographic hashes (random), Merkle roots (deterministic checksums), arbitrary miner data
+
+**Validated Pattern From**: Empirical testing 2025-11-07 (cost dry-run, Parquet download, DuckDB integration all tested)
+
+**Complete Documentation**: See `.claude/skills/bigquery-ethereum-data-acquisition/references/ethereum_columns_ml_evaluation.md` for detailed column-by-column ML value analysis
+
+**Package**: Available as `/Users/terryli/eon/gapless-network-data/bigquery-ethereum-data-acquisition.zip ` for distribution
+
 ## SDK Quality Standards
 
 **Primary Use Case**: Programmatic API consumption (`import gapless_network_data`) by downstream packages and AI coding agents
