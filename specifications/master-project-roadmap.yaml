@@ -20,11 +20,11 @@ info:
     project_version: "v0.1.0 (alpha)"
     current_phase: "Phase 0: Foundation (complete), Phase 1: Basic Collection (planned)"
     next_milestone: "v0.2.0 (Ethereum PRIMARY + Bitcoin SECONDARY collection)"
-    last_updated: "2025-11-04T01:00:00Z"
+    last_updated: "2025-11-08T03:00:00Z"
     supersedes: ["duckdb-integration-strategy.yaml (implementation-focused roadmap)"]
     focus_shift: |
       1. Feature-driven planning (WHAT to collect) vs architecture-driven (HOW to implement)
-      2. Ethereum LlamaRPC (12s high-frequency) as PRIMARY focus, Bitcoin mempool.space (5min low-frequency) as SECONDARY
+      2. Ethereum BigQuery (instant 5-year historical) as PRIMARY, Bitcoin mempool.space (5min low-frequency) as SECONDARY
       3. Chronological phase ordering: Collection → Quality → Features → Expansion → Production → Release
 
   x-architecture:
@@ -113,7 +113,8 @@ x-project-phases:
 
       data_sources:
         - "mempool.space: M5 recent, H12 historical (Bitcoin)"
-        - "LlamaRPC: 12s block-level, 2015+ archive (Ethereum)"
+        - "BigQuery: Instant 5-year historical (2015+ archive, Ethereum public dataset)"
+        - "RPC streaming deferred to Phase 2+ (real-time forward collection)"
         - "No multi-source redundancy for Bitcoin (single public API)"
 
       documentation:
@@ -141,85 +142,90 @@ x-project-phases:
   phase_1_basic_collection:
     name: "Historical Data Collection (5-Year Backfill)"
     status: "planned"
-    estimated_duration: "3-4 weeks development + 22-27 days machine runtime (530-650 hours at 5.5-6.85 blocks/sec)"
+    estimated_duration: "2-4 hours total (< 1 hour data acquisition + 2-3 hours implementation)"
     dependencies: ["phase_0_foundation"]
-    validation_status: "Empirically validated 2025-11-04 - see scratch/README.md"
+    validation_status: "Empirically validated 2025-11-07 - see .claude/skills/bigquery-ethereum-data-acquisition/"
 
     objectives:
-      - "Collect 5 years of Ethereum block data (2020-2025, ~13M blocks) - PRIMARY HISTORICAL BACKFILL"
+      - "Collect 5 years of Ethereum block data (2020-2025, ~13M blocks) via BigQuery - PRIMARY HISTORICAL BACKFILL"
       - "Store in DuckDB PRIMARY (single data.duckdb file, ~1.5 GB for Ethereum)"
-      - "Batch fetching with checkpoint/resume capability (survive 22-27 day runtime)"
-      - "Basic validation (RPC/HTTP, schema)"
+      - "Instant bulk download (< 1 hour total, 624x faster than RPC polling)"
+      - "Basic validation (schema, constraints)"
       - "Bitcoin collection deferred to Phase 2+ (SECONDARY priority)"
 
-    priority_note: "Historical backfill is PRIMARY goal. Forward-only collection (real-time) is deferred to Phase 2+."
+    priority_note: "BigQuery provides instant historical backfill (<1 hour). Real-time forward collection (streaming updates) deferred to Phase 2+."
 
-    collection_mode: "historical"
+    collection_mode: "historical_bulk"
     architectural_decision: |
-      Phase 1 focuses on historical data collection (5 years back), NOT real-time forward collection.
-      This allows building complete historical dataset first, then adding real-time collection later.
+      Phase 1 uses Google BigQuery public dataset for instant 5-year historical backfill.
+      This allows building complete historical dataset in <1 hour, then adding real-time
+      streaming updates in Phase 2.
 
       Rationale:
-      - Use case requires historical data for feature engineering and backtesting
-      - Ethereum archive nodes (LlamaRPC) provide complete history from 2015+
-      - Real-time collection can be added as incremental feature in Phase 2
+      - BigQuery: 624x faster than RPC polling (< 1 hour vs 26 days)
+      - Free tier: 1 TB/month query limit (0.97 GB for 13M blocks = 0.1% usage)
+      - Complete dataset: All 13M blocks instantly available from public dataset
+      - Column optimization: 11 ML-optimized columns = 97% cost savings vs all 23 columns
+      - Real-time streaming can be added as incremental feature in Phase 2
 
     features:
       ethereum_historical_backfill:
-        name: "Ethereum 5-Year Historical Backfill"
+        name: "Ethereum 5-Year Historical Backfill via BigQuery"
         priority: "P0"
-        effort: "20-30 hours development + 150 hours machine runtime"
+        effort: "2-4 hours total (< 1 hour data download + 2-3 hours implementation)"
         status: "pending"
-        detailed_specification: "/Users/terryli/eon/gapless-network-data/specifications/ethereum-collector-phase1.yaml"
+        detailed_specification: "/Users/terryli/eon/gapless-network-data/.claude/skills/bigquery-ethereum-data-acquisition/"
 
         what_to_collect:
           - "5 years of Ethereum blocks (2020-01-01 to 2025-01-01, ~13M blocks)"
-          - "LlamaRPC eth_getBlockByNumber with archive node access (from 2015+)"
-          - "Key fields: number, timestamp, baseFeePerGas, gasUsed, gasLimit, transactions.length"
-          - "Store in: DuckDB ethereum_blocks table (~1.5 GB, 76-100 bytes/block empirically validated)"
+          - "Google BigQuery public dataset: bigquery-public-data.crypto_ethereum.blocks"
+          - "11 ML-optimized columns: timestamp, number, gas_limit, gas_used, base_fee_per_gas, transaction_count, difficulty, total_difficulty, size, blob_gas_used, excess_blob_gas"
+          - "Store in: DuckDB ethereum_blocks table (~1.5 GB, 62 bytes/row empirically validated)"
 
         tasks:
-          - task: "Historical collector implementation"
-            effort: "6-8 hours"
+          - task: "One-time setup"
+            effort: "30 minutes"
             details:
-              - "web3.py client with LlamaRPC archive node endpoint"
-              - "Batch fetching (100 blocks at a time, parallel requests)"
-              - "Checkpoint-based resume (survive crashes, 7-day runtime)"
-              - "Extract 6 core fields from block object"
-              - "DuckDB batch INSERT (1000 blocks per transaction)"
+              - "Install gcloud CLI and authenticate: gcloud auth application-default login"
+              - "Install Python dependencies: google-cloud-bigquery, pandas, pyarrow, db-dtypes"
+              - "Verify authentication with test query"
 
-          - task: "Block number resolution"
-            effort: "2-3 hours"
+          - task: "Cost validation"
+            effort: "5 minutes"
             details:
-              - "Convert timestamps to block numbers (binary search)"
-              - "Cache timestamp→block mapping for performance"
+              - "Run test_bigquery_cost.py to validate query cost (0.97 GB)"
+              - "Confirm 0.1% of 1 TB free tier usage"
+              - "Document actual vs expected cost"
 
-          - task: "Progress tracking"
-            effort: "2-3 hours"
+          - task: "Bulk download to Parquet"
+            effort: "30-60 minutes (network-bound)"
             details:
-              - "CLI progress bar (blocks/sec, ETA, % complete)"
-              - "Checkpoint logging (last block processed, timestamp)"
+              - "Run download_bigquery_to_parquet.py with block range (11560000-24000000)"
+              - "Stream results directly to Parquet file (no BigQuery storage used)"
+              - "Validate output: 13M rows, ~760 MB file size"
 
-          - task: "Retry & error handling"
-            effort: "3-4 hours"
+          - task: "DuckDB import"
+            effort: "1-2 hours"
             details:
-              - "Exponential backoff for failed blocks"
-              - "Skip blocks that consistently fail (log to errors table)"
-              - "Handle rate limit 429 errors (back off 60 seconds)"
+              - "Create ethereum_blocks table with schema and constraints"
+              - "Load Parquet file into DuckDB: CREATE TABLE AS SELECT FROM read_parquet()"
+              - "Execute CHECKPOINT for durability"
+              - "Verify data integrity (row count, column types, constraint checks)"
+              - "Test basic queries (time_bucket aggregations, window functions)"
 
           - task: "Multi-chain API"
             effort: "1-2 hours"
             details:
               - "Add chain parameter: fetch_snapshots(chain='bitcoin'|'ethereum')"
               - "Single DuckDB database, separate tables (ethereum_blocks, bitcoin_mempool)"
-              - "Chain-specific collectors (dispatch by chain)"
+              - "Chain-specific data access (dispatch by chain)"
 
         acceptance_criteria:
-          - "Successfully collect 5 years of Ethereum blocks (~13M blocks)"
+          - "Successfully download 5 years of Ethereum blocks (~13M blocks)"
           - "Data stored in DuckDB ethereum_blocks table"
-          - "< 0.01% missing blocks (allow ~1,300 failures out of 13M)"
-          - "Checkpoint/resume works (tested with forced restarts)"
-          - "RPC errors handled with retry logic"
+          - "100% data completeness (no missing blocks in BigQuery public dataset)"
+          - "Query cost ≤ 1 GB (< 0.1% of free tier)"
+          - "Total time < 2 hours (setup + download + import)"
           - "Schema validation catches missing/malformed fields"
           - "Multi-chain API works: fetch_snapshots(chain='ethereum', mode='historical')"
 
@@ -279,20 +285,21 @@ x-project-phases:
     deliverables:
       - "5 years of Ethereum block data (2020-2025, ~13M blocks, ~1.5 GB in DuckDB)"
       - "DuckDB PRIMARY storage (single data.duckdb file, empirically validated)"
-      - "Batch fetching with checkpoint/resume capability (crash-tested)"
-      - "Block number resolution (binary search, 20-24 RPC calls)"
-      - "Progress tracking (CLI with ETA, blocks/sec)"
-      - "Basic validation (HTTP/RPC + schema)"
+      - "BigQuery bulk download workflow (< 1 hour total, 624x faster than RPC)"
+      - "11 ML-optimized columns (97% cost savings vs all 23 columns)"
+      - "Parquet intermediate format (zero-copy DuckDB import)"
+      - "Basic validation (schema + constraints)"
       - "Bitcoin collection deferred to Phase 2+"
 
     success_gates:
       - gate: "Ethereum historical backfill complete (PRIMARY)"
         criteria:
           - "5 years of Ethereum blocks collected (~13M blocks)"
-          - "< 0.01% missing blocks (allow ~1,300 failures)"
+          - "100% data completeness (BigQuery public dataset)"
           - "Data stored in DuckDB ethereum_blocks table"
-          - "Checkpoint/resume works (tested with forced restarts)"
-          - "Basic validation (RPC + schema) operational"
+          - "Query cost < 1 GB (< 0.1% of free tier)"
+          - "Total time < 2 hours (setup + download + import)"
+          - "Basic validation (schema + constraints) operational"
 
       - gate: "Bitcoin historical collection complete (SECONDARY)"
         criteria:
@@ -733,18 +740,21 @@ x-sub-specifications:
     note: "Archived for reference; Bitcoin collector patterns reused in multi-chain Phase 1"
 
   ethereum_collector_phase1:
-    file: "/Users/terryli/eon/gapless-network-data/specifications/ethereum-collector-phase1.yaml"
+    file: "/Users/terryli/eon/gapless-network-data/.claude/skills/bigquery-ethereum-data-acquisition/"
     status: "active"
-    created_date: "2025-11-04"
-    scope: "Ethereum collector implementation via web3.py + LlamaRPC (PRIMARY data source)"
+    created_date: "2025-11-08"
+    updated_date: "2025-11-08"
+    supersedes: "RPC-based ethereum-collector-phase1.yaml (archived)"
+    scope: "Ethereum historical data acquisition via Google BigQuery public dataset (PRIMARY data source)"
     priority: "P0"
     deliverables:
-      - "EthereumCollector class with 6-field minimal schema"
+      - "BigQuery bulk download workflow (< 1 hour total)"
+      - "11 ML-optimized columns (97% cost savings)"
+      - "Parquet intermediate format with DuckDB import"
       - "Multi-chain API integration (chain parameter)"
-      - "Basic validation (Layer 1-2: RPC + schema)"
+      - "Basic validation (schema + constraints)"
       - "Comprehensive tests (70%+ coverage)"
-      - "CLI multi-chain support"
-    estimated_effort: "14 hours (6 tasks in critical path)"
+    estimated_effort: "2-4 hours total (< 1 hour download + 2-3 hours implementation)"
     reference: "Part of Phase 1 multi-chain implementation (v0.2.0)"
 
   duckdb_schema:
@@ -767,24 +777,24 @@ x-sub-specifications:
         - "metadata (checkpoints and collection progress)"
 
   historical_collection_strategy:
-    file: "/Users/terryli/eon/gapless-network-data/HISTORICAL_COLLECTION_STRATEGY.md"
+    file: "/Users/terryli/eon/gapless-network-data/.claude/skills/bigquery-ethereum-data-acquisition/"
     status: "active"
-    created_date: "2025-11-04"
-    scope: "5-year historical data backfill strategy (2020-2025)"
+    created_date: "2025-11-08"
+    updated_date: "2025-11-08"
+    supersedes: "RPC-based HISTORICAL_COLLECTION_STRATEGY.md (archived 2025-11-08)"
+    scope: "5-year historical data backfill strategy via BigQuery (2020-2025)"
     priority: "P0"
-    architectural_decision: "Historical backfill is Phase 1 PRIMARY (forward-only collection deferred to Phase 2+)"
+    architectural_decision: "BigQuery bulk download for historical backfill (< 1 hour, 624x faster than RPC). Real-time streaming deferred to Phase 2+."
     content:
-      - "Ethereum 5-year backfill (13M blocks, 150-hour runtime at 1 req/sec)"
-      - "Bitcoin 5-year backfill (H12 granularity, 3,650 snapshots)"
-      - "Batch fetching with checkpoint/resume capability"
-      - "Progress tracking (CLI with ETA, blocks/sec)"
-      - "Retry & error handling"
+      - "Ethereum 5-year backfill via BigQuery public dataset (< 1 hour total)"
+      - "11 ML-optimized columns (0.97 GB query cost, 0.1% of free tier)"
+      - "Parquet intermediate format for zero-copy DuckDB import"
+      - "Bitcoin 5-year backfill via mempool.space API (deferred to Phase 2+)"
     time_estimates:
-      ethereum:
-        conservative: "150 hours (1 req/sec = 7 days)"
-        aggressive: "15 hours (10 req/sec = ~1 day)"
-      bitcoin: "8-12 hours development"
-    reference: "Defines Phase 1 collection mode (historical, NOT real-time)"
+      ethereum_bigquery: "< 1 hour (30min auth + 5min validation + 30-60min download)"
+      ethereum_rpc_avoided: "26 days with Alchemy (624x slower, NOT using)"
+      bitcoin: "Deferred to Phase 2+"
+    reference: "Defines Phase 1 collection mode (BigQuery bulk download, NOT RPC streaming)"
 
 x-implementation-findings:
   finding_1:
@@ -944,6 +954,44 @@ x-version-tracking:
       estimated_release: "10-14 weeks total from Phase 1 start"
 
 x-decision-log:
+  - date: "2025-11-08"
+    decision: "Use BigQuery for Ethereum historical backfill (supersedes all RPC approaches)"
+    rationale: |
+      BigQuery public dataset provides 624x faster historical data acquisition compared to
+      RPC polling approaches (< 1 hour vs 26 days with Alchemy, 110 days with LlamaRPC).
+
+      Key advantages:
+      - Speed: < 1 hour total (30min auth + 5min validation + 30-60min download)
+      - Cost: $0 (0.97 GB = 0.1% of 1 TB free tier per month)
+      - Completeness: 100% data availability (no missing blocks, no rate limit failures)
+      - Column optimization: 11 ML-optimized fields = 97% cost savings vs all 23 columns
+      - Simplicity: No checkpoint/resume, rate limiting, or retry logic needed
+      - Zero setup: No API keys, no RPC provider signup, just gcloud auth
+
+      RPC streaming (real-time forward collection) deferred to Phase 2+ for incremental updates.
+    impact: "Phase 1 timeline: 26 days → < 1 hour (624x speedup)"
+    supersedes:
+      - "2025-11-05 RPC provider comparison (Alchemy vs LlamaRPC decision)"
+      - "All RPC-based collection approaches (LlamaRPC, Alchemy, Infura, QuickNode)"
+    alternatives:
+      - option: "Alchemy RPC (300M CU/month free tier)"
+        rejected: "26 days runtime, rate limiting complexity, API key required"
+        timeline: "26 days (5.79 RPS sustained)"
+      - option: "LlamaRPC free tier"
+        rejected: "110 days runtime (1.37 RPS sustainable), 4x slower than Alchemy"
+        timeline: "110 days (empirically validated)"
+      - option: "QuickNode free tier"
+        rejected: "~157 days estimated, unverified rate limits"
+      - option: "Infura free tier"
+        rejected: "519 days (25K requests/day limit = 0.29 RPS), unusable"
+    status: "Decided (2025-11-08), ready to implement"
+    phase_impact:
+      - "Phase 1: BigQuery bulk download (< 1 hour) instead of RPC polling (26-110 days)"
+      - "Phase 2: Add RPC streaming for real-time forward collection (incremental updates)"
+      - "Phase 3+: Feature engineering on complete 5-year historical dataset"
+    skill_reference: "/Users/terryli/eon/gapless-network-data/.claude/skills/bigquery-ethereum-data-acquisition/"
+    validation_status: "Empirically validated (v0.2.0, 2025-11-07)"
+
   - date: "2025-11-04"
     decision: "DuckDB PRIMARY for raw data storage (supersedes 2025-11-03 Parquet decision)"
     rationale: |
