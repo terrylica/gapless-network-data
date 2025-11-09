@@ -22,6 +22,7 @@ To load data into MotherDuck, there are two options:
   - `gcloud auth application-default login`.
 
 Minimum required IAM roles:
+
 - `BigQuery Data Editor`
 - `BigQuery Job User`
 
@@ -271,6 +272,7 @@ create_duckdb_table_from_arrow(
 ```
 
 **Benefits**:
+
 - No local storage needed (760 MB → 0 MB local)
 - Query from multiple machines
 - Share data with team via MotherDuck access

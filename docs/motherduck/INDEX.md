@@ -10,6 +10,7 @@ MotherDuck is a serverless cloud analytics platform built on DuckDB. It enables 
 ## Overview
 
 MotherDuck provides:
+
 - **Cloud DuckDB**: Serverless analytics without managing infrastructure
 - **Data Sharing**: Collaborate with team members on shared databases
 - **Hybrid Execution**: Combine local and cloud compute
@@ -23,6 +24,10 @@ MotherDuck provides:
   - Using `duckdb-bigquery` community extension
   - Using Google Cloud BigQuery Python SDK
   - Python end-to-end pipeline example
+- [Credentials Management](credentials.md) - Secure token storage and Doppler integration
+  - Token stored in Doppler (claude-config/dev)
+  - Usage patterns and best practices
+  - Token rotation workflow
 
 ## Use Cases for gapless-network-data
 
@@ -31,6 +36,7 @@ MotherDuck provides:
 Instead of storing 760 MB Ethereum block data locally or in S3:
 
 **Traditional approach**:
+
 ```
 BigQuery → Local Parquet → DuckDB (local)
          ↓
@@ -38,6 +44,7 @@ BigQuery → Local Parquet → DuckDB (local)
 ```
 
 **MotherDuck approach**:
+
 ```
 BigQuery → MotherDuck (cloud DuckDB)
          ↓
@@ -67,11 +74,22 @@ See [MotherDuck Pricing](https://motherduck.com/pricing) for current rates.
 
 Create a MotherDuck account at [motherduck.com](https://motherduck.com)
 
-### 2. Get Token
+**Current Setup**: Login using **terrylica GitHub account**
+
+### 2. Get Token from Doppler
+
+Credentials are managed via Doppler for security:
 
 ```bash
-# Set environment variable
-export motherduck_token='your_token_here'
+# Inject MotherDuck token from Doppler
+doppler run --project claude-config --config dev \
+  --command='export motherduck_token=$MOTHERDUCK_TOKEN && python your_script.py'
+```
+
+**Manual export** (for development):
+
+```bash
+export motherduck_token=$(doppler secrets get MOTHERDUCK_TOKEN --project claude-config --config dev --plain)
 ```
 
 ### 3. Connect from DuckDB
