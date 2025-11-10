@@ -70,6 +70,7 @@ print(result)
 ```
 
 **Example output**:
+
 ```
                  timestamp     number  base_fee_per_gas   gas_used   gas_limit  transaction_count
 0  2025-11-10 17:03:23  21464789      8234567890  29876543  30000000                245
@@ -81,19 +82,19 @@ print(result)
 
 11 columns optimized for ML feature engineering:
 
-| Column              | Type      | Description                          |
-| ------------------- | --------- | ------------------------------------ |
-| `timestamp`         | TIMESTAMP | UTC timestamp                        |
-| `number`            | BIGINT    | Block number (PRIMARY KEY)           |
-| `gas_limit`         | BIGINT    | Block gas limit                      |
-| `gas_used`          | BIGINT    | Total gas used                       |
-| `base_fee_per_gas`  | BIGINT    | EIP-1559 base fee (wei)              |
-| `transaction_count` | BIGINT    | Number of transactions               |
-| `difficulty`        | HUGEINT   | Mining/staking difficulty            |
-| `total_difficulty`  | HUGEINT   | Cumulative chain work                |
-| `size`              | BIGINT    | Block size (bytes)                   |
-| `blob_gas_used`     | BIGINT    | EIP-4844 blob gas used (2024+)       |
-| `excess_blob_gas`   | BIGINT    | EIP-4844 excess blob gas (2024+)     |
+| Column              | Type      | Description                      |
+| ------------------- | --------- | -------------------------------- |
+| `timestamp`         | TIMESTAMP | UTC timestamp                    |
+| `number`            | BIGINT    | Block number (PRIMARY KEY)       |
+| `gas_limit`         | BIGINT    | Block gas limit                  |
+| `gas_used`          | BIGINT    | Total gas used                   |
+| `base_fee_per_gas`  | BIGINT    | EIP-1559 base fee (wei)          |
+| `transaction_count` | BIGINT    | Number of transactions           |
+| `difficulty`        | HUGEINT   | Mining/staking difficulty        |
+| `total_difficulty`  | HUGEINT   | Cumulative chain work            |
+| `size`              | BIGINT    | Block size (bytes)               |
+| `blob_gas_used`     | BIGINT    | EIP-4844 blob gas used (2024+)   |
+| `excess_blob_gas`   | BIGINT    | EIP-4844 excess blob gas (2024+) |
 
 **Rationale**: These 11 columns contain all temporal patterns suitable for time-series forecasting. Excludes cryptographic hashes (32-byte random data), Merkle roots (integrity checksums), and other non-predictive fields. See `.claude/skills/bigquery-ethereum-data-acquisition/CLAUDE.md` for complete column selection analysis.
 
@@ -178,6 +179,7 @@ uv run scripts/verify_motherduck.py
 ### Service Management
 
 **Cloud Run Job** (BigQuery sync):
+
 ```bash
 # Manual trigger
 gcloud run jobs execute eth-md-updater --region us-central1
@@ -187,6 +189,7 @@ gcloud logging read "resource.type=cloud_run_job AND resource.labels.job_name=et
 ```
 
 **VM Service** (real-time collector):
+
 ```bash
 # Check status
 gcloud compute ssh eth-realtime-collector --zone=us-east1-b \
@@ -217,6 +220,7 @@ All monitoring runs on the cloud (no local processes):
 - **Pushover**: Alert delivery to mobile/desktop
 
 **SLOs Met**:
+
 - ✅ Availability: Pipelines run without manual intervention
 - ✅ Correctness: 100% data accuracy with schema validation
 - ✅ Observability: 100% operation tracking via Cloud Logging
@@ -226,15 +230,15 @@ All monitoring runs on the cloud (no local processes):
 
 **Total**: $0/month (all within free tiers)
 
-| Service          | Usage            | Free Tier Limit | Cost   |
-| ---------------- | ---------------- | --------------- | ------ |
-| BigQuery         | 10 MB queries    | 1 TB/month      | $0     |
-| Cloud Run        | 720 executions   | 2M invocations  | $0     |
-| Compute Engine   | e2-micro VM      | 1 instance      | $0     |
-| MotherDuck       | 1.5 GB storage   | 10 GB           | $0     |
-| Healthchecks.io  | 1 check          | 20 checks       | $0     |
-| UptimeRobot      | 1 monitor        | 50 monitors     | $0     |
-| Pushover         | Alerts           | 10,000/month    | $0     |
+| Service         | Usage          | Free Tier Limit | Cost |
+| --------------- | -------------- | --------------- | ---- |
+| BigQuery        | 10 MB queries  | 1 TB/month      | $0   |
+| Cloud Run       | 720 executions | 2M invocations  | $0   |
+| Compute Engine  | e2-micro VM    | 1 instance      | $0   |
+| MotherDuck      | 1.5 GB storage | 10 GB           | $0   |
+| Healthchecks.io | 1 check        | 20 checks       | $0   |
+| UptimeRobot     | 1 monitor      | 50 monitors     | $0   |
+| Pushover        | Alerts         | 10,000/month    | $0   |
 
 ## Security
 
@@ -255,10 +259,12 @@ All monitoring runs on the cloud (no local processes):
 ## Data Sources
 
 **Active (Production)**:
+
 - BigQuery public dataset: `bigquery-public-data.crypto_ethereum.blocks`
 - Alchemy WebSocket API: 300M CU/month free tier
 
 **Researched (Not Used)**:
+
 - LlamaRPC: Rejected due to rate limits (1.37 RPS sustained, 110-day timeline)
 - See `docs/llamarpc/INDEX.md` for complete research documentation
 
@@ -280,6 +286,7 @@ All monitoring runs on the cloud (no local processes):
 ## Contributing
 
 This project is in production operational mode. Contributions focused on:
+
 - Bitcoin mempool.space integration
 - Python SDK development
 - Additional blockchain support (Solana, Avalanche)
