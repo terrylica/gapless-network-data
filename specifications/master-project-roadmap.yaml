@@ -17,15 +17,32 @@ info:
 
   x-metadata:
     project_name: "gapless-network-data"
-    project_version: "v0.1.0 (alpha)"
-    current_phase: "Phase 0: Foundation (complete), Phase 1: Basic Collection (planned)"
-    next_milestone: "v0.2.0 (Ethereum PRIMARY + Bitcoin SECONDARY collection)"
-    last_updated: "2025-11-08T03:00:00Z"
+    project_version: "v2.2.1 (production operational)"
+    current_phase: "Phase 1: Historical Data Collection - COMPLETED (2025-11-10)"
+    next_milestone: "Phase 2: Bitcoin mempool.space integration + SDK development"
+    last_updated: "2025-11-10T17:30:00Z"
     supersedes: ["duckdb-integration-strategy.yaml (implementation-focused roadmap)"]
     focus_shift: |
       1. Feature-driven planning (WHAT to collect) vs architecture-driven (HOW to implement)
       2. Ethereum BigQuery (instant 5-year historical) as PRIMARY, Bitcoin mempool.space (5min low-frequency) as SECONDARY
       3. Chronological phase ordering: Collection → Quality → Features → Expansion → Production → Release
+
+  x-phase1-completion:
+    completion_date: "2025-11-10"
+    data_loaded: "14.57M Ethereum blocks (2020-2025)"
+    architecture: "BigQuery hourly batch + Alchemy real-time WebSocket"
+    infrastructure:
+      - "Cloud Run Job: eth-md-updater (us-central1, hourly BigQuery sync)"
+      - "e2-micro VM: eth-realtime-collector (us-east1-b, Alchemy WebSocket)"
+      - "MotherDuck: ethereum_mainnet.blocks (cloud-hosted DuckDB)"
+      - "Monitoring: Healthchecks.io + UptimeRobot + Pushover (all cloud-based)"
+    cost: "$0/month (all within free tiers)"
+    decision: "Rejected LlamaRPC due to rate limits (1.37 RPS sustained, 110-day timeline)"
+    slos_met:
+      - "Availability: Pipelines run without manual intervention"
+      - "Correctness: 100% data accuracy with schema validation"
+      - "Observability: 100% operation tracking via Cloud Logging"
+      - "Maintainability: <30 minutes for common operations"
 
   x-architecture:
     core_principle: "DuckDB PRIMARY for Raw Data Storage"

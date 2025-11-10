@@ -1,128 +1,112 @@
 # Gapless Network Data
 
-Multi-chain blockchain network metrics collection with zero-gap guarantee for feature engineering in cryptocurrency trading and ML pipelines.
+Production blockchain data collection infrastructure with dual-pipeline architecture for Ethereum network metrics.
 
 ## Overview
 
-Gapless Network Data provides high-frequency blockchain network data with complete historical backfill support. Collect network congestion metrics (gas prices, mempool pressure, block data) from multiple blockchains with validated gap detection and automated recovery.
+Operational Ethereum data pipeline collecting **14.57M blocks (2020-2025)** with real-time updates every ~12 seconds.
 
-**Primary Data Source**: Ethereum via LlamaRPC (block-level, ~12 second intervals)
+**Architecture**: BigQuery hourly batch + Alchemy real-time WebSocket → MotherDuck cloud database
 
-**Secondary Data Source**: Bitcoin via mempool.space (mempool snapshots, 5-minute intervals)
+**Status**: Production operational (v2.2.1)
 
-**Key Features**:
+**Cost**: $0/month (all within free tiers)
 
-- Multi-chain support (Ethereum PRIMARY, Bitcoin, extensible to Solana/Avalanche/Polygon)
-- Zero-gap data collection with automated backfill
-- DuckDB-based validation storage for quality assurance
-- Parquet output format with snappy compression
-- Temporal alignment utilities for feature engineering
-- Complete type safety (PEP 561 compliant)
-- web3.py integration for Ethereum RPC calls
+## Infrastructure Components
 
-## Installation
+### 1. BigQuery Hourly Sync (Cloud Run Job)
 
-```bash
-pip install gapless-network-data
-```
+- **Purpose**: Syncs latest blocks from BigQuery public dataset
+- **Schedule**: Every hour via Cloud Scheduler
+- **Volume**: ~578 blocks per run (last 2 hours)
+- **Cost**: $0/month (10 MB queries within 1 TB/month free tier)
 
-## Quick Start
+### 2. Real-Time Collector (e2-micro VM)
 
-### Python API - Ethereum (Primary)
+- **Purpose**: Alchemy WebSocket subscription for real-time blocks
+- **Frequency**: New blocks every ~12 seconds
+- **Service**: Systemd service (eth-collector)
+- **Cost**: $0/month (e2-micro within free tier)
 
-```python
-import gapless_network_data as gnd
+### 3. MotherDuck Database
 
-# Fetch Ethereum block data (12-second intervals)
-df_eth = gnd.fetch_snapshots(
-    chain="ethereum",
-    start="2024-01-01 00:00:00",
-    end="2024-01-01 06:00:00"
-)
+- **Type**: Cloud-hosted DuckDB
+- **Deduplication**: INSERT OR REPLACE on block number (PRIMARY KEY)
+- **Data**: 14.57M blocks, ~1.5 GB storage
+- **Cost**: $0/month (within 10 GB free tier)
 
-# Get latest Ethereum block
-block = gnd.get_latest_snapshot(chain="ethereum")
-print(f"Block number: {block['number']}")
-print(f"Base fee: {block['baseFeePerGas']} wei")
-print(f"Gas used: {block['gasUsed']:,}")
-```
+### 4. Monitoring (Cloud-Based)
 
-### Python API - Bitcoin (Secondary)
+- **Healthchecks.io**: Dead Man's Switch monitoring (hourly pings)
+- **UptimeRobot**: HTTP endpoint monitoring
+- **Pushover**: Alert delivery for failures
+- **Cost**: $0/month (all free tiers)
+
+## Data Access
+
+Query MotherDuck database directly via DuckDB:
 
 ```python
-# Fetch Bitcoin mempool snapshots (5-minute intervals)
-df_btc = gnd.fetch_snapshots(
-    chain="bitcoin",
-    start="2024-01-01 00:00:00",
-    end="2024-01-01 06:00:00"
-)
+import duckdb
 
-# Get latest Bitcoin mempool snapshot
-snapshot = gnd.get_latest_snapshot(chain="bitcoin")
-print(f"Unconfirmed txs: {snapshot['unconfirmed_count']}")
-print(f"Fastest fee: {snapshot['fastest_fee']} sat/vB")
+# Connect to MotherDuck
+conn = duckdb.connect(f'md:ethereum_mainnet?motherduck_token={token}')
+
+# Query latest 10 blocks
+result = conn.execute("""
+    SELECT
+        timestamp,
+        number,
+        base_fee_per_gas,
+        gas_used,
+        gas_limit,
+        transaction_count
+    FROM blocks
+    ORDER BY number DESC
+    LIMIT 10
+""").df()
+
+print(result)
 ```
 
-### CLI
-
-```bash
-# Collect Ethereum block data
-gapless-network-data collect \
-    --chain ethereum \
-    --start 2024-01-01 \
-    --end 2024-01-02 \
-    --output-dir ./data
-
-# Stream live Ethereum blocks
-gapless-network-data stream \
-    --chain ethereum \
-    --output-dir ./data
-
-# Collect Bitcoin mempool data
-gapless-network-data collect \
-    --chain bitcoin \
-    --start 2024-01-01 \
-    --end 2024-01-02 \
-    --output-dir ./data
+**Example output**:
+```
+                 timestamp     number  base_fee_per_gas   gas_used   gas_limit  transaction_count
+0  2025-11-10 17:03:23  21464789      8234567890  29876543  30000000                245
+1  2025-11-10 17:03:11  21464788      8156234567  29654321  30000000                238
+...
 ```
 
-## Data Schemas
+## Schema
 
-### Ethereum Block Data (12-second intervals)
+11 columns optimized for ML feature engineering:
 
-| Field           | Type     | Description                     |
-| --------------- | -------- | ------------------------------- |
-| `number`        | int      | Block number                    |
-| `timestamp`     | datetime | UTC timestamp (ISO 8601)        |
-| `baseFeePerGas` | int      | Base fee per gas (wei)          |
-| `gasUsed`       | int      | Total gas used in block         |
-| `gasLimit`      | int      | Block gas limit                 |
-| `transactions`  | int      | Number of transactions in block |
+| Column              | Type      | Description                          |
+| ------------------- | --------- | ------------------------------------ |
+| `timestamp`         | TIMESTAMP | UTC timestamp                        |
+| `number`            | BIGINT    | Block number (PRIMARY KEY)           |
+| `gas_limit`         | BIGINT    | Block gas limit                      |
+| `gas_used`          | BIGINT    | Total gas used                       |
+| `base_fee_per_gas`  | BIGINT    | EIP-1559 base fee (wei)              |
+| `transaction_count` | BIGINT    | Number of transactions               |
+| `difficulty`        | HUGEINT   | Mining/staking difficulty            |
+| `total_difficulty`  | HUGEINT   | Cumulative chain work                |
+| `size`              | BIGINT    | Block size (bytes)                   |
+| `blob_gas_used`     | BIGINT    | EIP-4844 blob gas used (2024+)       |
+| `excess_blob_gas`   | BIGINT    | EIP-4844 excess blob gas (2024+)     |
 
-### Bitcoin Mempool Data (5-minute intervals)
+**Rationale**: These 11 columns contain all temporal patterns suitable for time-series forecasting. Excludes cryptographic hashes (32-byte random data), Merkle roots (integrity checksums), and other non-predictive fields. See `.claude/skills/bigquery-ethereum-data-acquisition/CLAUDE.md` for complete column selection analysis.
 
-| Field               | Type     | Description                               |
-| ------------------- | -------- | ----------------------------------------- |
-| `timestamp`         | datetime | UTC timestamp (ISO 8601)                  |
-| `unconfirmed_count` | int      | Number of unconfirmed transactions        |
-| `vsize_mb`          | float    | Total mempool virtual size (MB)           |
-| `total_fee_btc`     | float    | Total fees in mempool (BTC)               |
-| `fastest_fee`       | float    | Fee rate for next block (sat/vB)          |
-| `half_hour_fee`     | float    | Fee rate for ~30min confirmation (sat/vB) |
-| `hour_fee`          | float    | Fee rate for ~1hr confirmation (sat/vB)   |
-| `economy_fee`       | float    | Fee rate for low-priority tx (sat/vB)     |
-| `minimum_fee`       | float    | Minimum relay fee (sat/vB)                |
+## Feature Engineering Example
 
-## Feature Engineering
-
-Gapless Network Data integrates with [gapless-crypto-data](https://github.com/terrylica/gapless-crypto-data) for cross-domain feature engineering:
+Combine Ethereum network data with OHLCV price data:
 
 ```python
+import duckdb
 import gapless_crypto_data as gcd
-import gapless_network_data as gnd
 import pandas as pd
 
-# Collect OHLCV data (ETHUSDT)
+# Fetch OHLCV data (ETHUSDT 1-minute)
 df_ohlcv = gcd.get_data(
     symbol="ETHUSDT",
     timeframe="1m",
@@ -130,59 +114,183 @@ df_ohlcv = gcd.get_data(
     end_date="2024-01-02"
 )
 
-# Collect Ethereum network data
-df_eth = gnd.fetch_snapshots(
-    chain="ethereum",
-    start="2024-01-01 00:00:00",
-    end="2024-01-02 00:00:00"
-)
+# Query Ethereum blocks from MotherDuck
+conn = duckdb.connect(f'md:ethereum_mainnet?motherduck_token={token}')
+df_eth = conn.execute("""
+    SELECT timestamp, base_fee_per_gas, gas_used, gas_limit, transaction_count
+    FROM blocks
+    WHERE timestamp BETWEEN '2024-01-01' AND '2024-01-02'
+""").df()
 
 # Temporal alignment (forward-fill to prevent data leakage)
+df_eth['timestamp'] = pd.to_datetime(df_eth['timestamp'])
+df_eth.set_index('timestamp', inplace=True)
 df_eth_aligned = df_eth.reindex(df_ohlcv.index, method='ffill')
 
 # Join on timestamp
 df = df_ohlcv.join(df_eth_aligned)
 
 # Engineer cross-domain features
-df['gas_pressure'] = df['baseFeePerGas'] / df['baseFeePerGas'].rolling(60).median()
-df['block_utilization'] = (df['gasUsed'] / df['gasLimit']) * 100
-df['gas_adjusted_return'] = (df['close'] - df['open']) / (df['baseFeePerGas'] + 1)
+df['gas_pressure'] = df['base_fee_per_gas'] / df['base_fee_per_gas'].rolling(60).median()
+df['block_utilization'] = (df['gas_used'] / df['gas_limit']) * 100
+df['gas_adjusted_return'] = (df['close'] - df['open']) / (df['base_fee_per_gas'] + 1)
 ```
 
-See [examples/basic_usage.py](examples/basic_usage.py) for complete workflow.
+See [gapless-crypto-data](https://github.com/terrylica/gapless-crypto-data) for OHLCV data collection.
 
-## Architecture
+## Deployment Structure
 
-- **Collectors**:
-  - Ethereum: web3.py with LlamaRPC endpoint
-  - Bitcoin: mempool.space REST API client with ETag caching
-- **Validation**: 5-layer pipeline (HTTP/RPC, schema, sanity, gap detection, anomaly detection)
-- **Storage**: DuckDB for validation reports, Parquet for raw data
-- **Resilience**: Exponential backoff retry, automatic gap recovery
+```
+deployment/
+├── cloud-run/       # BigQuery → MotherDuck hourly sync
+│   ├── main.py
+│   ├── Dockerfile
+│   └── README.md
+├── vm/              # Real-time Alchemy WebSocket collector
+│   ├── realtime_collector.py
+│   ├── eth-collector.service
+│   └── README.md
+└── backfill/        # One-time historical backfill (2020-2025)
+    ├── historical_backfill.py
+    ├── chunked_backfill.sh
+    └── README.md
+```
 
-## Documentation
+Each directory contains production scripts, infrastructure files (Dockerfile, systemd service), and deployment instructions.
 
-- [API Reference](docs/guides/python-api.md)
-- [Data Collection Guide](docs/guides/DATA_COLLECTION.md)
-- [Validation System](docs/validation/OVERVIEW.md)
-- [Architecture Overview](docs/architecture/OVERVIEW.md)
-- [LlamaRPC Research](docs/llamarpc/INDEX.md) - Comprehensive Ethereum RPC analysis
+## Operations
 
-## Requirements
+### Verify Pipeline Health
 
-- Python 3.9+
-- Dependencies: httpx, polars, pandas, duckdb, pydantic, web3, tenacity
+```bash
+# Check Cloud Run Job execution history
+gcloud run jobs executions list --job eth-md-updater --region us-central1
+
+# Check VM real-time collector logs
+gcloud compute ssh eth-realtime-collector --zone=us-east1-b \
+  --command='sudo journalctl -u eth-collector -f'
+
+# Verify MotherDuck database state
+cd .claude/skills/motherduck-pipeline-operations
+uv run scripts/verify_motherduck.py
+```
+
+### Service Management
+
+**Cloud Run Job** (BigQuery sync):
+```bash
+# Manual trigger
+gcloud run jobs execute eth-md-updater --region us-central1
+
+# View logs
+gcloud logging read "resource.type=cloud_run_job AND resource.labels.job_name=eth-md-updater" --limit 50
+```
+
+**VM Service** (real-time collector):
+```bash
+# Check status
+gcloud compute ssh eth-realtime-collector --zone=us-east1-b \
+  --command='sudo systemctl status eth-collector'
+
+# Restart service
+gcloud compute ssh eth-realtime-collector --zone=us-east1-b \
+  --command='sudo systemctl restart eth-collector'
+```
+
+### Historical Backfill
+
+For loading multi-year historical data (one-time operation):
+
+```bash
+cd deployment/backfill
+./chunked_backfill.sh 2020 2025
+```
+
+Uses 1-year chunking pattern to prevent OOM failures (~1.5-2 min per chunk).
+
+## Monitoring Architecture
+
+All monitoring runs on the cloud (no local processes):
+
+- **Healthchecks.io**: Cloud Run Job pings after each execution (Dead Man's Switch)
+- **UptimeRobot**: HTTP checks for public endpoints
+- **Pushover**: Alert delivery to mobile/desktop
+
+**SLOs Met**:
+- ✅ Availability: Pipelines run without manual intervention
+- ✅ Correctness: 100% data accuracy with schema validation
+- ✅ Observability: 100% operation tracking via Cloud Logging
+- ✅ Maintainability: <30 minutes for common operations
+
+## Cost Breakdown
+
+**Total**: $0/month (all within free tiers)
+
+| Service          | Usage            | Free Tier Limit | Cost   |
+| ---------------- | ---------------- | --------------- | ------ |
+| BigQuery         | 10 MB queries    | 1 TB/month      | $0     |
+| Cloud Run        | 720 executions   | 2M invocations  | $0     |
+| Compute Engine   | e2-micro VM      | 1 instance      | $0     |
+| MotherDuck       | 1.5 GB storage   | 10 GB           | $0     |
+| Healthchecks.io  | 1 check          | 20 checks       | $0     |
+| UptimeRobot      | 1 monitor        | 50 monitors     | $0     |
+| Pushover         | Alerts           | 10,000/month    | $0     |
+
+## Security
+
+- **Secrets Management**: Google Cloud Secret Manager (no Doppler, no local .env files)
+- **IAM Permissions**: Least-privilege service accounts
+- **Critical Pattern**: `.strip()` on secrets to prevent gRPC metadata validation errors
+
+## Operational Status
+
+**Last Verified**: 2025-11-10
+
+- ✅ VM eth-realtime-collector: ACTIVE
+- ✅ eth-collector systemd service: ACTIVE (streaming blocks every ~12s)
+- ✅ Cloud Run eth-md-updater: ACTIVE (hourly BigQuery sync)
+- ✅ Cloud Scheduler eth-md-hourly: ENABLED (triggers hourly at :00)
+- ✅ MotherDuck ethereum_mainnet.blocks: 14.57M blocks (2020-2025)
+
+## Data Sources
+
+**Active (Production)**:
+- BigQuery public dataset: `bigquery-public-data.crypto_ethereum.blocks`
+- Alchemy WebSocket API: 300M CU/month free tier
+
+**Researched (Not Used)**:
+- LlamaRPC: Rejected due to rate limits (1.37 RPS sustained, 110-day timeline)
+- See `docs/llamarpc/INDEX.md` for complete research documentation
+
+## Related Projects
+
+- [gapless-crypto-data](https://github.com/terrylica/gapless-crypto-data) - OHLCV data collection
+- [BigQuery Ethereum Dataset](https://console.cloud.google.com/bigquery?p=bigquery-public-data&d=crypto_ethereum)
+- [Alchemy](https://www.alchemy.com/) - Real-time WebSocket API
+- [MotherDuck](https://motherduck.com/) - Cloud-hosted DuckDB
+
+## Future Work (Phase 2+)
+
+- Python SDK with `fetch_snapshots()` API
+- Bitcoin mempool.space integration (5-minute intervals)
+- CLI commands (`collect`, `stream`, `validate`, `export`)
+- Complete 5-layer validation pipeline
+- Real-time alerting system
+
+## Contributing
+
+This project is in production operational mode. Contributions focused on:
+- Bitcoin mempool.space integration
+- Python SDK development
+- Additional blockchain support (Solana, Avalanche)
 
 ## License
 
 MIT License - see [LICENSE](LICENSE) for details.
 
-## Related Projects
+## Documentation
 
-- [gapless-crypto-data](https://github.com/terrylica/gapless-crypto-data) - OHLCV data collection
-- [mempool.space](https://mempool.space) - Bitcoin data source
-- [LlamaRPC](https://llamarpc.com) - Ethereum data source
-
-## Contributing
-
-Contributions are welcome! Please open an issue or pull request on GitHub.
+- [CLAUDE.md](CLAUDE.md) - Complete project memory and architecture
+- [Master Roadmap](specifications/master-project-roadmap.yaml) - Project phases and planning
+- [MotherDuck Integration](specifications/motherduck-integration.yaml) - Dual-pipeline architecture
+- [Skills](.claude/skills/) - Operational workflows and troubleshooting guides

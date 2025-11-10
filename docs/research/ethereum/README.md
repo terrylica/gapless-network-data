@@ -9,11 +9,11 @@
 
 ## 📋 Table of Contents
 
-1. [Quick Start](#quick-start)
-2. [Research Findings](#research-findings)
-3. [Testing & Validation](#testing--validation)
-4. [Files in This Directory](#files-in-this-directory)
-5. [Key Takeaways](#key-takeaways)
+1. [Quick Start](#-quick-start)
+2. [Research Findings](#-research-findings)
+3. [Testing & Validation](#-testing--validation)
+4. [Files in This Directory](#-files-in-this-directory)
+5. [Key Takeaways](#-key-takeaways)
 
 ---
 
