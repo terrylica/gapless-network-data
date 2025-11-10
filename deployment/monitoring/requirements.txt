@@ -1,3 +1,0 @@
-requests>=2.31.0
-healthchecks-io>=1.0.0
-python-uptimerobot>=0.0.1
