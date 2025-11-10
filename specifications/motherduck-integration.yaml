@@ -349,13 +349,15 @@ x-deployment-status:
     deployed: "2025-11-09T22:39:18Z"
     fixed: "2025-11-09T23:50:15Z"
     method: "gcloud compute scp + systemd service deployment"
-    status: "OPERATIONAL"
+    status: "OPERATIONAL (actively collecting blocks)"
     fix_applied: ".strip() fix deployed to resolve gRPC metadata error"
     verification: |
       gcloud compute ssh eth-realtime-collector --command="sudo systemctl status eth-collector"
       Status: active (running) since 2025-11-09 23:50:15 UTC
-      Blocks collected: Block 23,765,095 successfully inserted
-      Logs: "✅ Secrets loaded", "✅ MotherDuck connected", "🔴 REAL-TIME STREAMING ACTIVE"
+      Blocks collected: 45 blocks in 9 minutes (23,765,095 → 23,765,139)
+      Collection rate: ~12 seconds per block (matches Ethereum block time)
+      Logs: "✅ Secrets loaded", "✅ MotherDuck connected", "REAL-TIME STREAMING ACTIVE"
+      Note: Red dot emoji (🔴) in logs is visual indicator for "LIVE", not error status
 
   cloud_run_job:
     deployed: "2025-11-09"
