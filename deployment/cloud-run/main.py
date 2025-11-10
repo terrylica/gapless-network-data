@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # /// script
-# dependencies = ["google-cloud-bigquery[bqstorage]", "duckdb", "pyarrow", "google-cloud-secret-manager"]
+# dependencies = ["google-cloud-bigquery[bqstorage]", "duckdb", "pyarrow", "google-cloud-secret-manager", "requests"]
 # ///
 """
 BigQuery → MotherDuck Ethereum Block Updater
@@ -24,6 +24,7 @@ from datetime import datetime, timedelta, timezone
 from google.cloud import bigquery
 from google.cloud import secretmanager
 import duckdb
+import requests
 
 # Configuration
 GCP_PROJECT = os.environ.get('GCP_PROJECT', 'eonlabs-ethereum-bq')
@@ -32,6 +33,9 @@ TABLE_ID = os.environ.get('TABLE_ID', 'blocks')
 MD_DATABASE = os.environ.get('MD_DATABASE', 'ethereum_mainnet')
 MD_TABLE = os.environ.get('MD_TABLE', 'blocks')
 LOOKBACK_HOURS = int(os.environ.get('LOOKBACK_HOURS', '2'))
+
+# Monitoring
+HEALTHCHECK_URL = 'https://hc-ping.com/616d5e4b-9e5b-470f-bd85-7870c2329ba3'
 
 # ML-optimized columns (11 columns for feature engineering)
 COLUMNS = [
@@ -170,6 +174,23 @@ def load_to_motherduck(pa_table):
     conn.close()
 
 
+def ping_healthcheck(success: bool = True):
+    """Ping Healthchecks.io to signal job completion.
+
+    Args:
+        success: True for success ping, False for failure ping
+    """
+    try:
+        url = HEALTHCHECK_URL if success else f"{HEALTHCHECK_URL}/fail"
+        response = requests.get(url, timeout=10)
+        response.raise_for_status()
+        status = "✅" if success else "❌"
+        print(f"   {status} Healthchecks.io pinged")
+    except Exception as e:
+        # Don't fail the job if healthcheck ping fails
+        print(f"   ⚠️  Failed to ping Healthchecks.io: {e}")
+
+
 def main():
     """Main execution flow."""
     print("=" * 80)
@@ -200,12 +221,19 @@ def main():
         print("=" * 80)
         print(f"Timestamp: {datetime.now(timezone.utc).isoformat().replace('+00:00', 'Z')}")
 
+        # Ping Healthchecks.io on success
+        ping_healthcheck(success=True)
+
         return 0
 
     except Exception as e:
         print(f"\n❌ ERROR: {e}")
         import traceback
         traceback.print_exc()
+
+        # Ping Healthchecks.io on failure
+        ping_healthcheck(success=False)
+
         return 1
 
 
