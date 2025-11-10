@@ -3,6 +3,15 @@ info:
   title: DuckDB Integration Strategy
   version: 1.0.0
   description: |
+    ⚠️ SUPERSEDED (2025-11-04): This specification described "Parquet for Data" architecture.
+
+    **Current Architecture**: DuckDB PRIMARY (all raw data in DuckDB tables)
+
+    See master-project-roadmap.yaml x-architecture section for current approach.
+    This file preserved for historical context only.
+
+    ---
+
     Comprehensive DuckDB integration plan for gapless-network-data based on
     5-agent investigation (2025-11-03). Defines architectural principle,
     23 features, implementation priorities, and migration strategy.
