@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # /// script
-# dependencies = ["websockets", "duckdb", "pyarrow", "google-cloud-secret-manager"]
+# dependencies = ["websockets", "duckdb", "pyarrow", "google-cloud-secret-manager", "requests"]
 # ///
 """
 Alchemy WebSocket → MotherDuck Real-Time Ethereum Block Collector
@@ -18,17 +18,21 @@ Environment Variables:
 import os
 import sys
 import json
+import time
 import asyncio
+import threading
 from datetime import datetime, timezone
 from google.cloud import secretmanager
 import websockets
 import duckdb
+import requests
 
 # Configuration
 GCP_PROJECT = os.environ.get('GCP_PROJECT', 'eonlabs-ethereum-bq')
 MD_DATABASE = os.environ.get('MD_DATABASE', 'ethereum_mainnet')
 MD_TABLE = os.environ.get('MD_TABLE', 'blocks')
 ALCHEMY_WS_URL = None  # Will be set by validate_config() from Secret Manager
+HEALTHCHECK_URL = 'https://hc-ping.com/d73a71f2-9457-4e58-9ed6-8a31db5bbed1'  # Healthchecks.io heartbeat
 
 # Block fields to collect (matches BigQuery schema)
 BLOCK_FIELDS = [
@@ -60,6 +64,26 @@ def get_secret(secret_id: str, project_id: str = GCP_PROJECT) -> str:
     name = f"projects/{project_id}/secrets/{secret_id}/versions/latest"
     response = client.access_secret_version(request={"name": name})
     return response.payload.data.decode('UTF-8').strip()
+
+
+def heartbeat_worker():
+    """Background thread that pings Healthchecks.io every 5 minutes.
+
+    This provides a Dead Man's Switch monitoring pattern - if the VM or service
+    stops running, Healthchecks.io will detect the missing pings and send alerts.
+    """
+    while True:
+        try:
+            response = requests.get(HEALTHCHECK_URL, timeout=10)
+            response.raise_for_status()
+            now = datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M:%S')
+            print(f"[{now}] [HEARTBEAT] ✅ Pinged Healthchecks.io")
+        except Exception as e:
+            now = datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M:%S')
+            print(f"[{now}] [HEARTBEAT] ⚠️  Failed to ping: {e}")
+
+        # Sleep for 5 minutes
+        time.sleep(300)
 
 
 def validate_config():
@@ -263,6 +287,13 @@ def main():
     print(f"Timestamp: {datetime.now(timezone.utc).isoformat().replace('+00:00', 'Z')}")
     print(f"Database: {MD_DATABASE}.{MD_TABLE}")
     print("=" * 80)
+    print()
+
+    # Start background heartbeat thread for Healthchecks.io monitoring
+    print("[INIT] Starting Healthchecks.io heartbeat thread...")
+    heartbeat_thread = threading.Thread(target=heartbeat_worker, daemon=True)
+    heartbeat_thread.start()
+    print("✅ Heartbeat thread started (pings every 5 minutes)")
     print()
 
     try:
