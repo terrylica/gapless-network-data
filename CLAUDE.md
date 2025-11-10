@@ -291,18 +291,43 @@ See `.claude/skills/motherduck-pipeline-operations/` for complete workflows and 
 
 **Current State**: ALL SYSTEMS OPERATIONAL ✅
 
+**Infrastructure Components**:
+
+- **VM eth-realtime-collector**: ACTIVE (real-time WebSocket streaming via Alchemy)
+- **eth-collector systemd service**: ACTIVE (streaming blocks every ~12 seconds)
+- **Cloud Run eth-md-updater**: ACTIVE (hourly BigQuery sync, last 2 hours)
+- **Cloud Scheduler eth-md-hourly**: ENABLED (triggers hourly at :00)
+- **MotherDuck ethereum_mainnet.blocks**: 14.57M blocks (2020-2025)
+
 **Infrastructure Recovery** (2025-11-10 07:00 UTC):
+
 - VM network failure detected (DNS resolution failed, metadata server unreachable)
 - Recovery: VM reset restored network connectivity
 - eth-collector service restarted with `.strip()` fix (gRPC metadata validation resolved)
 - Real-time data flow confirmed: blocks streaming every ~12 seconds
 - Database verified: 14.57M blocks (2020-2025), latest block within 44 seconds
 
-**Blockers Identified**:
-- Cloud Run hourly scheduler: Requires App Engine initialization (user decision pending)
-- Pushover monitoring: Requires API credentials (user input needed)
-- Healthchecks.io integration: Requires project setup (user input needed)
-- UptimeRobot integration: Requires account setup (user input needed)
+**Monitoring Setup** (2025-11-10):
+
+- **Pushover**: Implemented and tested (alert notifications for pipeline failures)
+  - Test alert sent successfully (Request ID: 10a4994f-a12e-44b7-8cf6-c9a646a8812c)
+  - Credentials sourced from Doppler (PUSHOVER_TOKEN, PUSHOVER_USER)
+  - Script: `.claude/skills/data-pipeline-monitoring/scripts/send_pushover_alert.py`
+
+- **Healthchecks.io**: Implemented and tested (uptime tracking)
+  - Check created: eth-pipeline-test
+  - Pinged successfully via API v3
+  - Credentials sourced from Doppler (HEALTHCHECKS_API_KEY)
+  - Script: `.claude/skills/data-pipeline-monitoring/scripts/ping_healthchecks.py`
+
+- **UptimeRobot**: API key available in Doppler, integration pending
+
+**Scheduled Monitoring** (discovered existing setup):
+
+- Cloud Scheduler `eth-md-hourly` running in `us-central1`
+- Schedule: `0 * * * *` (hourly, America/New_York timezone)
+- Recent executions: 5/5 succeeded (03:00-07:00 UTC, avg 1m30s duration)
+- Service account: eth-md-scheduler-sa@eonlabs-ethereum-bq.iam.gserviceaccount.com
 
 **Maintainability SLO Achievement**: Critical infrastructure failure (VM network down) resolved in <30 minutes (VM reset + service restart + verification).
 
