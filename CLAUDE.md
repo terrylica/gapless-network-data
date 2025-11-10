@@ -8,7 +8,7 @@ Gapless Network Data is a multi-chain blockchain network metrics collection tool
 
 **Core Capability**: Collect complete historical blockchain network data with high-frequency granularity:
 
-- **Ethereum** (PRIMARY): Block-level data via BigQuery + Alchemy dual-pipeline (~12 second intervals, 14.57M blocks operational)
+- **Ethereum** (PRIMARY): Block-level data via Alchemy real-time stream (~12 second intervals, 14.57M blocks operational)
 - **Bitcoin**: Mempool snapshots via mempool.space (5-minute intervals, future work)
 - **Multi-chain**: Extensible to Solana, Avalanche, Polygon, etc.
 
@@ -69,14 +69,14 @@ Coordinates all project phases, specifications, and implementation work.
 - **Phase**: Phase 1 (Historical Data Collection: 5-Year Backfill) - **COMPLETED** (2025-11-10)
 - **Version**: v2.4.0 (production operational)
 - **Data Loaded**: 14.57M Ethereum blocks (2020-2025) in MotherDuck
-- **Architecture**: BigQuery hourly batch + Alchemy real-time WebSocket (dual-pipeline operational)
+- **Architecture**: Alchemy real-time WebSocket (VM-based streaming) + historical backfill via BigQuery
 - **Monitoring**: Healthchecks.io + UptimeRobot + Pushover (all cloud-based)
 - **Authoritative Spec**: `/Users/terryli/eon/gapless-network-data/specifications/master-project-roadmap.yaml ` Phase 1
 - **Validation**: Empirical validation complete - see `/Users/terryli/eon/gapless-network-data/scratch/README.md ` and `/Users/terryli/eon/gapless-network-data/scratch/ethereum-collector-poc/ETHEREUM_COLLECTOR_POC_REPORT.md `
 
 **Key Decisions Logged**:
 
-1. Architecture: MotherDuck cloud database for dual-pipeline ingestion (2025-11-09, operational)
+1. Architecture: MotherDuck cloud database for VM-based real-time ingestion (2025-11-09, operational)
 2. Data Sources: BigQuery public dataset (historical) + Alchemy WebSocket (real-time) - rejected LlamaRPC due to rate limits (2025-11-10)
 3. Separate databases for gapless-crypto-data and gapless-network-data (9-2 score)
 4. ASOF JOIN as P0 feature (prevents data leakage, 16x faster)
@@ -120,7 +120,7 @@ Coordinates all project phases, specifications, and implementation work.
 
 - **Ethereum Historical**: BigQuery public dataset `bigquery-public-data.crypto_ethereum.blocks` (2015-2025, 14.57M blocks, free tier)
 - **Ethereum Real-Time**: Alchemy WebSocket API (300M CU/month free tier, ~12s block intervals)
-- **Storage**: MotherDuck cloud database (dual-pipeline with automatic deduplication)
+- **Storage**: MotherDuck cloud database (VM-based real-time ingestion with automatic deduplication)
 
 **Researched Sources (Not Used in Production)**:
 
@@ -164,12 +164,20 @@ Each directory contains:
 
 ### Secret Manager Best Practices
 
-All production credentials stored in Google Cloud Secret Manager (no Doppler):
+**Production (Cloud Infrastructure)**: Google Cloud Secret Manager
+
+All production credentials stored in Google Cloud Secret Manager:
 
 **Secrets**:
 
 - `alchemy-api-key` - Alchemy WebSocket access
 - `motherduck-token` - MotherDuck authentication
+
+**Local Development (Optional)**: Doppler CLI
+
+Skills scripts (`.claude/skills/data-pipeline-monitoring/`) may use Doppler for local testing:
+- `PUSHOVER_TOKEN`, `PUSHOVER_USER` - Alert notifications
+- `HEALTHCHECKS_API_KEY` - Uptime tracking
 
 **IAM Permissions**:
 
@@ -457,12 +465,12 @@ Project-specific skills that capture validated workflows from scratch investigat
 
 **Version**: v2.4.0 (production operational)
 
-**Status**: Production operational - dual-pipeline architecture with 14.57M blocks
+**Status**: Production operational - VM-based real-time collection with 14.57M blocks
 
 **Operational Infrastructure**:
 
-- **BigQuery Hourly Batch** (Cloud Run Job): Syncs latest blocks from BigQuery public dataset every hour (~578 blocks/run)
-- **Alchemy Real-Time Stream** (e2-micro VM): WebSocket subscription for real-time blocks (~12s intervals)
+- **Alchemy Real-Time Stream** (e2-micro VM): WebSocket subscription for real-time blocks (~12s intervals) - OPERATIONAL
+- **BigQuery Hourly Batch** (Cloud Run Job): Planned but not deployed - historical backfill completed via local scripts
 - **MotherDuck Database**: Cloud-hosted DuckDB with automatic deduplication (INSERT OR REPLACE)
 - **Monitoring**: Healthchecks.io (Dead Man's Switch) + UptimeRobot (HTTP checks) + Pushover (alerts)
 
@@ -714,7 +722,7 @@ All investigation materials with absolute paths:
 - **Purpose**: Always up-to-date production data (14.57M blocks, 2020-2025)
 - **Access**: SDK queries this by default (`import gapless_network_data`)
 - **Deployment**: Maintained by cloud pipelines (no user setup required)
-- **Current Status**: Operational (dual-pipeline architecture)
+- **Current Status**: Operational (VM-based real-time collection)
 
 **Local Development (Optional)**:
 
