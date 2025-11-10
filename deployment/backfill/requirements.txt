@@ -1,0 +1,7 @@
+# Dependencies for historical_backfill.py
+# Pinned versions for reproducible builds
+
+google-cloud-bigquery[bqstorage]==3.27.0
+google-cloud-secret-manager==2.21.1
+duckdb==1.4.1
+pyarrow==19.0.0

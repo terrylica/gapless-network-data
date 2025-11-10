@@ -160,6 +160,7 @@ Dual-pipeline architecture for Ethereum data collection with automatic deduplica
 - `deployment/backfill/` - Historical backfill script (2020-2025, ~13M blocks)
 
 Each directory contains:
+
 - Production Python scripts
 - Infrastructure files (Dockerfile, systemd service)
 - README.md with deployment instructions
@@ -169,14 +170,17 @@ Each directory contains:
 All production credentials stored in Google Cloud Secret Manager (no Doppler):
 
 **Secrets**:
+
 - `alchemy-api-key` - Alchemy WebSocket access
 - `motherduck-token` - MotherDuck authentication
 
 **IAM Permissions**:
+
 - VM service account: `893624294905-compute@developer.gserviceaccount.com` → `roles/secretmanager.secretAccessor`
 - Cloud Run service account: `eth-md-job-sa@eonlabs-ethereum-bq.iam.gserviceaccount.com` → `roles/secretmanager.secretAccessor`
 
 **Critical Pattern**:
+
 ```python
 def get_secret(secret_id: str, project_id: str = GCP_PROJECT) -> str:
     """Fetch secret from Google Secret Manager."""
@@ -191,6 +195,7 @@ def get_secret(secret_id: str, project_id: str = GCP_PROJECT) -> str:
 ### Service Management
 
 **Cloud Run Job** (BigQuery sync):
+
 ```bash
 # View execution history
 gcloud run jobs executions list --job eth-md-updater --region us-east1
@@ -200,6 +205,7 @@ gcloud run jobs execute eth-md-updater --region us-east1
 ```
 
 **VM Service** (real-time collector):
+
 ```bash
 # View logs
 gcloud compute ssh eth-realtime-collector --zone=us-east1-b --command='sudo journalctl -u eth-collector -f'
@@ -211,23 +217,76 @@ gcloud compute ssh eth-realtime-collector --zone=us-east1-b --command='sudo syst
 gcloud compute ssh eth-realtime-collector --zone=us-east1-b --command='sudo systemctl restart eth-collector'
 ```
 
+### Database Verification & Operations
+
+**Important**: Pipeline health monitoring (whether services are running) is separate from data completeness verification (whether historical data exists in MotherDuck).
+
+**Verify MotherDuck Database State**:
+
+Use the `motherduck-pipeline-operations` skill for database verification:
+
+```bash
+cd /Users/terryli/eon/gapless-network-data/.claude/skills/motherduck-pipeline-operations
+uv run scripts/verify_motherduck.py
+```
+
+Expected output for complete 2020-2025 backfill:
+- Total blocks: 13-15M
+- Block range: ~11,560,000 → ~24,000,000
+- Time range: 2020-01-01 → 2025-present
+- Yearly breakdown showing ~2-3M blocks per year
+
+**Historical Backfill**:
+
+For loading multi-year historical data, use 1-year chunking pattern (canonical approach established 2025-11-10):
+
+```bash
+cd /Users/terryli/eon/gapless-network-data/deployment/backfill
+./chunked_backfill.sh 2020 2025
+```
+
+Pattern details:
+- Chunk size: 1 year (~2.6M blocks, ~1.5-2GB memory)
+- Execution time: ~1m40s-2m per chunk
+- Prevents OOM failures (Cloud Run 4GB limit)
+- Idempotent: `INSERT OR REPLACE` allows safe re-runs
+
+**Common Scenario**: "Pipeline health checks show OK, but no historical data exists"
+
+Root cause: Dual-pipeline architecture responsibilities:
+- Cloud Run `eth-md-updater`: Hourly sync of **last 2 hours only** (NOT historical)
+- VM `eth-realtime-collector`: Real-time streaming of **new blocks only** (NOT historical)
+- Historical backfill: **Separate one-time operation** using `ethereum-historical-backfill` Cloud Run Job
+
+Resolution workflow:
+1. Verify database state with `verify_motherduck.py`
+2. If missing historical blocks, execute `chunked_backfill.sh`
+3. Re-verify to confirm 13-15M blocks loaded
+
+See `.claude/skills/motherduck-pipeline-operations/` for complete workflows and troubleshooting.
+
 ### SLOs
 
 **Availability**: Data pipelines run without manual intervention
+
 - Status: MET (both pipelines operational)
 
 **Correctness**: 100% data accuracy with no silent errors
+
 - Status: MET (schema validation, exception-only failures, idempotent deduplication)
 
 **Observability**: 100% operation tracking with queryable logs
+
 - Status: MET (Cloud Logging for all operations)
 
 **Maintainability**: <30 minutes for common operations
+
 - Status: MET (critical fix deployed in <15 minutes)
 
 ### Cost
 
 **Total**: $0/month (all within free tiers)
+
 - BigQuery: $0 (10 MB queries within 1 TB/month free tier)
 - Cloud Run: $0 (720 executions within free tier)
 - Compute Engine: $0 (e2-micro within free tier)
@@ -296,6 +355,32 @@ Project-specific skills that capture validated workflows from scratch investigat
 **Complete Documentation**: See `.claude/skills/bigquery-ethereum-data-acquisition/CLAUDE.md` for column selection rationale, research methodology, and implementation guide
 
 **Package**: Available as `/Users/terryli/eon/gapless-network-data/bigquery-ethereum-data-acquisition.zip ` for distribution
+
+### motherduck-pipeline-operations
+
+**Description**: Operations for managing the Ethereum blockchain data pipeline that populates MotherDuck cloud database. Use when verifying MotherDuck database state, executing historical backfills, or troubleshooting missing historical data despite pipeline health checks showing systems are operational.
+
+**Key Principle**: Pipeline health monitoring (whether services are running) is separate from data completeness verification (whether historical data exists in MotherDuck).
+
+**What This Skill Provides**:
+
+- 3 core operations: Verify database state, Execute chunked backfill, Troubleshoot missing data
+- Scripts: `verify_motherduck.py` (database verification)
+- References: `pipeline-architecture-and-troubleshooting.md` (dual-pipeline architecture, common failure modes)
+- Canonical pattern: 1-year chunked backfills to prevent OOM failures (empirically validated 2025-11-10)
+
+**When to Use**:
+
+- Verifying actual MotherDuck database state (block counts, historical data presence)
+- Executing historical backfills for Ethereum blockchain data
+- Troubleshooting "No historical data despite healthy pipelines" scenarios
+- Understanding dual-pipeline architecture responsibilities
+
+**Validated Pattern From**: 5-year backfill execution (14.57M blocks, 2020-2025) using `deployment/backfill/chunked_backfill.sh`
+
+**Cross-References**: Works with `data-pipeline-monitoring` skill (pipeline health) and `bigquery-ethereum-data-acquisition` skill (BigQuery → MotherDuck workflow)
+
+**Package**: Available as `/Users/terryli/eon/gapless-network-data/motherduck-pipeline-operations.zip ` for distribution
 
 ## SDK Quality Standards
 

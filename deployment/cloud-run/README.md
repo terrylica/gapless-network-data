@@ -22,6 +22,7 @@ Cloud Run Job that syncs latest Ethereum blocks from BigQuery to MotherDuck on a
 ## Deployment
 
 Build and push container:
+
 ```bash
 cd deployment/cloud-run
 
@@ -31,6 +32,7 @@ gcloud builds submit \
 ```
 
 Update Cloud Run Job:
+
 ```bash
 gcloud run jobs update eth-md-updater \
   --image gcr.io/eonlabs-ethereum-bq/eth-md-updater \
@@ -41,6 +43,7 @@ gcloud run jobs update eth-md-updater \
 ## Manual Execution
 
 Run the job manually:
+
 ```bash
 gcloud run jobs execute eth-md-updater \
   --region us-east1 \
@@ -50,6 +53,7 @@ gcloud run jobs execute eth-md-updater \
 ## Configuration
 
 Environment variables (set on Cloud Run Job):
+
 - `GCP_PROJECT`: `eonlabs-ethereum-bq`
 - `LOOKBACK_HOURS`: `2` (default, fetch blocks from last 2 hours)
 - `MD_DATABASE`: `ethereum_mainnet`
@@ -68,6 +72,7 @@ BigQuery (crypto_ethereum.blocks) → PyArrow → MotherDuck (ethereum_mainnet.b
 ## Schedule
 
 Cloud Scheduler runs this job every hour at minute 0:
+
 ```
 0 * * * *
 ```
@@ -75,6 +80,7 @@ Cloud Scheduler runs this job every hour at minute 0:
 ## Monitoring
 
 View job execution history:
+
 ```bash
 gcloud run jobs executions list \
   --job eth-md-updater \
@@ -83,6 +89,7 @@ gcloud run jobs executions list \
 ```
 
 View logs for latest execution:
+
 ```bash
 gcloud logging read \
   "resource.type=cloud_run_job AND resource.labels.job_name=eth-md-updater" \

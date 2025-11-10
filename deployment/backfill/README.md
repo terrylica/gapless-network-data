@@ -20,17 +20,20 @@ One-time backfill script to load 5 years of historical Ethereum blocks from BigQ
 ## Execution
 
 ### Default (2020-2025):
+
 ```bash
 cd deployment/backfill
 uv run historical_backfill.py
 ```
 
 ### Custom date range:
+
 ```bash
 uv run historical_backfill.py --start-year 2022 --end-year 2024
 ```
 
 ### Dry run (show query without executing):
+
 ```bash
 uv run historical_backfill.py --dry-run
 ```
@@ -38,10 +41,12 @@ uv run historical_backfill.py --dry-run
 ## Expected Performance
 
 **Data volume**:
+
 - 2020-2025: ~13M blocks
 - Storage size: ~1.5 GB in MotherDuck
 
 **Execution time**: ~30-60 minutes
+
 - BigQuery query: ~30s
 - MotherDuck insert: ~30-45 minutes
 
@@ -60,6 +65,7 @@ MotherDuck (ethereum_mainnet.blocks)
 ## Configuration
 
 Environment variables (optional):
+
 - `GCP_PROJECT`: GCP project ID (default: `eonlabs-ethereum-bq`)
 - `MD_DATABASE`: MotherDuck database name (default: `ethereum_mainnet`)
 - `MD_TABLE`: MotherDuck table name (default: `blocks`)
@@ -69,6 +75,7 @@ Environment variables (optional):
 ## Schema
 
 11 columns optimized for ML feature engineering:
+
 - `timestamp` (TIMESTAMP)
 - `number` (BIGINT, PRIMARY KEY)
 - `gas_limit` (BIGINT)
@@ -84,6 +91,7 @@ Environment variables (optional):
 ## Monitoring
 
 The script outputs progress to stdout:
+
 1. Fetch phase: Shows block range and count
 2. Load phase: Shows insertion rate (blocks/sec)
 3. Verification: Shows total blocks and block range in MotherDuck
@@ -91,6 +99,7 @@ The script outputs progress to stdout:
 ## Error Handling
 
 The script raises and propagates all errors (exception-only failures):
+
 - BigQuery query errors
 - Secret Manager access errors
 - MotherDuck connection errors
@@ -107,6 +116,7 @@ No retries, no fallbacks, no silent failures.
 ## One-Time Execution
 
 This script is designed for one-time use. After initial backfill:
+
 1. Real-time collector (VM) handles new blocks (~12s intervals)
 2. Hourly sync (Cloud Run) handles any gaps
 3. Re-running is safe (idempotent due to `INSERT OR REPLACE`)

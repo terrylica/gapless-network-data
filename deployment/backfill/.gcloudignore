@@ -1,0 +1,13 @@
+# Exclude unnecessary files from Cloud Build context
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.git/
+.gitignore
+README.md
+*.md
+.DS_Store
+*.swp
+*.swo
+*~

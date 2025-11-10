@@ -82,7 +82,25 @@ Validated scripts (v0.2.0):
 - `scripts/README.md` - Complete script usage guide with validated results
 - `VALIDATION_STATUS.md` - Empirical test results, testing methodology, dependencies validated
 
+## Verification After Acquisition
+
+**Important**: This skill covers data acquisition from BigQuery (downloading historical Ethereum blocks), but does NOT verify the data actually landed in MotherDuck.
+
+After completing BigQuery download and DuckDB import:
+- Use the **motherduck-pipeline-operations** skill
+- Run `uv run scripts/verify_motherduck.py` to verify database state
+- Confirm expected block count (~13-15M blocks for 2020-2025 backfill)
+
+**Common workflow**:
+1. Download from BigQuery using this skill (Step 4 above)
+2. Import to DuckDB (Step 5 above)
+3. **Verify MotherDuck state** using motherduck-pipeline-operations skill
+4. Check yearly breakdown to ensure complete coverage
+
+See `motherduck-pipeline-operations` skill for database verification and troubleshooting missing data.
+
 ## Related Skills
 
+- `motherduck-pipeline-operations` - MotherDuck database verification and historical backfill operations
 - `blockchain-rpc-provider-research` - RPC rate limit comparison and provider evaluation
 - `blockchain-data-collection-validation` - Empirical validation workflow for data pipelines
