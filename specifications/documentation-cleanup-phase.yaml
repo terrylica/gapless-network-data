@@ -1,0 +1,209 @@
+openapi: 3.1.0
+info:
+  title: Documentation Cleanup Specification
+  version: 1.0.0
+  description: |
+    Systematic removal of legacy documentation, outdated scripts, and superseded specifications.
+
+    Findings from 4-agent parallel audit (2025-11-10):
+    - 5 critical issues (wrong architecture taught to users)
+    - 6 medium issues (misleading version/status)
+    - 16 low issues (cosmetic inaccuracies)
+
+    Status: planned (2025-11-10)
+    Cost: $0 (documentation cleanup)
+
+  x-metadata:
+    project: "gapless-network-data"
+    component: "Documentation Cleanup"
+    created: "2025-11-10"
+    last_updated: "2025-11-10"
+    status: "planned"
+    environment: "documentation"
+    supersedes: []
+    audit_reports:
+      - "/tmp/scripts-audit/AUDIT_REPORT.md"
+      - "/tmp/docs-audit/AUDIT_REPORT.md"
+      - "/tmp/docstrings-audit/AUDIT_REPORT.md"
+      - "/tmp/specifications-audit/AUDIT_REPORT.md"
+
+  x-slos:
+    availability:
+      target: "Documentation accurately reflects operational architecture"
+      measurement: "Zero references to removed services in user-facing docs"
+      failure_mode: "Users attempt to configure superseded services"
+      error_handling: "Raise exception if git operations fail"
+
+    correctness:
+      target: "100% version accuracy across all documentation"
+      measurement: "All references show v2.4.0, Phase 1 completed status"
+      validation: |
+        - grep -r "v0.1.0" returns no results in docs/
+        - grep -r "planned" in specifications shows only future work
+        - All UptimeRobot/Doppler references in archived locations
+      failure_mode: "Documentation contradicts operational reality"
+
+    observability:
+      target: "All cleanup operations tracked with git commits"
+      measurement: "Each phase committed separately with conventional commits"
+      log_format: "chore(docs): <action> - <rationale>"
+      failure_mode: "Changes not tracked in version control"
+
+    maintainability:
+      target: "<60 minutes for complete cleanup"
+      measurement: "Time from start to final commit"
+      operations:
+        critical_fixes: "20 minutes (P0)"
+        status_updates: "15 minutes (P1)"
+        documentation_alignment: "25 minutes (P2)"
+
+  x-phases:
+    phase_1_critical:
+      name: "Remove superseded monitoring infrastructure"
+      rationale: "Blocks users from configuring non-functional monitoring"
+      tasks:
+        - delete_deployment_monitoring_dir
+        - archive_setup_monitoring_script
+        - add_research_deprecation_warnings
+      severity: "critical"
+      estimated_time: "20 minutes"
+
+    phase_2_status:
+      name: "Update version and status fields"
+      rationale: "Documentation shows v0.1.0 planned when v2.4.0 operational"
+      tasks:
+        - update_master_roadmap_version
+        - archive_phase1_checklist
+        - update_deployment_docstrings
+      severity: "medium"
+      estimated_time: "15 minutes"
+
+    phase_3_alignment:
+      name: "Align architecture documentation"
+      rationale: "Docs reference rejected LlamaRPC, superseded Parquet storage"
+      tasks:
+        - update_architecture_docs
+        - archive_monitoring_skill
+        - add_motherduck_probe_notice
+      severity: "medium"
+      estimated_time: "25 minutes"
+
+  x-implementation:
+    phase_1_critical:
+      task_1:
+        id: "delete_deployment_monitoring_dir"
+        intent: "Remove UptimeRobot setup automation for removed service"
+        command: "git rm -r deployment/monitoring/"
+        validation: "ls deployment/monitoring/ returns error"
+        files_affected:
+          - "deployment/monitoring/README.md (90 lines)"
+          - "deployment/monitoring/setup_monitoring.py (427 lines)"
+        rationale: |
+          UptimeRobot monitors HTTP endpoints.
+          Cloud Run Jobs don't expose HTTP endpoints.
+          This directory teaches users to configure non-functional monitoring.
+
+      task_2:
+        id: "archive_setup_monitoring_script"
+        intent: "Preserve Doppler-based monitoring research"
+        command: "git mv deployment/monitoring/setup_monitoring.py scratch/archive/"
+        validation: "grep -l 'def setup_doppler' scratch/archive/*.py"
+        note: "Already deleted by task_1, no action needed"
+
+      task_3:
+        id: "add_research_deprecation_warnings"
+        intent: "Clarify LlamaRPC research vs production decision"
+        files:
+          - "docs/research/ethereum/README.md"
+          - "docs/research/INDEX.md"
+          - "docs/llamarpc/INDEX.md"
+        template: |
+          > **⚠️ Research Artifact**: This documentation describes LlamaRPC evaluation.
+          > Production uses BigQuery + Alchemy (empirical testing showed 1.37 RPS sustained vs 50 RPS documented).
+          > See [Ethereum Collector POC Report](../../scratch/ethereum-collector-poc/ETHEREUM_COLLECTOR_POC_REPORT.md).
+
+    phase_2_status:
+      task_1:
+        id: "update_master_roadmap_version"
+        intent: "Reflect operational status"
+        file: "specifications/master-project-roadmap.yaml"
+        changes:
+          - field: "project_version"
+            from: "v0.1.0 (alpha)"
+            to: "v2.4.0 (production operational)"
+          - field: "current_phase"
+            from: "Phase 1: Basic Collection (planned)"
+            to: "Phase 1: Historical Data Collection - COMPLETED (2025-11-10)"
+          - field: "ethereum_backfill.status"
+            from: "pending"
+            to: "completed (14.57M blocks, 2020-2025)"
+
+      task_2:
+        id: "archive_phase1_checklist"
+        intent: "Move completed checklist to archive"
+        command: "git mv specifications/phase1-implementation-checklist.yaml specifications/archive/"
+        validation: "ls specifications/archive/phase1-implementation-checklist.yaml"
+
+      task_3:
+        id: "update_deployment_docstrings"
+        intent: "Fix environment variable documentation"
+        files:
+          - "deployment/cloud-run/main.py"
+          - "deployment/vm/realtime_collector.py"
+          - "deployment/backfill/historical_backfill.py"
+        pattern: "motherduck_token environment variable"
+        replacement: "motherduck_token from Google Secret Manager (secret: motherduck-token)"
+
+    phase_3_alignment:
+      task_1:
+        id: "update_architecture_docs"
+        intent: "Replace rejected architecture references"
+        files:
+          - "docs/architecture/OVERVIEW.md"
+          - "docs/architecture/DATA_FORMAT.md"
+        replacements:
+          - pattern: "LlamaRPC"
+            replacement: "BigQuery (hourly batch) + Alchemy WebSocket (real-time)"
+          - pattern: "Parquet files"
+            replacement: "MotherDuck cloud database"
+          - pattern: "web3.py"
+            replacement: "google-cloud-bigquery + duckdb"
+
+      task_2:
+        id: "archive_monitoring_skill"
+        intent: "Move UptimeRobot skill to archive"
+        command: "git mv .claude/skills/service-monitoring-setup .claude/skills/archive/"
+        validation: "ls .claude/skills/archive/service-monitoring-setup/"
+
+      task_3:
+        id: "add_motherduck_probe_notice"
+        intent: "Clarify Doppler test vs GCP Secret Manager production"
+        file: "scratch/motherduck-probe/README.md"
+        prepend: |
+          > **⚠️ Research Artifact**: Doppler secret injection tests.
+          > Production uses GCP Secret Manager with `.strip()` pattern.
+          > See [Secret Manager Migration Report](../motherduck-migration/docs-staging/SECRET_MANAGER_MIGRATION_REPORT.md).
+
+  x-validation:
+    post_phase_1:
+      - "deployment/monitoring/ directory does not exist"
+      - "grep -r 'UptimeRobot' docs/ returns only archived references"
+      - "All research docs have deprecation warnings"
+
+    post_phase_2:
+      - "grep 'v0.1.0' specifications/ returns no results"
+      - "specifications/archive/phase1-implementation-checklist.yaml exists"
+      - "Deployment docstrings reference Secret Manager, not env vars"
+
+    post_phase_3:
+      - "grep -r 'LlamaRPC' docs/architecture/ returns no results"
+      - ".claude/skills/service-monitoring-setup/ moved to archive/"
+      - "scratch/motherduck-probe/README.md has deprecation notice"
+
+    final:
+      - "Total commits: 3 (one per phase)"
+      - "All commits use conventional commit format"
+      - "semantic-release creates new version tag"
+
+paths: {}
+components: {}
