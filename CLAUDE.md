@@ -320,7 +320,10 @@ See `.claude/skills/motherduck-pipeline-operations/` for complete workflows and 
   - Credentials sourced from Doppler (HEALTHCHECKS_API_KEY)
   - Script: `.claude/skills/data-pipeline-monitoring/scripts/ping_healthchecks.py`
 
-- **UptimeRobot**: API key available in Doppler, integration pending
+- **UptimeRobot**: Removed (Cloud Run Jobs don't expose public HTTP endpoints)
+  - Lesson learned: UptimeRobot is for public HTTP endpoints only
+  - Cloud Run Jobs require Dead Man's Switch monitoring (Healthchecks.io)
+  - Attempted to monitor Kubernetes API endpoint caused false positive alerts
 
 **Scheduled Monitoring** (discovered existing setup):
 
