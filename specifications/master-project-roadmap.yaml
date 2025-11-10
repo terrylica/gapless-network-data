@@ -215,7 +215,7 @@ x-project-phases:
 
   phase_1_basic_collection:
     name: "Historical Data Collection (5-Year Backfill)"
-    status: "planned"
+    status: "completed (2025-11-10)"
     estimated_duration: "2-4 hours total (< 1 hour data acquisition + 2-3 hours implementation)"
     dependencies: ["phase_0_foundation"]
     validation_status: "Empirically validated 2025-11-07 - see .claude/skills/bigquery-ethereum-data-acquisition/"
