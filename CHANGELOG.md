@@ -1,3 +1,10 @@
+# [2.4.0](https://github.com/terrylica/gapless-network-data/compare/v2.3.0...v2.4.0) (2025-11-10)
+
+
+### Features
+
+* add motherduck data quality monitoring ([7f0e518](https://github.com/terrylica/gapless-network-data/commit/7f0e518e179e69528bb85a93a397746d03fcaf4d))
+
 # [2.3.0](https://github.com/terrylica/gapless-network-data/compare/v2.2.1...v2.3.0) (2025-11-10)
 
 
