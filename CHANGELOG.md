@@ -1,3 +1,10 @@
+## [2.0.1](https://github.com/terrylica/gapless-network-data/compare/v2.0.0...v2.0.1) (2025-11-10)
+
+
+### Bug Fixes
+
+* **skills:** sync monitoring skill docs with Pushover API clients ([6115cc5](https://github.com/terrylica/gapless-network-data/commit/6115cc5479fcb346400e4f4ec30d9c3505a6323e))
+
 # [2.0.0](https://github.com/terrylica/gapless-network-data/compare/v1.1.1...v2.0.0) (2025-11-10)
 
 
