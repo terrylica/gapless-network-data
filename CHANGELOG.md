@@ -1,9 +1,8 @@
 ## [1.1.1](https://github.com/terrylica/gapless-network-data/compare/v1.1.0...v1.1.1) (2025-11-09)
 
-
 ### Bug Fixes
 
-* deploy .strip() fix to VM collector, resolve crash-loop ([8f820e7](https://github.com/terrylica/gapless-network-data/commit/8f820e786d1d56ffc04be09b765a1c93a4757091))
+- deploy .strip() fix to VM collector, resolve crash-loop ([8f820e7](https://github.com/terrylica/gapless-network-data/commit/8f820e786d1d56ffc04be09b765a1c93a4757091))
 
 # [1.1.0](https://github.com/terrylica/gapless-network-data/compare/v1.0.0...v1.1.0) (2025-11-09)
 

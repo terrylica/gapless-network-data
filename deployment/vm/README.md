@@ -26,6 +26,7 @@ cd deployment/vm
 ```
 
 The script performs:
+
 1. Verify Secret Manager permissions for VM service account
 2. Copy `realtime_collector.py` to VM
 3. Install Python dependencies (websockets, duckdb, pyarrow, google-cloud-secret-manager)
@@ -36,21 +37,25 @@ The script performs:
 ## Service Management
 
 View logs:
+
 ```bash
 gcloud compute ssh eth-realtime-collector --zone=us-east1-b --project=eonlabs-ethereum-bq --command='sudo journalctl -u eth-collector -f'
 ```
 
 Check status:
+
 ```bash
 gcloud compute ssh eth-realtime-collector --zone=us-east1-b --project=eonlabs-ethereum-bq --command='sudo systemctl status eth-collector'
 ```
 
 Restart service:
+
 ```bash
 gcloud compute ssh eth-realtime-collector --zone=us-east1-b --project=eonlabs-ethereum-bq --command='sudo systemctl restart eth-collector'
 ```
 
 Stop service:
+
 ```bash
 gcloud compute ssh eth-realtime-collector --zone=us-east1-b --project=eonlabs-ethereum-bq --command='sudo systemctl stop eth-collector'
 ```
