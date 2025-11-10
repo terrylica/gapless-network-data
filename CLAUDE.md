@@ -231,6 +231,7 @@ uv run scripts/verify_motherduck.py
 ```
 
 Expected output for complete 2020-2025 backfill:
+
 - Total blocks: 13-15M
 - Block range: ~11,560,000 → ~24,000,000
 - Time range: 2020-01-01 → 2025-present
@@ -246,6 +247,7 @@ cd /Users/terryli/eon/gapless-network-data/deployment/backfill
 ```
 
 Pattern details:
+
 - Chunk size: 1 year (~2.6M blocks, ~1.5-2GB memory)
 - Execution time: ~1m40s-2m per chunk
 - Prevents OOM failures (Cloud Run 4GB limit)
@@ -254,11 +256,13 @@ Pattern details:
 **Common Scenario**: "Pipeline health checks show OK, but no historical data exists"
 
 Root cause: Dual-pipeline architecture responsibilities:
+
 - Cloud Run `eth-md-updater`: Hourly sync of **last 2 hours only** (NOT historical)
 - VM `eth-realtime-collector`: Real-time streaming of **new blocks only** (NOT historical)
 - Historical backfill: **Separate one-time operation** using `ethereum-historical-backfill` Cloud Run Job
 
 Resolution workflow:
+
 1. Verify database state with `verify_motherduck.py`
 2. If missing historical blocks, execute `chunked_backfill.sh`
 3. Re-verify to confirm 13-15M blocks loaded
