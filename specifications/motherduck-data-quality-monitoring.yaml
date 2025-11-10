@@ -1,0 +1,193 @@
+openapi: 3.1.0
+info:
+  title: MotherDuck Data Quality Monitoring Specification
+  version: 1.0.0
+  description: |
+    Specification for automated data quality verification of MotherDuck database.
+
+    Verifies that Ethereum block data is continuously growing with no gaps or staleness.
+    Uses Cloud Scheduler + Cloud Run Job + Healthchecks.io for monitoring.
+
+    Status: planned (2025-11-10)
+    Cost: $0/month (within Cloud Scheduler 3-job free tier)
+
+  x-metadata:
+    project: "gapless-network-data"
+    component: "MotherDuck Data Quality Monitoring"
+    created: "2025-11-10"
+    last_updated: "2025-11-10"
+    status: "planned"
+    environment: "production"
+    depends_on: ["motherduck-integration.yaml"]
+    parent_spec: "specifications/master-project-roadmap.yaml"
+
+  x-slos:
+    availability:
+      target: "Data quality checks run without manual intervention"
+      measurement: "Percentage of scheduled checks that complete successfully"
+      check_frequency: "every 5 minutes"
+      alert_threshold: ">5 minutes data staleness"
+      failure_mode: "Check fails, alert via Healthchecks.io + Pushover"
+      error_handling: "Exception-only failures (raise and propagate, no fallbacks)"
+
+    correctness:
+      target: "100% accurate staleness detection with no false positives"
+      measurement: "All data quality assessments correct"
+      validation: |
+        - Query MotherDuck for MAX(timestamp) from blocks table
+        - Calculate age_seconds = now() - MAX(timestamp)
+        - Alert if age_seconds > 300 (5 minutes)
+      failure_mode: "Exception raised on invalid data, no silent errors"
+      error_handling: "Structured exceptions with timestamp, query, error message"
+
+    observability:
+      target: "100% check execution tracking with queryable logs"
+      measurement: "All quality checks logged with diagnostic data"
+      log_storage: "Cloud Logging (queryable via gcloud logging read)"
+      healthcheck_data: |
+        - Success: "✅ FRESH: Block {number:,}, {age_seconds:.0f}s"
+        - Failure: "❌ STALE: {age_minutes:.1f} min"
+      failure_mode: "Silent check failures, missing audit trail"
+
+    maintainability:
+      target: "<30 minutes for common operations"
+      measurement: "Time to deploy, update check frequency, modify alert threshold"
+      operations:
+        deploy: "gcloud run jobs deploy + gcloud scheduler jobs create"
+        update_frequency: "gcloud scheduler jobs update (modify schedule)"
+        update_threshold: "Update Cloud Run Job environment variable"
+        verify_status: "gcloud scheduler jobs list + gcloud run jobs executions list"
+
+  x-cost:
+    cloud_scheduler:
+      price: "$0/month (within 3-job free tier)"
+      current_usage: "1 job (eth-md-hourly)"
+      after_deployment: "2 jobs (eth-md-hourly, eth-md-data-quality)"
+      free_tier_remaining: "1 job"
+
+    cloud_run_job:
+      price: "$0/month (within 2M requests/month free tier)"
+      execution_frequency: "288 executions/day (every 5 min)"
+      monthly_executions: "8,640 executions/month"
+      free_tier_limit: "2,000,000 requests/month"
+
+    motherduck:
+      price: "$0/month (within 10GB/month free tier)"
+      query_size: "~100 bytes/query (SELECT MAX aggregation)"
+      monthly_queries: "8,640 queries/month"
+      total_data_transfer: "~0.8 MB/month"
+
+    total: "$0/month"
+
+  x-architecture:
+    components:
+      - name: "Cloud Scheduler (eth-md-data-quality)"
+        type: "GCP Cloud Scheduler Job"
+        schedule: "*/5 * * * * (every 5 minutes)"
+        region: "us-central1"
+        target: "Cloud Run Job (eth-md-data-quality-checker)"
+
+      - name: "Cloud Run Job (eth-md-data-quality-checker)"
+        type: "GCP Cloud Run Job"
+        runtime: "python3.12"
+        memory: "512Mi"
+        timeout: "60s"
+        concurrency: "1"
+        service_account: "eth-md-job-sa@eonlabs-ethereum-bq.iam.gserviceaccount.com"
+        secrets:
+          - name: "motherduck-token"
+            source: "Google Secret Manager"
+          - name: "healthchecks-api-key"
+            source: "Google Secret Manager"
+        environment_variables:
+          - name: "STALE_THRESHOLD_SECONDS"
+            value: "300"
+          - name: "MD_DATABASE"
+            value: "ethereum_mainnet"
+          - name: "MD_TABLE"
+            value: "blocks"
+
+      - name: "Healthchecks.io (Data Quality Monitor)"
+        type: "Healthchecks.io Check"
+        check_name: "Data Quality | MotherDuck Growing & Gapless"
+        timeout: "10 minutes (2× check interval)"
+        grace: "5 minutes"
+        channels: "*"
+        alert_delivery: "Pushover (Emergency priority)"
+
+    data_flow: |
+      Cloud Scheduler (every 5 min)
+          ↓
+      Trigger Cloud Run Job
+          ↓
+      Query MotherDuck: SELECT MAX(number), MAX(timestamp), COUNT(*) FROM blocks
+          ↓
+      Calculate staleness: age_seconds = now() - MAX(timestamp)
+          ↓
+      Decision:
+        - If age_seconds > 300: POST /fail to Healthchecks.io → Pushover alert
+        - If age_seconds <= 300: POST success to Healthchecks.io
+          ↓
+      Log diagnostic data to Cloud Logging
+
+  x-implementation-phases:
+    phase_1:
+      name: "Deploy Cloud Run Job"
+      tasks:
+        - id: "1.1"
+          description: "Create deployment/cloud-run/data_quality_checker.py"
+          intent: "Query MotherDuck for data freshness"
+
+        - id: "1.2"
+          description: "Create deployment/cloud-run/Dockerfile.data-quality"
+          intent: "Containerize data quality checker"
+
+        - id: "1.3"
+          description: "Deploy Cloud Run Job to GCP"
+          command: "gcloud run jobs deploy"
+
+        - id: "1.4"
+          description: "Test Cloud Run Job manually"
+          success_criteria: "Job completes, logs show fresh data confirmation"
+
+    phase_2:
+      name: "Create Cloud Scheduler Job"
+      tasks:
+        - id: "2.1"
+          description: "Create Healthchecks.io check via API"
+
+        - id: "2.2"
+          description: "Store Healthchecks.io ping URL in Secret Manager"
+
+        - id: "2.3"
+          description: "Create Cloud Scheduler job"
+
+        - id: "2.4"
+          description: "Verify Cloud Scheduler triggers job"
+
+    phase_3:
+      name: "Validate End-to-End"
+      tasks:
+        - id: "3.1"
+          description: "Wait for scheduled execution"
+
+        - id: "3.2"
+          description: "Verify Healthchecks.io receiving pings"
+
+        - id: "3.3"
+          description: "Test failure scenario"
+
+    phase_4:
+      name: "Update Documentation"
+      tasks:
+        - id: "4.1"
+          description: "Update CLAUDE.md monitoring section"
+
+        - id: "4.2"
+          description: "Update deployment/cloud-run/README.md"
+
+        - id: "4.3"
+          description: "Update specifications/master-project-roadmap.yaml"
+
+paths: {}
+components: {}
