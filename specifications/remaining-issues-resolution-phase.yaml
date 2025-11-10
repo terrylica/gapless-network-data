@@ -1,0 +1,194 @@
+openapi: 3.1.0
+info:
+  title: Remaining Issues Resolution Specification
+  version: 1.0.0
+  description: |
+    Resolution of remaining issues identified in 5-agent workspace survey (2025-11-10)
+    with pruning preference for irrelevant items.
+
+    Analysis:
+    - README.md shows Ethereum infrastructure (MotherDuck, BigQuery, 14.57M blocks)
+    - SDK code implements Bitcoin mempool collector (MempoolCollector class)
+    - CLAUDE.md claims "Primary Use Case: SDK consumption"
+    - Project status: "production operational" for infrastructure, not SDK
+
+    Critical Finding: Fundamental scope ambiguity
+    - Infrastructure (Ethereum): Production operational
+    - SDK (Bitcoin): Code exists but not operational/tested
+    - Documentation: Conflates the two
+
+    Resolution Strategy: PRUNE sdk-focused requests, CLARIFY scope distinction
+
+  x-metadata:
+    project: "gapless-network-data"
+    component: "Scope Clarification & Documentation Pruning"
+    created: "2025-11-10"
+    last_updated: "2025-11-10"
+    status: "planned"
+    environment: "documentation"
+    supersedes: []
+    audit_source: "/tmp/readme-completeness-audit/FINDINGS.md"
+
+  x-slos:
+    availability:
+      target: "Documentation scope prevents user confusion about primary use case"
+      measurement: "Clear distinction between infrastructure (operational) and SDK (future work)"
+      failure_mode: "Users expect pip-installable SDK when only infrastructure is operational"
+      error_handling: "Raise exception if git operations fail"
+
+    correctness:
+      target: "100% accuracy in scope claims (operational vs planned)"
+      measurement: |
+        - Infrastructure claims: Verified operational (VM collector, MotherDuck)
+        - SDK claims: Marked as future work or deferred
+        - No conflation of Ethereum infrastructure with Bitcoin SDK
+      validation: |
+        - grep "Primary Use Case" CLAUDE.md shows infrastructure or clarifies SDK is future
+        - README.md focuses on operational infrastructure only
+        - SDK examples removed or clearly marked as future work
+      failure_mode: "Documentation claims SDK is ready when it's not tested/deployed"
+
+    observability:
+      target: "All pruning and clarification operations tracked with git commits"
+      measurement: "Single commit documenting scope clarification and pruning rationale"
+      log_format: "docs(scope): <action> - <rationale>"
+      failure_mode: "Changes not tracked in version control"
+
+    maintainability:
+      target: "<1 hour for scope clarification and pruning"
+      measurement: "Time from start to final commit"
+      operations:
+        analyze_scope: "15 minutes"
+        prune_irrelevant: "20 minutes"
+        clarify_scope: "15 minutes"
+        commit_changes: "10 minutes"
+
+  x-decision_matrix:
+    infrastructure_vs_sdk:
+      question: "Is this project infrastructure or SDK?"
+      analysis:
+        operational_evidence:
+          - "VM eth-realtime-collector: Running (verified by audit)"
+          - "MotherDuck: 14.57M Ethereum blocks (verified by audit)"
+          - "Healthchecks.io: Heartbeat monitoring operational"
+          - "deployment/vm/realtime_collector.py: 200+ lines production code"
+        sdk_evidence:
+          - "src/gapless_network_data/api.py: 75 lines (fetch_snapshots, get_latest_snapshot)"
+          - "MempoolCollector: Bitcoin mempool.space integration"
+          - "No tests for SDK functions"
+          - "No PyPI package published"
+          - "No MotherDuck integration in SDK (queries local DuckDB only)"
+      conclusion: "Infrastructure is PRIMARY and OPERATIONAL, SDK is SECONDARY and EXPERIMENTAL"
+
+    ethereum_vs_bitcoin:
+      question: "Is this Ethereum or Bitcoin data collection?"
+      analysis:
+        production_infrastructure:
+          - "Ethereum: 14.57M blocks in MotherDuck (operational)"
+          - "Ethereum: VM collector streaming via Alchemy WebSocket"
+          - "Ethereum: BigQuery historical backfill (completed)"
+        sdk_implementation:
+          - "Bitcoin: MempoolCollector class in src/"
+          - "Bitcoin: mempool.space API integration"
+          - "Bitcoin: No operational deployment"
+      conclusion: "Ethereum for infrastructure, Bitcoin for SDK (but SDK not operational)"
+
+    prune_or_keep:
+      readme_installation_instructions:
+        decision: "PRUNE"
+        rationale: "SDK not ready for external use (no tests, no PyPI, not operational)"
+
+      sdk_vs_infrastructure_confusion:
+        decision: "CLARIFY"
+        rationale: "Critical scope ambiguity must be resolved"
+
+      contributing_md:
+        decision: "PRUNE"
+        rationale: "Project not seeking contributors ('production operational mode' statement)"
+
+      development_docs:
+        decision: "KEEP AS PENDING"
+        rationale: "Already marked pending in CLAUDE.md, accurate status"
+
+  x-implementation:
+    task_1:
+      id: "clarify_primary_use_case"
+      intent: "Update CLAUDE.md to reflect infrastructure is primary, SDK is future work"
+      file: "CLAUDE.md"
+      section: "Project Overview"
+      current: |
+        **Primary Use Case**: Programmatic API consumption (`import gapless_network_data`)
+        by downstream packages and AI coding agents
+      replacement: |
+        **Primary Use Case**: Blockchain network metrics infrastructure
+
+        **Operational**: Ethereum block data collection (14.57M blocks, 2020-2025)
+        - VM-based real-time streaming via Alchemy WebSocket
+        - MotherDuck cloud storage with automatic deduplication
+        - Designed for feature engineering in ML pipelines
+
+        **Future Work**: Python SDK for programmatic access
+        - API functions implemented (fetch_snapshots, get_latest_snapshot)
+        - Not yet tested or deployed for external use
+        - Bitcoin mempool.space integration (experimental)
+      rationale: "Prevents users from expecting pip-installable SDK when infrastructure is the operational component"
+
+    task_2:
+      id: "remove_sdk_usage_examples"
+      intent: "Remove or mark as future work SDK examples that don't match operational infrastructure"
+      file: "CLAUDE.md"
+      sections_to_review:
+        - "Feature Engineering Integration" (lines 743+)
+        - "SDK Quality Standards" (lines 425+)
+      action: |
+        Mark SDK examples as "Future Work" or remove if they show Bitcoin SDK
+        when infrastructure is Ethereum-only.
+
+        Keep architecture documentation (DuckDB, MotherDuck) as it's operational.
+      rationale: "SDK examples show df_mempool = gmd.fetch_snapshots() but this isn't operational"
+
+    task_3:
+      id: "prune_contributing_references"
+      intent: "Remove or defer CONTRIBUTING.md references"
+      rationale: |
+        CLAUDE.md states: "Project in production operational mode. Contributions focused on..."
+        This is NOT an open-source project seeking contributors yet.
+      action: "Keep 'Contributing' section but clarify it's for future contributors, not current call"
+
+    task_4:
+      id: "document_pruning_decisions"
+      intent: "Add pruning rationale to CLAUDE.md or specification"
+      content: |
+        ## Documentation Scope
+
+        This project documentation focuses on operational infrastructure:
+
+        **Documented (Operational)**:
+        - Ethereum data collection infrastructure (VM, MotherDuck, monitoring)
+        - Deployment procedures (Cloud Run, Compute Engine, Secret Manager)
+        - Architecture specifications (DuckDB, MotherDuck integration)
+
+        **Deferred (Future Work)**:
+        - Python SDK installation and usage guides
+        - CONTRIBUTING.md for external contributors
+        - Development environment setup for SDK development
+
+        **Rationale**: Infrastructure is production operational (v2.4.0).
+        SDK exists as experimental code but is not tested, deployed, or supported for external use.
+      location: "Add to CLAUDE.md after Project Overview"
+
+  x-validation:
+    post_implementation:
+      - "CLAUDE.md Primary Use Case section clarifies infrastructure vs SDK"
+      - "SDK examples marked as future work or removed"
+      - "No user-facing claims that SDK is ready for pip install"
+      - "Documentation scope section explains pruning decisions"
+
+    final:
+      - "Total commits: 1"
+      - "Commit uses conventional format (docs(scope):)"
+      - "semantic-release executed"
+      - "Workspace clarity: 93% → 97% (target)"
+
+paths: {}
+components: {}

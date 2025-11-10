@@ -176,6 +176,7 @@ All production credentials stored in Google Cloud Secret Manager:
 **Local Development (Optional)**: Doppler CLI
 
 Skills scripts (`.claude/skills/data-pipeline-monitoring/`) may use Doppler for local testing:
+
 - `PUSHOVER_TOKEN`, `PUSHOVER_USER` - Alert notifications
 - `HEALTHCHECKS_API_KEY` - Uptime tracking
 
@@ -430,11 +431,28 @@ Project-specific skills that capture validated workflows from scratch investigat
 
 **Cross-References**: Works with `data-pipeline-monitoring` skill (pipeline health) and `bigquery-ethereum-data-acquisition` skill (BigQuery → MotherDuck workflow)
 
-## SDK Quality Standards
+## Project Scope
 
-**Primary Use Case**: Programmatic API consumption (`import gapless_network_data`) by downstream packages and AI coding agents
+**Primary Use Case**: Blockchain network metrics infrastructure (operational)
 
-**Implementation Status**: Following gapless-crypto-data SDK standards
+**Operational (v2.4.0)**:
+- **Ethereum Block Data Collection**: 14.57M blocks (2020-2025) via VM-based real-time streaming
+- **Infrastructure**: Alchemy WebSocket → MotherDuck cloud storage
+- **Monitoring**: Healthchecks.io, UptimeRobot, Pushover
+- **Purpose**: Network metrics for ML feature engineering pipelines
+
+**Future Work**:
+- **Python SDK**: Programmatic API access (`import gapless_network_data`)
+- **Bitcoin Integration**: mempool.space data collection (experimental code exists)
+- **Package Distribution**: pip install (not yet published to PyPI)
+
+**Current Focus**: Infrastructure operation and maintenance. SDK development deferred to future phases.
+
+## SDK Quality Standards (Future Work)
+
+**Intended Use Case**: Programmatic API consumption by downstream packages and AI coding agents
+
+**Implementation Status**: Experimental code following gapless-crypto-data SDK standards
 
 **Key Abstractions**:
 
@@ -443,9 +461,9 @@ Project-specific skills that capture validated workflows from scratch investigat
 - **Structured Exceptions**: Machine-parseable error context with timestamp, endpoint, HTTP status (implemented)
 - **Coverage Strategy**: SDK entry points (85%+), Core engines (70%+) (pending)
 
-## Network Architecture
+## Network Architecture (Future Work: Bitcoin Integration)
 
-**Data Source**: mempool.space REST API (99.9%+ uptime SLA)
+**Data Source**: mempool.space REST API (99.9%+ uptime SLA) - experimental, not operational
 
 **Performance**: httpx with async support for concurrent requests
 
@@ -457,9 +475,11 @@ Project-specific skills that capture validated workflows from scratch investigat
 
 **Contrast with gapless-crypto-data**: Unlike OHLCV package (CloudFront CDN, no retry), mempool API requires retry logic due to live API dependency.
 
-## Authentication
+## Authentication (Future Work)
 
 **No authentication required** - mempool.space provides public API endpoints. No rate limit keys needed.
+
+**Note**: This section describes planned Bitcoin integration. Current operational infrastructure (Ethereum) uses Alchemy API key from Secret Manager.
 
 ## Current Architecture
 
