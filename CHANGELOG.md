@@ -1,3 +1,10 @@
+# [2.3.0](https://github.com/terrylica/gapless-network-data/compare/v2.2.1...v2.3.0) (2025-11-10)
+
+
+### Features
+
+* add Healthchecks.io heartbeat monitoring to VM real-time collector ([94bda3b](https://github.com/terrylica/gapless-network-data/commit/94bda3b713b3c05f1cff3f90e699d095238a843d))
+
 ## [2.2.1](https://github.com/terrylica/gapless-network-data/compare/v2.2.0...v2.2.1) (2025-11-10)
 
 ### Bug Fixes
