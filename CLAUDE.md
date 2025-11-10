@@ -706,19 +706,31 @@ All investigation materials with absolute paths:
 
 ## Data Format
 
-**Primary Storage**: DuckDB (single database file)
+## Data Storage Architecture
 
-**Storage Location**: `~/.cache/gapless-network-data/data.duckdb`
+**Production (Cloud)**:
+- **Location**: MotherDuck cloud (`md:ethereum_mainnet.blocks`)
+- **Purpose**: Always up-to-date production data (14.57M blocks, 2020-2025)
+- **Access**: SDK queries this by default (`import gapless_network_data`)
+- **Deployment**: Maintained by cloud pipelines (no user setup required)
+- **Current Status**: Operational (dual-pipeline architecture)
+
+**Local Development (Optional)**:
+- **Location**: `~/.cache/gapless-network-data/data.duckdb`
+- **Purpose**: Local cache for offline analysis (future feature)
+- **Access**: SDK fallback if MotherDuck unreachable (pending implementation)
+- **Deployment**: User can populate with `fetch_snapshots(cache=True)` (pending)
+- **Current Status**: Not implemented (SDK queries MotherDuck cloud only)
+
+**Default Mode**: SDK queries MotherDuck cloud directly (no local DuckDB setup needed)
 
 **Schema Version**: 1.0.0
 
-**Tables**:
-
-- `ethereum_blocks` - 5 years of Ethereum block data (~13M rows, ~1.5 GB)
+**Tables** (MotherDuck cloud):
+- `ethereum_blocks` - 14.57M Ethereum blocks (2020-2025, ~1.5 GB)
 - `bitcoin_mempool` - Deferred to Phase 2+ (Bitcoin is SECONDARY)
 
 **Complete Schema Specification**: See `/Users/terryli/eon/gapless-network-data/specifications/duckdb-schema-specification.yaml ` for:
-
 - DDL statements with constraints and indexes
 - Common query patterns (time_bucket, ASOF JOIN, window functions)
 - Data integrity checks

@@ -1,0 +1,319 @@
+openapi: 3.1.0
+info:
+  title: Cloud/Local Architectural Alignment Specification
+  version: 1.0.0
+  description: |
+    Formalize the distinction between cloud deployment infrastructure and local development workflows.
+
+    Context from 5-agent parallel audit (2025-11-10):
+    - Directory structure: 90% aligned (3 violations)
+    - Terminology: 100% consistent in core docs
+    - Scripts: Zero misplaced (129 analyzed)
+    - Specifications: Gaps found (cloud well-documented, local not formalized)
+    - User instructions: Ambiguous (local → cloud pattern lacks context)
+
+    Hypothesis validated: "Deployment is whatever that's on the cloud"
+    Implementation status: Practiced but not formalized
+
+    Cost: $0 (documentation updates only)
+
+  x-metadata:
+    project: "gapless-network-data"
+    component: "Architecture Formalization"
+    created: "2025-11-10"
+    last_updated: "2025-11-10"
+    status: "planned"
+    environment: "documentation"
+    supersedes: []
+    audit_reports:
+      - "/tmp/directory-structure-audit/FINDINGS.md"
+      - "/tmp/documentation-terminology-audit/FINDINGS.md"
+      - "/tmp/scripts-categorization-audit/FINDINGS.md"
+      - "/tmp/architecture-specification-audit/FINDINGS.md"
+      - "/tmp/user-instructions-audit/analysis_notes.md"
+
+  x-slos:
+    availability:
+      target: "Architecture boundaries prevent user confusion"
+      measurement: "Zero ambiguous 'deployment' references in specifications"
+      failure_mode: "Users deploy cloud infrastructure when they only need SDK"
+      error_handling: "Raise exception if git operations fail"
+
+    correctness:
+      target: "100% clarity on execution environment (cloud vs local)"
+      measurement: "All commands explicitly state where they execute"
+      validation: |
+        - grep -r "uv run" README.md shows execution context
+        - All "local → cloud" patterns documented
+        - x-architectural-boundaries section exists in master-project-roadmap.yaml
+      failure_mode: "Users run commands in wrong environment (VM vs local)"
+
+    observability:
+      target: "All alignment operations tracked with git commits"
+      measurement: "Each phase committed separately with conventional commits"
+      log_format: "docs(architecture): <action> - <rationale>"
+      failure_mode: "Changes not tracked in version control"
+
+    maintainability:
+      target: "<90 minutes for complete alignment"
+      measurement: "Time from start to final commit"
+      operations:
+        formalize_boundaries: "30 minutes (P0)"
+        clarify_instructions: "30 minutes (P1)"
+        archive_violations: "30 minutes (P2)"
+
+  x-phases:
+    phase_1_formalize_boundaries:
+      name: "Formalize architectural boundaries in specifications"
+      rationale: "Specifications document cloud deployment but not SDK local usage"
+      tasks:
+        - add_architectural_boundaries_to_roadmap
+        - update_claude_md_storage_architecture
+        - commit_phase_1
+      severity: "high"
+      estimated_time: "30 minutes"
+      validation:
+        - "x-architectural-boundaries section exists in master-project-roadmap.yaml"
+        - "Storage architecture distinguishes cloud vs local in CLAUDE.md"
+
+    phase_2_clarify_instructions:
+      name: "Add execution context to user-facing commands"
+      rationale: "Local scripts accessing cloud resources lack execution context"
+      tasks:
+        - update_readme_operations_section
+        - update_backfill_readme
+        - commit_phase_2
+      severity: "medium"
+      estimated_time: "30 minutes"
+      validation:
+        - "All 'uv run' commands in README.md have execution context"
+        - "Backfill README explains local execution"
+
+    phase_3_archive_violations:
+      name: "Archive directory structure violations"
+      rationale: "3 violations found (scratch/motherduck-probe/, docs/llamarpc/, skills/)"
+      tasks:
+        - archive_motherduck_probe
+        - add_llamarpc_disclaimer
+        - document_skills_distinction
+        - commit_phase_3
+      severity: "low"
+      estimated_time: "30 minutes"
+      validation:
+        - "scratch/motherduck-probe/ moved to archive"
+        - "docs/llamarpc/historical/historical_collector.py has disclaimer"
+        - ".claude/skills/README.md exists"
+
+  x-implementation:
+    phase_1_formalize_boundaries:
+      task_1:
+        id: "add_architectural_boundaries_to_roadmap"
+        intent: "Define three architectural layers with execution environments"
+        file: "specifications/master-project-roadmap.yaml"
+        operation: "Add x-architectural-boundaries section after x-metadata"
+        content: |
+          x-architectural-boundaries:
+            data_collection_infrastructure:
+              execution: "cloud-only"
+              description: "24/7 data collection pipelines on GCP"
+              components:
+                - "Cloud Run Job (eth-md-updater): BigQuery hourly sync"
+                - "Compute Engine VM (eth-realtime-collector): Alchemy WebSocket"
+                - "MotherDuck cloud database: ethereum_mainnet.blocks"
+              operators: "DevOps engineers, platform team"
+              deployment_method: "GCP infrastructure (Cloud Run, Compute Engine)"
+              user_setup_required: false
+
+            data_access_sdk:
+              execution: "local-development-friendly"
+              description: "Python package for querying collected data"
+              components:
+                - "Python package: pip install gapless-network-data"
+                - "SDK functions: fetch_snapshots(), get_latest_snapshot()"
+                - "Data source: MotherDuck cloud (default) or local DuckDB cache"
+              users: "ML engineers, data scientists, analysts"
+              deployment_method: "pip install (no cloud infrastructure required)"
+              user_setup_required: true
+
+            package_development:
+              execution: "local-only"
+              description: "Contributor development environment"
+              components:
+                - "uv development environment"
+                - "pytest test suite"
+                - "Pre-commit hooks (ruff, mypy)"
+              users: "Package contributors"
+              deployment_method: "git clone + uv sync"
+              user_setup_required: true
+
+            rationale: |
+              SDK users can query data locally without deploying cloud infrastructure.
+              Cloud pipelines collect data 24/7 independently of SDK usage.
+              Package development is separate from both SDK usage and cloud deployment.
+        validation: "yq eval '.x-architectural-boundaries' specifications/master-project-roadmap.yaml"
+
+      task_2:
+        id: "update_claude_md_storage_architecture"
+        intent: "Distinguish MotherDuck cloud (primary) from local DuckDB cache (optional)"
+        file: "CLAUDE.md"
+        operation: "Replace 'Data Format' section storage details"
+        find_pattern: "**Primary Storage**: DuckDB"
+        replace_with: |
+          ## Data Storage Architecture
+
+          **Production (Cloud)**:
+          - **Location**: MotherDuck cloud (`md:ethereum_mainnet.blocks`)
+          - **Purpose**: Always up-to-date production data (14.57M blocks, 2020-2025)
+          - **Access**: SDK queries this by default (`import gapless_network_data`)
+          - **Deployment**: Maintained by cloud pipelines (no user setup required)
+
+          **Local Development (Optional)**:
+          - **Location**: `~/.cache/gapless-network-data/data.duckdb`
+          - **Purpose**: Local cache for offline analysis (future feature)
+          - **Access**: SDK fallback if MotherDuck unreachable
+          - **Deployment**: User can populate with `fetch_snapshots(cache=True)` (pending)
+
+          **Default Mode**: SDK queries MotherDuck cloud directly (no local DuckDB setup needed)
+
+          **Storage Location (Current)**: MotherDuck cloud only
+        validation: "grep 'MotherDuck cloud' CLAUDE.md"
+
+    phase_2_clarify_instructions:
+      task_1:
+        id: "update_readme_operations_section"
+        intent: "Add execution context to all commands (local vs cloud)"
+        file: "README.md"
+        operation: "Add execution context comments to operations section"
+        sections_to_update:
+          - "Verify Pipeline Health"
+          - "Service Management"
+          - "Historical Backfill"
+        pattern: |
+          For each command:
+          1. Identify if it runs locally or on cloud
+          2. Add comment: "# Run locally. Queries <cloud resource>. Requires <auth>."
+          3. For gcloud commands: Already clear (keep as-is)
+        validation: "grep '# Run locally' README.md | wc -l"
+
+      task_2:
+        id: "update_backfill_readme"
+        intent: "Clarify backfill scripts run locally but trigger Cloud Run Jobs"
+        file: "deployment/backfill/README.md"
+        operation: "Add execution environment section at top"
+        content: |
+          ## Execution Environment
+
+          **These scripts run locally** (on your laptop/workstation) but orchestrate cloud resources:
+
+          - `historical_backfill.py`: Runs locally, fetches from BigQuery, loads to MotherDuck cloud
+          - `chunked_backfill.sh`: Runs locally, triggers Cloud Run Job executions via `gcloud`
+
+          **Requirements**:
+          - Local: `uv`, `gcloud` CLI (authenticated)
+          - Cloud: GCP project access, BigQuery API enabled, Secret Manager access
+
+          **Authentication**: Uses `gcloud auth` credentials (no manual token export needed)
+        validation: "grep 'Execution Environment' deployment/backfill/README.md"
+
+    phase_3_archive_violations:
+      task_1:
+        id: "archive_motherduck_probe"
+        intent: "Move POC deployment scripts to archive (SSoT violation)"
+        operation: "git mv"
+        commands:
+          - "mkdir -p scratch/archive"
+          - "git mv scratch/motherduck-probe scratch/archive/motherduck-probe-2025-11-09"
+        rationale: |
+          scratch/motherduck-probe/ contains production deployment scripts (deploy.sh,
+          Dockerfile, systemd service) that duplicate deployment/vm/ code.
+          This violates Single Source of Truth principle.
+        validation: "ls scratch/archive/motherduck-probe-2025-11-09/"
+
+      task_2:
+        id: "add_llamarpc_disclaimer"
+        intent: "Clarify production-quality code in docs is reference only"
+        file: "docs/llamarpc/historical/historical_collector.py"
+        operation: "Prepend docstring disclaimer"
+        content: |
+          """
+          Historical Ethereum Block Collector (LlamaRPC)
+
+          ⚠️ REFERENCE DOCUMENTATION: This is example code from LlamaRPC research (2025-11-03).
+          Production deployment uses BigQuery + Alchemy WebSocket (see deployment/vm/realtime_collector.py).
+
+          This file demonstrates:
+          - web3.py integration patterns
+          - LlamaRPC endpoint usage
+          - Historical block fetching logic
+
+          For production code, see:
+          - deployment/vm/realtime_collector.py (real-time Alchemy WebSocket)
+          - deployment/backfill/historical_backfill.py (BigQuery historical backfill)
+          """
+        validation: "grep 'REFERENCE DOCUMENTATION' docs/llamarpc/historical/historical_collector.py"
+
+      task_3:
+        id: "document_skills_distinction"
+        intent: "Clarify .claude/skills/ contains operational helpers (local → cloud)"
+        file: ".claude/skills/README.md"
+        operation: "Create new file"
+        content: |
+          # Claude Code Skills - Operational Helpers
+
+          This directory contains validated workflows for operating and monitoring the gapless-network-data infrastructure.
+
+          ## Execution Model
+
+          **These scripts run LOCALLY** (on developer laptops) but may query cloud resources:
+
+          ```
+          Local Execution → Cloud API Query → Local Analysis
+          ```
+
+          **Examples**:
+          - `data-pipeline-monitoring/scripts/check_pipeline_health.py`: Runs locally, queries `gcloud` APIs
+          - `motherduck-pipeline-operations/scripts/verify_motherduck.py`: Runs locally, queries MotherDuck cloud
+          - `bigquery-ethereum-data-acquisition/scripts/estimate_query_cost.py`: Runs locally, queries BigQuery
+
+          ## Distinction from deployment/
+
+          | Directory | Purpose | Execution | Provisioning |
+          |-----------|---------|-----------|--------------|
+          | `deployment/` | Infrastructure code that **runs ON cloud** (Cloud Run, VM) | Cloud services | Provisions cloud resources |
+          | `.claude/skills/` | Operational helpers that **run locally** (monitoring, verification) | Local laptop | Queries cloud APIs |
+
+          **Key difference**: `deployment/` scripts are deployed to cloud infrastructure. Skills scripts run locally for operational tasks.
+
+          ## Authentication
+
+          Skills scripts use local credentials:
+          - `gcloud auth login` (for GCP APIs)
+          - `doppler login` or Secret Manager (for third-party APIs)
+          - MotherDuck token from environment
+
+          No deployment or cloud execution required.
+        validation: "test -f .claude/skills/README.md"
+
+  x-validation:
+    post_phase_1:
+      - "x-architectural-boundaries exists in master-project-roadmap.yaml"
+      - "CLAUDE.md distinguishes MotherDuck cloud from local cache"
+      - "grep 'cloud-only' specifications/master-project-roadmap.yaml"
+
+    post_phase_2:
+      - "README.md operations have execution context comments"
+      - "deployment/backfill/README.md has Execution Environment section"
+      - "All 'uv run' commands explain where they execute"
+
+    post_phase_3:
+      - "scratch/motherduck-probe/ moved to archive/"
+      - "docs/llamarpc/historical/historical_collector.py has disclaimer"
+      - ".claude/skills/README.md exists and explains local → cloud pattern"
+
+    final:
+      - "Total commits: 3 (one per phase)"
+      - "All commits use conventional commit format (docs(architecture):)"
+      - "semantic-release executed after each phase"
+
+paths: {}
+components: {}

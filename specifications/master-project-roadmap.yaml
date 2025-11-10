@@ -57,6 +57,63 @@ info:
       - "Compact storage: ~1.5 GB DuckDB vs ~1.2 GB Parquet (negligible 300 MB difference)"
       - "Production-proven (DoorDash uses DuckDB for 1-min time-series)"
 
+  x-architectural-boundaries:
+    description: |
+      This project has three distinct architectural layers with different execution environments.
+      Understanding these boundaries prevents confusion about where code runs (cloud vs local).
+
+    data_collection_infrastructure:
+      execution: "cloud-only"
+      description: "24/7 data collection pipelines running on GCP infrastructure"
+      components:
+        - "Cloud Run Job (eth-md-updater): BigQuery hourly sync"
+        - "Compute Engine VM (eth-realtime-collector): Alchemy WebSocket streaming"
+        - "MotherDuck cloud database: ethereum_mainnet.blocks (14.57M blocks)"
+      operators: "DevOps engineers, platform team"
+      deployment_method: "GCP infrastructure (Cloud Run, Compute Engine, MotherDuck cloud)"
+      user_setup_required: false
+      rationale: |
+        Data collection happens automatically in the cloud.
+        End users never deploy or manage this infrastructure.
+
+    data_access_sdk:
+      execution: "local-development-friendly"
+      description: "Python package for querying collected data from local environment"
+      components:
+        - "Python package: pip install gapless-network-data"
+        - "SDK functions: fetch_snapshots(), get_latest_snapshot()"
+        - "Data source: MotherDuck cloud (default) or local DuckDB cache (optional)"
+      users: "ML engineers, data scientists, analysts"
+      deployment_method: "pip install (no cloud infrastructure required)"
+      user_setup_required: true
+      rationale: |
+        SDK users query data locally without deploying cloud infrastructure.
+        The SDK connects to MotherDuck cloud database automatically.
+
+    package_development:
+      execution: "local-only"
+      description: "Contributor development environment for package maintenance"
+      components:
+        - "uv development environment (dependency management)"
+        - "pytest test suite (unit and integration tests)"
+        - "Pre-commit hooks (ruff, mypy, conventional commits)"
+      users: "Package contributors, maintainers"
+      deployment_method: "git clone + uv sync"
+      user_setup_required: true
+      rationale: |
+        Package development happens locally on contributor machines.
+        No cloud resources required for development work.
+
+    separation_rationale: |
+      These three layers are architecturally independent:
+
+      1. Cloud pipelines collect data 24/7 (users never touch this)
+      2. SDK users query collected data locally (no deployment needed)
+      3. Contributors develop the SDK locally (separate from usage)
+
+      This separation allows SDK users to benefit from data collection
+      without deploying or managing cloud infrastructure.
+
   x-slos:
     availability:
       target: "Data collection operations complete without manual intervention"
