@@ -42,7 +42,7 @@ uv run historical_backfill.py --dry-run
 
 **Data volume**:
 
-- 2020-2025: ~13M blocks
+- 2020-2025: ~14.57M blocks (actual: 14,576,959 as of 2025-11-10)
 - Storage size: ~1.5 GB in MotherDuck
 
 **Execution time**: ~30-60 minutes
