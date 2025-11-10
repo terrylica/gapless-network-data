@@ -1,3 +1,10 @@
+# [2.2.0](https://github.com/terrylica/gapless-network-data/compare/v2.1.0...v2.2.0) (2025-11-10)
+
+
+### Features
+
+* **monitoring:** implement Pushover and Healthchecks.io integrations ([58df1aa](https://github.com/terrylica/gapless-network-data/commit/58df1aaba7a3dc41c5a66a9d06f33a198647ec3e))
+
 # [2.1.0](https://github.com/terrylica/gapless-network-data/compare/v2.0.1...v2.1.0) (2025-11-10)
 
 ### Features
