@@ -1,7 +1,7 @@
 [project]
 name = "gapless-network-data"
-version = "1.0.0"
-description = "Multi-chain blockchain network metrics collection with zero-gap guarantee (Ethereum, Bitcoin, Solana, etc.)"
+version = "2.4.0"
+description = "Ethereum blockchain network metrics collection infrastructure with zero-gap guarantee (multi-chain support planned)"
 readme = "README.md"
 requires-python = ">=3.9"
 license = {text = "MIT"}
