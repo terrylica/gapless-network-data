@@ -1,3 +1,16 @@
+# [2.0.0](https://github.com/terrylica/gapless-network-data/compare/v1.1.1...v2.0.0) (2025-11-10)
+
+
+### Features
+
+* add MotherDuck integration with dual pipeline architecture ([d46259c](https://github.com/terrylica/gapless-network-data/commit/d46259c35b3d429777fc31679b7bdd49b42146e1))
+* **skills:** validate monitoring APIs with Pushover integration ([10672ed](https://github.com/terrylica/gapless-network-data/commit/10672edb6ebdb8a94e809d32451ce821a544b9f4))
+
+
+### BREAKING CHANGES
+
+* **skills:** Replaced Telegram methods with Pushover methods in API clients
+
 ## [1.1.1](https://github.com/terrylica/gapless-network-data/compare/v1.1.0...v1.1.1) (2025-11-09)
 
 
