@@ -61,18 +61,21 @@ Dual-pipeline architecture for Ethereum blockchain data collection with automati
 **Purpose**: Batch sync of historical and recent blocks
 
 **Infrastructure**:
+
 - Cloud Run Job: `eth-md-updater`
 - Region: `us-east1`
 - Schedule: Every hour (via Cloud Scheduler)
 - Service account: `eth-md-job-sa@eonlabs-ethereum-bq.iam.gserviceaccount.com`
 
 **Data Flow**:
+
 1. Cloud Scheduler triggers job every hour at minute 0
 2. Job queries BigQuery public dataset for blocks from last 2 hours
 3. Results returned as PyArrow table (zero-copy)
 4. PyArrow table loaded to MotherDuck via `INSERT OR REPLACE`
 
 **Performance**:
+
 - Query time: ~30s
 - Transfer time: ~10s
 - Insert time: ~10s
@@ -85,16 +88,19 @@ Dual-pipeline architecture for Ethereum blockchain data collection with automati
 **Purpose**: Real-time block streaming for low latency
 
 **Infrastructure**:
+
 - VM: `eth-realtime-collector` (e2-micro, us-east1-b)
 - Runtime: systemd service
 - Service account: Default compute SA (`893624294905-compute@...`)
 
 **Data Flow**:
+
 1. WebSocket connection to Alchemy (`eth_subscribe` with `newHeads`)
 2. Block notifications received every ~12 seconds (Ethereum block time)
 3. Block parsed and inserted to MotherDuck via `INSERT OR REPLACE`
 
 **Performance**:
+
 - Latency: <1 second from block creation
 - Collection rate: ~12 seconds per block
 - Blocks per day: ~7,200
@@ -106,6 +112,7 @@ Dual-pipeline architecture for Ethereum blockchain data collection with automati
 **Method**: `INSERT OR REPLACE` with PRIMARY KEY on block number
 
 **Schema**:
+
 ```sql
 CREATE TABLE ethereum_mainnet.blocks (
     timestamp TIMESTAMP NOT NULL,
@@ -123,6 +130,7 @@ CREATE TABLE ethereum_mainnet.blocks (
 ```
 
 **Behavior**:
+
 - When BigQuery pipeline inserts block N: upsert (replace if exists)
 - When real-time collector inserts block N: upsert (replace if exists)
 - Result: Always latest data, no duplicates
@@ -134,16 +142,19 @@ CREATE TABLE ethereum_mainnet.blocks (
 ### Credential Management
 
 All credentials stored in Google Cloud Secret Manager:
+
 - `alchemy-api-key` - Alchemy WebSocket access
 - `motherduck-token` - MotherDuck authentication
 
 **IAM Permissions**:
+
 - VM service account: `roles/secretmanager.secretAccessor`
 - Cloud Run service account: `roles/secretmanager.secretAccessor`
 
 ### Secret Access Pattern
 
 Both pipelines use identical secret fetching:
+
 ```python
 def get_secret(secret_id: str, project_id: str = GCP_PROJECT) -> str:
     """Fetch secret from Google Secret Manager."""
@@ -165,19 +176,23 @@ def get_secret(secret_id: str, project_id: str = GCP_PROJECT) -> str:
 ## Cost Analysis
 
 **BigQuery**:
+
 - Query: ~10 MB per run (within free tier)
 - Monthly cost: $0
 
 **Cloud Run**:
+
 - Executions: 720/month (hourly)
 - Duration: ~50s per execution
 - Monthly cost: $0 (within free tier)
 
 **Compute Engine (e2-micro)**:
+
 - VM: 1 instance, us-east1-b
 - Monthly cost: $0 (within free tier)
 
 **MotherDuck**:
+
 - Storage: ~1.5 GB
 - Queries: <10 GB/month
 - Monthly cost: $0 (within free tier)
@@ -189,6 +204,7 @@ def get_secret(secret_id: str, project_id: str = GCP_PROJECT) -> str:
 ### BigQuery Pipeline
 
 View job execution history:
+
 ```bash
 gcloud run jobs executions list \
   --job eth-md-updater \
@@ -197,6 +213,7 @@ gcloud run jobs executions list \
 ```
 
 View logs:
+
 ```bash
 gcloud logging read \
   "resource.type=cloud_run_job AND resource.labels.job_name=eth-md-updater" \
@@ -207,6 +224,7 @@ gcloud logging read \
 ### Real-Time Pipeline
 
 View service status:
+
 ```bash
 gcloud compute ssh eth-realtime-collector \
   --zone=us-east1-b \
@@ -215,6 +233,7 @@ gcloud compute ssh eth-realtime-collector \
 ```
 
 View logs:
+
 ```bash
 gcloud compute ssh eth-realtime-collector \
   --zone=us-east1-b \
@@ -229,6 +248,7 @@ gcloud compute ssh eth-realtime-collector \
 **Symptom**: Cloud Run Job execution fails
 
 **Recovery**:
+
 1. Check Cloud Run logs for error message
 2. Verify BigQuery API access
 3. Verify Secret Manager access
@@ -241,6 +261,7 @@ gcloud compute ssh eth-realtime-collector \
 **Symptom**: systemd service crash-looping or stopped
 
 **Recovery**:
+
 1. Check systemd logs: `sudo journalctl -u eth-collector -n 100`
 2. Verify Alchemy WebSocket connectivity
 3. Verify Secret Manager access
@@ -253,6 +274,7 @@ gcloud compute ssh eth-realtime-collector \
 **Symptom**: No new blocks in MotherDuck
 
 **Recovery**:
+
 1. Restore real-time pipeline first (lower latency)
 2. Run historical backfill to fill gaps
 3. Verify deduplication working correctly
@@ -261,13 +283,13 @@ gcloud compute ssh eth-realtime-collector \
 
 ## Performance Characteristics
 
-| Metric | BigQuery Pipeline | Real-Time Pipeline |
-|--------|------------------|-------------------|
-| Latency | 30-60 minutes | <1 second |
-| Throughput | ~578 blocks/hour | ~300 blocks/hour |
-| Reliability | High (Cloud Run SLA) | Medium (e2-micro) |
-| Cost | $0 (free tier) | $0 (free tier) |
-| Data source | Historical archive | Live stream |
+| Metric      | BigQuery Pipeline    | Real-Time Pipeline |
+| ----------- | -------------------- | ------------------ |
+| Latency     | 30-60 minutes        | <1 second          |
+| Throughput  | ~578 blocks/hour     | ~300 blocks/hour   |
+| Reliability | High (Cloud Run SLA) | Medium (e2-micro)  |
+| Cost        | $0 (free tier)       | $0 (free tier)     |
+| Data source | Historical archive   | Live stream        |
 
 ## Design Rationale
 

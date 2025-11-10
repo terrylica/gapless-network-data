@@ -1,29 +1,25 @@
 ## [2.0.1](https://github.com/terrylica/gapless-network-data/compare/v2.0.0...v2.0.1) (2025-11-10)
 
-
 ### Bug Fixes
 
-* **skills:** sync monitoring skill docs with Pushover API clients ([6115cc5](https://github.com/terrylica/gapless-network-data/commit/6115cc5479fcb346400e4f4ec30d9c3505a6323e))
+- **skills:** sync monitoring skill docs with Pushover API clients ([6115cc5](https://github.com/terrylica/gapless-network-data/commit/6115cc5479fcb346400e4f4ec30d9c3505a6323e))
 
 # [2.0.0](https://github.com/terrylica/gapless-network-data/compare/v1.1.1...v2.0.0) (2025-11-10)
 
-
 ### Features
 
-* add MotherDuck integration with dual pipeline architecture ([d46259c](https://github.com/terrylica/gapless-network-data/commit/d46259c35b3d429777fc31679b7bdd49b42146e1))
-* **skills:** validate monitoring APIs with Pushover integration ([10672ed](https://github.com/terrylica/gapless-network-data/commit/10672edb6ebdb8a94e809d32451ce821a544b9f4))
-
+- add MotherDuck integration with dual pipeline architecture ([d46259c](https://github.com/terrylica/gapless-network-data/commit/d46259c35b3d429777fc31679b7bdd49b42146e1))
+- **skills:** validate monitoring APIs with Pushover integration ([10672ed](https://github.com/terrylica/gapless-network-data/commit/10672edb6ebdb8a94e809d32451ce821a544b9f4))
 
 ### BREAKING CHANGES
 
-* **skills:** Replaced Telegram methods with Pushover methods in API clients
+- **skills:** Replaced Telegram methods with Pushover methods in API clients
 
 ## [1.1.1](https://github.com/terrylica/gapless-network-data/compare/v1.1.0...v1.1.1) (2025-11-09)
 
-
 ### Bug Fixes
 
-* deploy .strip() fix to VM collector, resolve crash-loop ([8f820e7](https://github.com/terrylica/gapless-network-data/commit/8f820e786d1d56ffc04be09b765a1c93a4757091))
+- deploy .strip() fix to VM collector, resolve crash-loop ([8f820e7](https://github.com/terrylica/gapless-network-data/commit/8f820e786d1d56ffc04be09b765a1c93a4757091))
 
 # [1.1.0](https://github.com/terrylica/gapless-network-data/compare/v1.0.0...v1.1.0) (2025-11-09)
 
