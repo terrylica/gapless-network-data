@@ -1,0 +1,158 @@
+openapi: 3.1.1
+info:
+  title: Monitoring Skill Enhancement - Phase 2 Findings
+  version: 2.0.0
+  description: |
+    Empirically validated API patterns for Healthchecks.io and UptimeRobot.
+    Documents resolved issues and Pushover integration discoveries.
+
+  x-metadata:
+    validated: 2025-11-09
+    probe_location: /tmp/probe/
+
+components:
+  schemas:
+    HealthchecksValidation:
+      type: object
+      properties:
+        check_creation_400_error:
+          type: object
+          properties:
+            status:
+              const: resolved
+            root_cause:
+              const: "All fields optional per official docs - minimal payload works"
+            validated_payload:
+              type: object
+              required: [name, timeout, grace]
+              example:
+                name: "My Check"
+                timeout: 3600
+                grace: 600
+            http_status:
+              const: 201
+
+        ping_variations:
+          type: object
+          properties:
+            success_ping:
+              const: "GET ping_url - validated"
+            start_ping:
+              const: "GET ping_url/start - validated"
+            fail_ping:
+              const: "GET ping_url/fail - validated"
+            post_with_body:
+              const: "POST ping_url with log message - validated"
+
+        pushover_integration:
+          type: object
+          properties:
+            kind_code:
+              const: "po"
+              description: "Abbreviated code, not 'pushover'"
+            channel_id:
+              const: "ecee4935-7504-4ee7-9a10-0bb2f9060024"
+            name:
+              const: "Pushover"
+            discovery_method:
+              const: "GET /api/v3/channels/, filter kind in ['pushover', 'po']"
+
+    UptimeRobotValidation:
+      type: object
+      properties:
+        rate_limiting:
+          type: object
+          properties:
+            free_tier_limit:
+              const: 10
+              description: "requests per minute"
+            empirical_measurement:
+              const: 10
+              description: "requests before 429 error"
+            retry_after_header:
+              const: 47
+              description: "seconds (empirically observed)"
+            rate_limit_headers:
+              type: object
+              properties:
+                X-RateLimit-Remaining:
+                  type: string
+                  description: "Counts down from 9 to 0"
+                X-RateLimit-Limit:
+                  const: "10"
+                Retry-After:
+                  type: string
+                  description: "Seconds before retry allowed"
+
+        pushover_integration:
+          type: object
+          properties:
+            type_code:
+              const: 9
+              description: "Shows as 'Slack' in docs, but user configured Pushover"
+            contact_id:
+              const: "7898795"
+            name:
+              const: "Pushover integration #1"
+            status:
+              const: 2
+              description: "active"
+            alert_contacts_format:
+              const: "7898795_0_0"
+              description: "ID_threshold_recurrence"
+            discovery_method:
+              const: "POST getAlertContacts, search by name containing 'pushover'"
+
+  x-remaining-work:
+    phase_3_capability_matrices:
+      description: "Systematic validation of all documented endpoints"
+      endpoints_to_test:
+        healthchecks:
+          - GET /api/v3/checks/<uuid>
+          - POST /api/v3/checks/<uuid>/pause
+          - POST /api/v3/checks/<uuid>/resume
+          - GET /api/v3/checks/<uuid>/pings
+          - GET /api/v3/checks/<uuid>/flips
+          - GET /api/v3/badges
+        uptimerobot:
+          - POST getMonitors (with filters)
+          - POST editMonitor
+          - POST getMWindows
+          - POST newMWindow
+          - POST deleteMWindow
+
+    phase_4_skill_updates:
+      completed:
+        - Official API documentation saved to references/
+        - Pushover discovery scripts validated
+      remaining:
+        - Update scripts/healthchecks_client.py with "po" kind check
+        - Update scripts/uptimerobot_client.py with type 9 Pushover
+        - Update SKILL.md examples to use Pushover (not Telegram)
+        - Add rate limiting guidance to SKILL.md
+        - Add troubleshooting for 400 errors to references/
+
+    phase_5_versioning:
+      deferred:
+        - Package updated skill
+        - Create conventional commit
+        - Invoke semantic-release skill
+        - Generate CHANGELOG entry
+
+  x-key-discoveries:
+    healthchecks_api:
+      - "kind code for Pushover is 'po' (abbreviated)"
+      - "All check creation fields are optional"
+      - "Minimal payload: name, timeout, grace"
+      - "All ping variations work (success, /start, /fail, POST)"
+
+    uptimerobot_api:
+      - "Rate limit is exactly 10 req/min (not ~6 as initially thought)"
+      - "Rate limit headers decrement correctly"
+      - "Retry-After header provides wait time"
+      - "Pushover may use type code 9 (or configured via Slack webhook)"
+
+    integration_patterns:
+      - "Both services require web UI configuration for Pushover first"
+      - "API can only list and assign existing Pushover integrations"
+      - "Cannot create Pushover integrations via API"
