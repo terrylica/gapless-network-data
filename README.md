@@ -149,7 +149,7 @@ df['block_utilization'] = (df['gasUsed'] / df['gasLimit']) * 100
 df['gas_adjusted_return'] = (df['close'] - df['open']) / (df['baseFeePerGas'] + 1)
 ```
 
-See [examples/feature_integration.py](examples/feature_integration.py) for complete workflow.
+See [examples/basic_usage.py](examples/basic_usage.py) for complete workflow.
 
 ## Architecture
 
@@ -185,4 +185,4 @@ MIT License - see [LICENSE](LICENSE) for details.
 
 ## Contributing
 
-Contributions are welcome! See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
+Contributions are welcome! Please open an issue or pull request on GitHub.

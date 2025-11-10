@@ -371,8 +371,6 @@ Project-specific skills that capture validated workflows from scratch investigat
 
 **Validated Pattern From**: `scratch/ethereum-collector-poc/` (LlamaRPC 1.37 RPS finding) and `scratch/rpc-provider-comparison/` (Alchemy 4.2x speedup discovery)
 
-**Package**: Available as `/Users/terryli/eon/gapless-network-data/blockchain-rpc-provider-research.zip ` for distribution
-
 ### blockchain-data-collection-validation
 
 **Description**: Empirical validation workflow for blockchain data collection pipelines before production implementation. Use when validating data sources, testing DuckDB integration, building POC collectors, or verifying complete fetch-to-storage pipelines.
@@ -397,15 +395,11 @@ Project-specific skills that capture validated workflows from scratch investigat
 
 **Validated Pattern From**: `scratch/ethereum-collector-poc/` (5 POC scripts progression) and `scratch/duckdb-batch-validation/` (CHECKPOINT crash testing, 124K blocks/sec performance)
 
-**Package**: Available as `/Users/terryli/eon/gapless-network-data/blockchain-data-collection-validation.zip ` for distribution
-
 ### bigquery-ethereum-data-acquisition
 
 **Description**: Bulk download 5 years of Ethereum data from Google BigQuery free tier (624x faster than RPC polling: <1 hour vs 26 days). Empirically validated column selection (11 vs 23 columns, 97% cost savings).
 
 **Complete Documentation**: See `.claude/skills/bigquery-ethereum-data-acquisition/CLAUDE.md` for column selection rationale, research methodology, and implementation guide
-
-**Package**: Available as `/Users/terryli/eon/gapless-network-data/bigquery-ethereum-data-acquisition.zip ` for distribution
 
 ### motherduck-pipeline-operations
 
@@ -430,8 +424,6 @@ Project-specific skills that capture validated workflows from scratch investigat
 **Validated Pattern From**: 5-year backfill execution (14.57M blocks, 2020-2025) using `deployment/backfill/chunked_backfill.sh`
 
 **Cross-References**: Works with `data-pipeline-monitoring` skill (pipeline health) and `bigquery-ethereum-data-acquisition` skill (BigQuery → MotherDuck workflow)
-
-**Package**: Available as `/Users/terryli/eon/gapless-network-data/motherduck-pipeline-operations.zip ` for distribution
 
 ## SDK Quality Standards
 

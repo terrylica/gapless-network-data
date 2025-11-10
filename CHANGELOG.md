@@ -1,9 +1,8 @@
 ## [2.2.1](https://github.com/terrylica/gapless-network-data/compare/v2.2.0...v2.2.1) (2025-11-10)
 
-
 ### Bug Fixes
 
-* **monitoring:** correct Cloud Run Job monitoring (Healthchecks.io) ([8df2232](https://github.com/terrylica/gapless-network-data/commit/8df223275b141122689a25d39808fac37134140c)), closes [#monitoring-false-positive](https://github.com/terrylica/gapless-network-data/issues/monitoring-false-positive)
+- **monitoring:** correct Cloud Run Job monitoring (Healthchecks.io) ([8df2232](https://github.com/terrylica/gapless-network-data/commit/8df223275b141122689a25d39808fac37134140c)), closes [#monitoring-false-positive](https://github.com/terrylica/gapless-network-data/issues/monitoring-false-positive)
 
 # [2.2.0](https://github.com/terrylica/gapless-network-data/compare/v2.1.0...v2.2.0) (2025-11-10)
 
