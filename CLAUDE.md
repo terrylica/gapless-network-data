@@ -12,7 +12,7 @@ Gapless Network Data is a multi-chain blockchain network metrics collection tool
 - **Bitcoin**: Mempool snapshots via mempool.space (5-minute intervals, future work)
 - **Multi-chain**: Extensible to Solana, Avalanche, Polygon, etc.
 
-**Version**: v0.1.0 (alpha)
+**Version**: v2.4.0 (production operational)
 
 ## Data Scope
 
@@ -67,7 +67,7 @@ Coordinates all project phases, specifications, and implementation work.
 **Current Status**:
 
 - **Phase**: Phase 1 (Historical Data Collection: 5-Year Backfill) - **COMPLETED** (2025-11-10)
-- **Version**: v2.2.1 (production operational)
+- **Version**: v2.4.0 (production operational)
 - **Data Loaded**: 14.57M Ethereum blocks (2020-2025) in MotherDuck
 - **Architecture**: BigQuery hourly batch + Alchemy real-time WebSocket (dual-pipeline operational)
 - **Monitoring**: Healthchecks.io + UptimeRobot + Pushover (all cloud-based)
@@ -455,7 +455,7 @@ Project-specific skills that capture validated workflows from scratch investigat
 
 ## Current Architecture
 
-**Version**: v2.2.1 (production operational)
+**Version**: v2.4.0 (production operational)
 
 **Status**: Production operational - dual-pipeline architecture with 14.57M blocks
 
@@ -473,10 +473,10 @@ Project-specific skills that capture validated workflows from scratch investigat
 - Deduplication: Both pipelines write to same MotherDuck table with PRIMARY KEY on block number
 - Cost: $0/month (all within free tiers)
 
-**SDK Package** (future work):
+**SDK Package** (implemented):
 
 - Package structure (src/gapless_network_data/)
-- API interface (fetch_snapshots, get_latest_snapshot) - pending implementation
+- API interface (fetch_snapshots, get_latest_snapshot) - implemented (src/gapless_network_data/api.py)
 - Bitcoin mempool.space collector - deferred to Phase 2+
 
 ## DuckDB Architecture & Strategy
@@ -709,6 +709,7 @@ All investigation materials with absolute paths:
 ## Data Storage Architecture
 
 **Production (Cloud)**:
+
 - **Location**: MotherDuck cloud (`md:ethereum_mainnet.blocks`)
 - **Purpose**: Always up-to-date production data (14.57M blocks, 2020-2025)
 - **Access**: SDK queries this by default (`import gapless_network_data`)
@@ -716,6 +717,7 @@ All investigation materials with absolute paths:
 - **Current Status**: Operational (dual-pipeline architecture)
 
 **Local Development (Optional)**:
+
 - **Location**: `~/.cache/gapless-network-data/data.duckdb`
 - **Purpose**: Local cache for offline analysis (future feature)
 - **Access**: SDK fallback if MotherDuck unreachable (pending implementation)
@@ -727,10 +729,12 @@ All investigation materials with absolute paths:
 **Schema Version**: 1.0.0
 
 **Tables** (MotherDuck cloud):
+
 - `ethereum_blocks` - 14.57M Ethereum blocks (2020-2025, ~1.5 GB)
 - `bitcoin_mempool` - Deferred to Phase 2+ (Bitcoin is SECONDARY)
 
 **Complete Schema Specification**: See `/Users/terryli/eon/gapless-network-data/specifications/duckdb-schema-specification.yaml ` for:
+
 - DDL statements with constraints and indexes
 - Common query patterns (time_bucket, ASOF JOIN, window functions)
 - Data integrity checks

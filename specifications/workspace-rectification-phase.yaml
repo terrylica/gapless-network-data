@@ -1,0 +1,258 @@
+openapi: 3.1.0
+info:
+  title: Workspace Rectification Specification
+  version: 1.0.0
+  description: |
+    Systematic rectification of inaccuracies, contradictions, and gaps identified
+    by 5-agent parallel audit (2025-11-10).
+
+    Findings Summary:
+    - CLAUDE.md Accuracy: 85% (5 critical issues)
+    - README.md Completeness: 70% (SDK/infrastructure confusion)
+    - Specifications Consistency: 84% (6 contradictions)
+    - Documentation Links: 94.5% (21 broken paths)
+    - Implementation Status: 63% (8 false claims)
+
+    Target: 95%+ workspace health after P0+P1 fixes
+    Estimated Effort: 6-8 hours (P0: 2-4h, P1: 4h)
+
+  x-metadata:
+    project: "gapless-network-data"
+    component: "Documentation Rectification"
+    created: "2025-11-10"
+    last_updated: "2025-11-10"
+    status: "planned"
+    environment: "documentation"
+    supersedes: []
+    audit_reports:
+      - "/tmp/claude-md-accuracy-audit/FINDINGS.md"
+      - "/tmp/readme-completeness-audit/FINDINGS.md"
+      - "/tmp/specifications-consistency-audit/FINDINGS.md"
+      - "/tmp/documentation-links-audit/FINDINGS.md"
+      - "/tmp/implementation-status-audit/FINDINGS.md"
+
+  x-slos:
+    availability:
+      target: "Documentation accuracy prevents user confusion"
+      measurement: "Zero contradictory version numbers, zero false operational claims"
+      failure_mode: "Users deploy non-existent infrastructure, misunderstand project maturity"
+      error_handling: "Raise exception if git operations fail"
+
+    correctness:
+      target: "100% alignment between documentation and reality"
+      measurement: |
+        - Version references: v2.4.0 everywhere (not v0.1.0, v2.2.1)
+        - Implementation status: "implemented" only if code exists
+        - Infrastructure claims: "operational" only if verified in GCP
+      validation: |
+        - grep -r "v0.1.0" CLAUDE.md returns no results
+        - grep -r "pending implementation" matches only truly pending features
+        - gcloud run jobs describe returns valid jobs for all "operational" claims
+      failure_mode: "Documentation contradicts reality, users cannot trust docs"
+
+    observability:
+      target: "All rectification operations tracked with git commits"
+      measurement: "Each phase committed separately with conventional commits"
+      log_format: "docs(accuracy): <action> - <rationale>"
+      failure_mode: "Changes not tracked in version control"
+
+    maintainability:
+      target: "<8 hours for P0+P1 rectification"
+      measurement: "Time from start to final commit"
+      operations:
+        version_alignment: "1 hour (P0)"
+        status_alignment: "1 hour (P0)"
+        architecture_reality: "2 hours (P1)"
+        specification_fixes: "1 hour (P1)"
+
+  x-phases:
+    phase_1_version_and_status:
+      name: "Align version numbers and implementation status"
+      rationale: "CLAUDE.md shows 3 different versions, SDK marked pending but implemented"
+      tasks:
+        - standardize_version_to_v2_4_0
+        - update_sdk_status_to_implemented
+        - fix_phase1_status_contradiction
+        - commit_phase_1
+      severity: "critical"
+      estimated_time: "1 hour"
+      validation:
+        - "grep -r 'v0.1.0' CLAUDE.md returns no results"
+        - "grep 'fetch_snapshots.*implemented' CLAUDE.md"
+        - "grep 'status: \"completed\"' specifications/master-project-roadmap.yaml"
+
+    phase_2_architecture_reality:
+      name: "Align infrastructure claims with actual deployment state"
+      rationale: "Cloud Run Job claimed operational but doesn't exist in GCP"
+      tasks:
+        - update_dual_pipeline_to_vm_only
+        - clarify_secret_manager_vs_doppler
+        - add_superseded_banner_to_duckdb_strategy
+        - commit_phase_2
+      severity: "high"
+      estimated_time: "2 hours"
+      validation:
+        - "grep 'VM-based real-time collection' CLAUDE.md"
+        - "grep 'Production: Secret Manager' CLAUDE.md"
+        - "grep 'SUPERSEDED' specifications/duckdb-integration-strategy.yaml"
+
+    phase_3_links_and_hygiene:
+      name: "Fix broken links and path hygiene"
+      rationale: "21 broken paths, 11 trailing spaces break iTerm2 Cmd+click"
+      tasks:
+        - remove_trailing_spaces_from_paths
+        - fix_archived_spec_references
+        - update_obsolete_references
+        - commit_phase_3
+      severity: "medium"
+      estimated_time: "1 hour"
+      validation:
+        - "grep -r '/Users/terryli.*  $' returns no results (no trailing spaces)"
+        - "All references in archive/ specs point to archive/ directory"
+
+  x-implementation:
+    phase_1_version_and_status:
+      task_1:
+        id: "standardize_version_to_v2_4_0"
+        intent: "Remove version confusion by standardizing on v2.4.0"
+        file: "CLAUDE.md"
+        changes:
+          - line: 15
+            from: "**Version**: v0.1.0 (alpha)"
+            to: "**Version**: v2.4.0 (production operational)"
+          - line: 70
+            from: "**Version**: v2.2.1 (production operational)"
+            to: "**Version**: v2.4.0 (production operational)"
+          - line: 458
+            from: "**Current Status**: Operational (v2.2.1)"
+            to: "**Current Status**: Operational (v2.4.0)"
+        validation: "grep -c 'v2.4.0' CLAUDE.md should be >= 3"
+
+      task_2:
+        id: "update_sdk_status_to_implemented"
+        intent: "Reflect SDK functions are implemented, not pending"
+        file: "CLAUDE.md"
+        changes:
+          - section: "Feature Implementation Status"
+            find: "API interface (fetch_snapshots, get_latest_snapshot) - pending implementation"
+            replace: "API interface (fetch_snapshots, get_latest_snapshot) - implemented (src/gapless_network_data/api.py)"
+        validation: "grep 'fetch_snapshots.*implemented' CLAUDE.md"
+
+      task_3:
+        id: "fix_phase1_status_contradiction"
+        intent: "Resolve Phase 1 status contradiction in master roadmap"
+        file: "specifications/master-project-roadmap.yaml"
+        changes:
+          - line: 218
+            from: "status: \"planned\""
+            to: "status: \"completed (2025-11-10)\""
+        validation: "yq eval '.paths.*.x-phase1.status' specifications/master-project-roadmap.yaml"
+
+    phase_2_architecture_reality:
+      task_1:
+        id: "update_dual_pipeline_to_vm_only"
+        intent: "Correct infrastructure architecture claim to match reality"
+        file: "CLAUDE.md"
+        rationale: |
+          Agent 5 verified: VM eth-realtime-collector is running
+          Agent 5 verified: gcloud run jobs describe eth-md-updater returns "Cannot find job"
+          Reality: Single pipeline (VM only), not dual-pipeline
+        changes:
+          - section: "Current Architecture"
+            find: "dual-pipeline architecture with 14.57M blocks"
+            replace: "VM-based real-time collection with 14.57M blocks"
+          - section: "Operational Infrastructure"
+            find: "BigQuery Hourly Batch (Cloud Run Job)"
+            replace: "BigQuery Hourly Batch (deferred - Cloud Run Job not deployed)"
+            add_note: "Only VM collector operational. Cloud Run Job planned but not deployed."
+        validation: "grep 'VM-based real-time collection' CLAUDE.md"
+
+      task_2:
+        id: "clarify_secret_manager_vs_doppler"
+        intent: "Resolve Secret Manager vs Doppler contradiction"
+        file: "CLAUDE.md"
+        changes:
+          - line: 167
+            context: "Monitoring Setup section"
+            from: "(no Doppler, no local .env files)"
+            to: "(production uses Secret Manager, local development may use Doppler)"
+          - section: "Secret Manager Best Practices"
+            add_clarification: |
+              **Production (Cloud)**: Google Secret Manager
+              - VM collector: motherduck-token, alchemy-api-key from Secret Manager
+              - Cloud Run Jobs: motherduck-token from Secret Manager
+
+              **Local Development (Optional)**: Doppler CLI
+              - Skills scripts: May use Doppler for local testing
+              - Not required for SDK usage (MotherDuck token from environment)
+        validation: "grep 'production uses Secret Manager' CLAUDE.md"
+
+      task_3:
+        id: "add_superseded_banner_to_duckdb_strategy"
+        intent: "Mark outdated architecture specification"
+        file: "specifications/duckdb-integration-strategy.yaml"
+        operation: "Prepend to description field"
+        content: |
+          ⚠️ SUPERSEDED (2025-11-04): This specification described "Parquet for Data" architecture.
+
+          **Current Architecture**: DuckDB PRIMARY (all raw data in DuckDB tables)
+
+          See master-project-roadmap.yaml x-architecture section for current approach.
+          This file preserved for historical context only.
+        validation: "grep 'SUPERSEDED' specifications/duckdb-integration-strategy.yaml"
+
+    phase_3_links_and_hygiene:
+      task_1:
+        id: "remove_trailing_spaces_from_paths"
+        intent: "Fix paths ending with space that break iTerm2 Cmd+click"
+        files: ["CLAUDE.md", "various documentation"]
+        pattern: "Find all paths matching: /Users/terryli/.*  $ (path + 2 spaces + EOL)"
+        action: "Remove trailing spaces"
+        affected_count: 11
+        validation: "grep -r '/Users/terryli.*  $' . returns empty"
+
+      task_2:
+        id: "fix_archived_spec_references"
+        intent: "Update references to archived specifications"
+        file: "specifications/archive/phase1-implementation-checklist.yaml"
+        changes:
+          - find: "specifications/core-collection-phase1.yaml"
+            replace: "specifications/archive/core-collection-phase1.yaml"
+          - find: "specifications/ethereum-collector-phase1.yaml"
+            replace: "specifications/archive/ethereum-collector-phase1.yaml"
+        validation: "grep 'specifications/archive/' specifications/archive/phase1-implementation-checklist.yaml"
+
+      task_3:
+        id: "update_obsolete_references"
+        intent: "Remove reference to non-existent file"
+        file: "specifications/archive/phase1-implementation-checklist.yaml"
+        changes:
+          - find: "HISTORICAL_COLLECTION_STRATEGY.md"
+            replace: "specifications/master-project-roadmap.yaml (Phase 1 section)"
+            rationale: "HISTORICAL_COLLECTION_STRATEGY.md never existed, reference should point to master roadmap"
+        validation: "grep -v 'HISTORICAL_COLLECTION_STRATEGY.md' specifications/archive/phase1-implementation-checklist.yaml"
+
+  x-validation:
+    post_phase_1:
+      - "CLAUDE.md shows v2.4.0 consistently (no v0.1.0, no v2.2.1)"
+      - "SDK functions marked implemented, not pending"
+      - "Phase 1 status shows completed in master roadmap"
+
+    post_phase_2:
+      - "Architecture describes VM-only, not dual-pipeline"
+      - "Secret Manager vs Doppler distinction clarified"
+      - "DuckDB strategy marked superseded"
+
+    post_phase_3:
+      - "No trailing spaces in file paths"
+      - "Archived spec references point to archive/"
+      - "No obsolete file references"
+
+    final:
+      - "Total commits: 3 (one per phase)"
+      - "All commits use conventional commit format (docs(accuracy):)"
+      - "semantic-release executed after each phase"
+      - "Workspace health: 78% → 93%+ (target)"
+
+paths: {}
+components: {}
