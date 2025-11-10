@@ -1,0 +1,17 @@
+[Unit]
+Description=Ethereum Real-Time Block Collector (Secure with Secret Manager)
+After=network.target
+
+[Service]
+Type=simple
+User=%i
+WorkingDirectory=/home/%i/eth-collector
+ExecStart=/usr/bin/python3 /home/%i/eth-collector/realtime_collector.py
+Restart=always
+RestartSec=10
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=eth-collector
+
+[Install]
+WantedBy=multi-user.target

@@ -59,6 +59,7 @@ Coordinates all project phases, specifications, and implementation work.
 
 **Sub-Specifications**:
 
+- `motherduck-integration.yaml` - MotherDuck dual pipeline (operational 2025-11-09, SLOs met)
 - `documentation-audit-phase.yaml` - Documentation audit (completed 2025-11-03, 6 findings resolved)
 - `duckdb-integration-strategy.yaml` - DuckDB integration (23 features, 29-40 hours total)
 - `archive/core-collection-phase1.yaml` - Bitcoin-only Phase 1 (superseded 2025-11-04, archived)
@@ -130,6 +131,107 @@ Coordinates all project phases, specifications, and implementation work.
 - **Multi-chain**: Dune Analytics (SQL aggregation, block-level, 2020+, free signup)
 
 **What This Research EXCLUDES**: Exchange OHLCV price data (Binance, Coinbase, Kraken) - not on-chain network metrics
+
+## MotherDuck Integration
+
+**Status**: Operational (deployed 2025-11-09)
+**Specification**: `/Users/terryli/eon/gapless-network-data/specifications/motherduck-integration.yaml`
+
+### Overview
+
+Dual-pipeline architecture for Ethereum data collection with automatic deduplication via MotherDuck:
+
+1. **BigQuery Hourly Batch** (Cloud Run Job): Syncs latest blocks from BigQuery public dataset every hour (~578 blocks/run)
+2. **Alchemy Real-Time Stream** (e2-micro VM): WebSocket subscription for real-time blocks (~12s intervals)
+
+**Deduplication**: Both pipelines use `INSERT OR REPLACE` on MotherDuck table with `number` as PRIMARY KEY
+
+### Architecture Documentation
+
+- [Dual Pipeline Architecture](/Users/terryli/eon/gapless-network-data/docs/architecture/motherduck-dual-pipeline.md) - Complete architecture diagram, failure modes, monitoring
+- [BigQuery Integration](/Users/terryli/eon/gapless-network-data/docs/architecture/bigquery-motherduck-integration.md) - PyArrow zero-copy transfer, performance analysis
+- [Real-Time Collector](/Users/terryli/eon/gapless-network-data/docs/deployment/realtime-collector.md) - VM deployment guide, systemd service configuration
+- [Secret Manager Migration](/Users/terryli/eon/gapless-network-data/docs/deployment/secret-manager-migration.md) - Migration from Doppler to GCP Secret Manager
+
+### Deployment Directories
+
+- `deployment/cloud-run/` - BigQuery → MotherDuck hourly sync (Cloud Run Job)
+- `deployment/vm/` - Real-time collector (e2-micro VM with systemd)
+- `deployment/backfill/` - Historical backfill script (2020-2025, ~13M blocks)
+
+Each directory contains:
+- Production Python scripts
+- Infrastructure files (Dockerfile, systemd service)
+- README.md with deployment instructions
+
+### Secret Manager Best Practices
+
+All production credentials stored in Google Cloud Secret Manager (no Doppler):
+
+**Secrets**:
+- `alchemy-api-key` - Alchemy WebSocket access
+- `motherduck-token` - MotherDuck authentication
+
+**IAM Permissions**:
+- VM service account: `893624294905-compute@developer.gserviceaccount.com` → `roles/secretmanager.secretAccessor`
+- Cloud Run service account: `eth-md-job-sa@eonlabs-ethereum-bq.iam.gserviceaccount.com` → `roles/secretmanager.secretAccessor`
+
+**Critical Pattern**:
+```python
+def get_secret(secret_id: str, project_id: str = GCP_PROJECT) -> str:
+    """Fetch secret from Google Secret Manager."""
+    client = secretmanager.SecretManagerServiceClient()
+    name = f"projects/{project_id}/secrets/{secret_id}/versions/latest"
+    response = client.access_secret_version(request={"name": name})
+    return response.payload.data.decode('UTF-8').strip()  # .strip() prevents gRPC errors
+```
+
+**Why `.strip()` is Critical**: Secrets stored via `gcloud secrets create` contain trailing newlines, causing gRPC metadata validation errors if not stripped.
+
+### Service Management
+
+**Cloud Run Job** (BigQuery sync):
+```bash
+# View execution history
+gcloud run jobs executions list --job eth-md-updater --region us-east1
+
+# Manual trigger
+gcloud run jobs execute eth-md-updater --region us-east1
+```
+
+**VM Service** (real-time collector):
+```bash
+# View logs
+gcloud compute ssh eth-realtime-collector --zone=us-east1-b --command='sudo journalctl -u eth-collector -f'
+
+# Check status
+gcloud compute ssh eth-realtime-collector --zone=us-east1-b --command='sudo systemctl status eth-collector'
+
+# Restart service
+gcloud compute ssh eth-realtime-collector --zone=us-east1-b --command='sudo systemctl restart eth-collector'
+```
+
+### SLOs
+
+**Availability**: Data pipelines run without manual intervention
+- Status: MET (both pipelines operational)
+
+**Correctness**: 100% data accuracy with no silent errors
+- Status: MET (schema validation, exception-only failures, idempotent deduplication)
+
+**Observability**: 100% operation tracking with queryable logs
+- Status: MET (Cloud Logging for all operations)
+
+**Maintainability**: <30 minutes for common operations
+- Status: MET (critical fix deployed in <15 minutes)
+
+### Cost
+
+**Total**: $0/month (all within free tiers)
+- BigQuery: $0 (10 MB queries within 1 TB/month free tier)
+- Cloud Run: $0 (720 executions within free tier)
+- Compute Engine: $0 (e2-micro within free tier)
+- MotherDuck: $0 (1.5 GB storage, <10 GB queries within free tier)
 
 ## Project Skills
 
