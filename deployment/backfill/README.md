@@ -10,6 +10,7 @@ One-time backfill script to load 5 years of historical Ethereum blocks from BigQ
 - `chunked_backfill.sh`: Runs locally, triggers Cloud Run Job executions via `gcloud`
 
 **Requirements**:
+
 - Local: `uv`, `gcloud` CLI (authenticated)
 - Cloud: GCP project access, BigQuery API enabled, Secret Manager access
 
