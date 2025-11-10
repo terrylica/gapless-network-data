@@ -164,14 +164,14 @@ Each directory contains production scripts, infrastructure files (Dockerfile, sy
 ### Verify Pipeline Health
 
 ```bash
-# Check Cloud Run Job execution history
+# Check Cloud Run Job execution history (run locally, requires gcloud auth)
 gcloud run jobs executions list --job eth-md-updater --region us-central1
 
-# Check VM real-time collector logs
+# Check VM real-time collector logs (run locally, requires gcloud auth)
 gcloud compute ssh eth-realtime-collector --zone=us-east1-b \
   --command='sudo journalctl -u eth-collector -f'
 
-# Verify MotherDuck database state
+# Verify MotherDuck database state (run locally, queries MotherDuck cloud, requires motherduck_token)
 cd .claude/skills/motherduck-pipeline-operations
 uv run scripts/verify_motherduck.py
 ```
@@ -205,6 +205,7 @@ gcloud compute ssh eth-realtime-collector --zone=us-east1-b \
 For loading multi-year historical data (one-time operation):
 
 ```bash
+# Run locally. Triggers Cloud Run Job executions via gcloud. Requires GCP credentials and BigQuery API access.
 cd deployment/backfill
 ./chunked_backfill.sh 2020 2025
 ```
