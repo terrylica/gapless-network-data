@@ -8,8 +8,8 @@ info:
 
   x-metadata:
     sso_source: "/Users/terryli/eon/gapless-network-data/specifications/master-project-roadmap.yaml"
-    detailed_spec: "/Users/terryli/eon/gapless-network-data/specifications/ethereum-collector-phase1.yaml"
-    strategy_doc: "/Users/terryli/eon/gapless-network-data/HISTORICAL_COLLECTION_STRATEGY.md"
+    detailed_spec: "/Users/terryli/eon/gapless-network-data/specifications/archive/ethereum-collector-phase1.yaml"
+    strategy_doc: "/Users/terryli/eon/gapless-network-data/specifications/master-project-roadmap.yaml (Phase 1 section)"
     target_version: "v0.2.0"
     current_version: "v0.1.0"
     last_updated: "2025-11-04"
