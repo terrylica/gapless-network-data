@@ -1,0 +1,26 @@
+# syntax=docker/dockerfile:1
+
+# Use official Python runtime as base image
+FROM python:3.12-slim
+
+# Set working directory
+WORKDIR /app
+
+# Install dependencies
+RUN pip install --no-cache-dir \
+    duckdb>=1.0.0 \
+    google-cloud-secret-manager>=2.0.0 \
+    requests>=2.31.0
+
+# Copy application
+COPY data_quality_checker.py .
+
+# Run as non-root user
+RUN useradd -m -u 1000 appuser && chown -R appuser:appuser /app
+USER appuser
+
+# Set environment variables
+ENV PYTHONUNBUFFERED=1
+
+# Run the application
+CMD ["python", "data_quality_checker.py"]
