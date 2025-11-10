@@ -1,6 +1,6 @@
 ---
 name: service-monitoring-setup
-description: Autonomous setup and management of external service monitoring using UptimeRobot (HTTP endpoint monitoring) and Healthchecks.io (heartbeat/Dead Man's Switch monitoring). Use when setting up monitoring for Cloud Run Jobs, VM services, or investigating monitoring configuration issues. Includes Telegram integration, validated API patterns, and dual-service architecture.
+description: Autonomous setup and management of external service monitoring using UptimeRobot (HTTP endpoint monitoring) and Healthchecks.io (heartbeat/Dead Man's Switch monitoring). Use when setting up monitoring for Cloud Run Jobs, VM services, or investigating monitoring configuration issues. Includes Pushover integration, validated API patterns, and dual-service architecture.
 ---
 
 # Service Monitoring Setup
@@ -22,7 +22,7 @@ Use this skill when:
 - Setting up monitoring for Cloud Run Jobs (heartbeat monitoring)
 - Configuring HTTP endpoint monitoring for VM services
 - Investigating why monitoring alerts aren't working
-- Troubleshooting Telegram integration with monitoring services
+- Troubleshooting Pushover integration with monitoring services
 - User mentions "monitoring", "uptime", "healthcheck", "dead man's switch", or "alerts"
 - Validating monitoring service API integration before production use
 
@@ -106,7 +106,7 @@ result = client.create_monitor(
     url="https://your-vm-ip:8000/health",
     type=1,  # HTTP(S)
     interval=300,  # 5 minutes (free tier)
-    alert_contacts=client.get_telegram_contact_id()
+    alert_contacts=client.get_pushover_contact_id()  # Type 9 Pushover contact
 )
 
 print(f"Monitor created: {result['monitor']['id']}")
@@ -134,10 +134,10 @@ def _request(self, endpoint: str, data: Dict) -> Dict:
 
 - **Monitors**: 50 HTTP/HTTPS monitors
 - **Check Interval**: 5 minutes (minimum)
-- **Alert Contacts**: Unlimited (email, Telegram, Slack, webhook)
+- **Alert Contacts**: Unlimited (email, Pushover, Slack, webhook)
 - **Limitations**:
   - Heartbeat monitoring requires Pro ($7/mo)
-  - Rate limiting: ~6 operations before throttle (429 error)
+  - Rate limiting: 10 req/min (429 error with Retry-After: 47s header)
   - Use exponential backoff for bulk operations
 
 ### Common Operations
@@ -156,7 +156,7 @@ result = client.create_monitor(
     url="https://api.example.com/health",
     type=1,  # HTTP(S)
     interval=300,  # 5 minutes
-    alert_contacts=telegram_id
+    alert_contacts=pushover_id
 )
 ```
 
@@ -165,11 +165,11 @@ result = client.create_monitor(
 client.delete_monitor(monitor_id="801762241")
 ```
 
-**Get Telegram Contact ID**:
+**Get Pushover Contact ID**:
 ```python
-telegram_id = client.get_telegram_contact_id()
-if not telegram_id:
-    print("⚠️ Telegram not configured - see Telegram Integration Setup")
+pushover_id = client.get_pushover_contact_id()
+if not pushover_id:
+    print("⚠️ Pushover not configured - see Pushover Integration Setup")
 ```
 
 ### Monitor Types
@@ -198,7 +198,7 @@ response = requests.get(f"{base_url}/checks/", headers=headers)
 - **Checks**: 20 checks
 - **Timeout**: User-defined (any duration)
 - **Grace Period**: User-defined buffer before alert
-- **Integrations**: Email, Telegram, Slack, Discord, webhooks (all free)
+- **Integrations**: Email, Pushover, Slack, Discord, webhooks (all free)
 - **Ping Mechanism**: Simple HTTP GET to unique ping URL
 
 ### Common Operations
@@ -217,7 +217,7 @@ result = client.create_check(
     timeout=86400,  # 24 hours
     grace=3600,     # 1 hour grace
     tags="backup production",
-    channels=telegram_id  # Or "*" for all channels
+    channels=pushover_id  # Or "*" for all channels
 )
 ping_url = result["ping_url"]
 ```
@@ -257,56 +257,92 @@ Advantages:
 - Catches job crashes, hangs, or scheduling failures
 ```
 
-## Telegram Integration Setup
+## Pushover Integration Setup
 
-Both services require manual Telegram bot setup before alerts work.
+**Important**: Pushover integration must be configured via web UI first. API can only list and assign existing integrations, not create them.
 
-### UptimeRobot Telegram Setup
+### Prerequisites
+
+1. Create Pushover account at https://pushover.net (30-day trial, then $5 one-time)
+2. Install Pushover app on mobile device
+3. Note your User Key from Pushover dashboard
+
+### UptimeRobot Pushover Setup
 
 1. Go to https://uptimerobot.com/dashboard
 2. Click "My Settings" → "Alert Contacts"
 3. Click "Add Alert Contact"
-4. Select "Telegram"
-5. Follow instructions to message UptimeRobot bot
+4. Select "Pushover" (may appear as type 9 in API)
+5. Enter your Pushover User Key
 6. Complete verification
-7. Verify with: `client.get_telegram_contact_id()` (should return UUID)
+7. Verify with: `client.get_pushover_contact_id()` (should return numeric ID)
 
-### Healthchecks.io Telegram Setup
+**API Note**: Pushover contacts appear as type=9 in UptimeRobot API responses.
+
+### Healthchecks.io Pushover Setup
 
 1. Go to https://healthchecks.io/projects
 2. Navigate to "Integrations" → "Add Integration"
-3. Select "Telegram"
-4. Start chat with @HealthchecksBot
-5. Send `/start` to the bot
-6. Copy confirmation code to Healthchecks.io
-7. Verify with: `client.get_telegram_channel_id()` (should return UUID)
+3. Select "Pushover"
+4. Enter your Pushover User Key and API Token/Key
+5. Save integration
+6. Verify with: `client.get_pushover_channel_id()` (should return UUID)
 
-**Common Issue**: If `get_telegram_contact_id()` returns `None`, Telegram is not configured. Complete setup steps above.
+**API Note**: Pushover channels use kind code "po" (abbreviated), not "pushover".
+
+**Common Issue**: If `get_pushover_contact_id()` or `get_pushover_channel_id()` returns `None`, Pushover is not configured. Complete setup steps above via web UI.
 
 ## Troubleshooting
 
 ### UptimeRobot Issues
 
 **429 Too Many Requests**:
-- Free tier has rate limits (~6 operations)
+- Free tier has rate limits (10 req/min empirically validated)
+- Response includes `Retry-After` header (observed: 47 seconds)
+- Response includes `X-RateLimit-Remaining` header (counts down from 9 to 0)
 - Add exponential backoff between operations
 - Use bulk operations where available
+
+**Rate Limit Example**:
+```python
+import time
+from requests.exceptions import HTTPError
+
+try:
+    result = client.get_monitors()
+except HTTPError as e:
+    if e.response.status_code == 429:
+        retry_after = int(e.response.headers.get('Retry-After', 60))
+        print(f"Rate limited. Waiting {retry_after} seconds...")
+        time.sleep(retry_after)
+        result = client.get_monitors()  # Retry
+```
 
 **Heartbeat Monitoring Not Available**:
 - Free tier only supports HTTP polling
 - Use Healthchecks.io for heartbeat monitoring (free)
 
-**Telegram Alerts Not Working**:
-- Verify: `client.get_telegram_contact_id()` returns a value
-- If `None`, complete Telegram setup steps
+**Pushover Alerts Not Working**:
+- Verify: `client.get_pushover_contact_id()` returns a value
+- If `None`, complete Pushover setup steps via web UI
 - Check alert contact is enabled (status=2)
+- Confirm Pushover app is installed on device
 
 ### Healthchecks.io Issues
 
 **400 Bad Request on Check Creation**:
-- Validate required fields: `name`, `timeout`
-- Ensure `channels` is valid UUID or "*"
-- Check JSON payload format matches API v3 spec
+- **Root Cause**: All fields are optional per official docs. Use minimal payload.
+- **Solution**: Only provide `name`, `timeout`, and `grace`:
+```python
+result = client.create_check(
+    name="My Check",
+    timeout=3600,   # seconds (required)
+    grace=600       # seconds (recommended)
+)
+# All other fields are optional
+```
+- Avoid complex payloads with undocumented fields
+- Official docs: https://healthchecks.io/docs/api/
 
 **Ping Not Recording**:
 - Verify ping URL is correct (from `create_check` response)
@@ -343,13 +379,13 @@ uptimerobot_key = os.popen(
 hc_client = HealthchecksClient(healthchecks_key)
 ur_client = UptimeRobotClient(uptimerobot_key)
 
-# Get Telegram channel IDs
-hc_telegram = hc_client.get_telegram_channel_id()
-ur_telegram = ur_client.get_telegram_contact_id()
+# Get Pushover integration IDs
+hc_pushover = hc_client.get_pushover_channel_id()
+ur_pushover = ur_client.get_pushover_contact_id()
 
-if not hc_telegram or not ur_telegram:
-    print("⚠️ WARNING: Telegram not configured for one or both services")
-    print("Alerts will only go to email until Telegram is set up")
+if not hc_pushover or not ur_pushover:
+    print("⚠️ WARNING: Pushover not configured for one or both services")
+    print("Alerts will only go to email until Pushover is set up via web UI")
 
 # Setup Cloud Run Job monitoring (Dead Man's Switch)
 job_check = hc_client.create_check(
@@ -357,7 +393,7 @@ job_check = hc_client.create_check(
     timeout=7200,  # 2 hours
     grace=600,     # 10 minutes
     tags="production ethereum cloud-run",
-    channels=hc_telegram if hc_telegram else "*"
+    channels=hc_pushover if hc_pushover else "*"
 )
 
 print(f"Cloud Run Job Ping URL: {job_check['ping_url']}")
@@ -370,7 +406,7 @@ vm_monitor = ur_client.create_monitor(
     url="https://your-vm-ip:8000/health",
     type=1,
     interval=300,
-    alert_contacts=ur_telegram if ur_telegram else None
+    alert_contacts=ur_pushover if ur_pushover else None
 )
 
 print(f"VM Monitor ID: {vm_monitor['monitor']['id']}")
@@ -410,7 +446,7 @@ All patterns in this skill have been empirically validated:
 | **Free tier checks** | 20 | 50 HTTP monitors |
 | **Heartbeat monitoring** | ✅ Free | ❌ Pro only ($7/mo) |
 | **HTTP monitoring** | ❌ | ✅ Free |
-| **Telegram alerts** | ✅ Free | ✅ Free |
+| **Pushover alerts** | ✅ Free | ✅ Free |
 | **API** | v3, modern | v2, established |
 | **Best for** | Dead Man's Switch | HTTP endpoint polling |
 
