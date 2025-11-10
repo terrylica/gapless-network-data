@@ -948,7 +948,7 @@ x-cross-package-integration:
       use_case: "Cross-validation analytics"
 
 x-version-tracking:
-  current_version: "v0.1.0"
+  current_version: "v2.4.0"
   next_milestones:
     - version: "v0.2.0"
       scope: "Phase 1: Basic Data Collection"
