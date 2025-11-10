@@ -16,7 +16,7 @@
 - ✅ Authentication (API key valid)
 - ✅ Account details retrieval
 - ✅ List monitors (empty account)
-- ✅ List alert contacts (1 email, Telegram NOT configured)
+- ✅ List alert contacts (1 email, Pushover NOT configured)
 - ✅ Monitor lifecycle (create → verify → delete)
 - ⚠️ Rate limiting encountered (~6 operations before throttle)
 
@@ -197,7 +197,7 @@ def get_alert_contacts() -> list[dict]:
 - `7` = Zapier
 - `9` = Slack
 - `10` = Discord
-- `11` = Telegram ← **Target for production**
+- `11` = Pushover ← **Target for production**
 - `12` = Microsoft Teams
 
 **Alert Contact Status**:
@@ -205,19 +205,19 @@ def get_alert_contacts() -> list[dict]:
 - `1` = Paused
 - `2` = Active (verified and enabled)
 
-### Get Telegram Contact ID
+### Get Pushover Contact ID
 
 ```python
-def get_telegram_contact_id() -> str | None:
-    """Find first active Telegram contact."""
+def get_pushover_contact_id() -> str | None:
+    """Find first active Pushover contact."""
     contacts = get_alert_contacts()
     for contact in contacts:
-        if str(contact['type']) == '11':  # Telegram
+        if str(contact['type']) == '11':  # Pushover
             return contact['id']
     return None
 ```
 
-**Current Status**: ⚠️ Returns `None` (Telegram not configured)
+**Current Status**: ⚠️ Returns `None` (Pushover not configured)
 
 **Required**: Manual setup via UptimeRobot dashboard before production use.
 
@@ -254,7 +254,7 @@ def rate_limited_request(endpoint: str, data: dict, max_retries: int = 3) -> dic
 - Use exponential backoff for retries
 - Batch operations when possible (use `getMonitors` instead of multiple individual queries)
 
-## Telegram Integration
+## Pushover Integration
 
 ### Manual Setup Steps (Required)
 
@@ -262,34 +262,34 @@ def rate_limited_request(endpoint: str, data: dict, max_retries: int = 3) -> dic
    - Go to https://uptimerobot.com/dashboard
    - Log in with account credentials
 
-2. **Add Telegram Contact**:
+2. **Add Pushover Contact**:
    - Click "My Settings" → "Alert Contacts"
    - Click "Add Alert Contact"
-   - Select "Telegram" from dropdown
+   - Select "Pushover" from dropdown
 
 3. **Bot Interaction**:
-   - Follow instructions to message UptimeRobot Telegram bot
+   - Follow instructions to message UptimeRobot Pushover bot
    - Send verification code to bot
    - Complete verification flow
 
 4. **Verify Integration**:
    ```python
-   telegram_id = client.get_telegram_contact_id()
-   assert telegram_id is not None, "Telegram not configured"
+   pushover_id = client.get_pushover_contact_id()
+   assert pushover_id is not None, "Pushover not configured"
    ```
 
 **Status Check**:
 ```python
 contacts = client.get_alert_contacts()
-telegram = next((c for c in contacts if c['type'] == '11'), None)
+pushover = next((c for c in contacts if c['type'] == '11'), None)
 
-if telegram:
-    if telegram['status'] == '2':
-        print("✅ Telegram active")
+if pushover:
+    if pushover['status'] == '2':
+        print("✅ Pushover active")
     else:
-        print("⚠️ Telegram inactive - complete verification")
+        print("⚠️ Pushover inactive - complete verification")
 else:
-    print("❌ Telegram not configured")
+    print("❌ Pushover not configured")
 ```
 
 ## Production Usage Pattern
@@ -309,10 +309,10 @@ api_key = os.popen(
 
 client = UptimeRobotClient(api_key)
 
-# Verify Telegram integration
-telegram_id = client.get_telegram_contact_id()
-if not telegram_id:
-    raise Exception("Telegram not configured - see manual setup steps")
+# Verify Pushover integration
+pushover_id = client.get_pushover_contact_id()
+if not pushover_id:
+    raise Exception("Pushover not configured - see manual setup steps")
 
 # Create production monitor
 monitor = client.create_monitor(
@@ -320,7 +320,7 @@ monitor = client.create_monitor(
     url="https://your-vm-ip:8000/health",
     type=1,  # HTTP(S)
     interval=300,  # 5 minutes
-    alert_contacts=telegram_id
+    alert_contacts=pushover_id
 )
 
 print(f"Monitor created: {monitor['monitor']['id']}")
@@ -365,7 +365,7 @@ def safe_request(endpoint: str, data: dict) -> dict | None:
 **Probe Files**: `/tmp/probe/uptimerobot/`
 - `01_test_api_key.py` - ✅ Account validation
 - `02_list_monitors.py` - ✅ Empty account confirmed
-- `03_list_alert_contacts.py` - ✅ Email found, Telegram missing
+- `03_list_alert_contacts.py` - ✅ Email found, Pushover missing
 - `04_create_test_monitor.py` - ✅ Lifecycle validated
 - `05_idiomatic_patterns.py` - ⚠️ Rate limit discovered
 
@@ -375,5 +375,5 @@ def safe_request(endpoint: str, data: dict) -> dict | None:
 - API key authentication works correctly
 - Monitor creation/deletion validated
 - Rate limiting at ~6 operations
-- Telegram manual setup required
+- Pushover manual setup required
 - Free tier suitable for VM HTTP monitoring

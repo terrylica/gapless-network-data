@@ -15,7 +15,7 @@
 **Core Capabilities Validated**:
 - ✅ Authentication (X-Api-Key header works)
 - ✅ List checks (1 existing check found)
-- ✅ List channels (1 email, Telegram NOT configured)
+- ✅ List channels (1 email, Pushover NOT configured)
 - ⚠️ Create check (API field mismatch discovered)
 - ❌ Ping test (400 Bad Request - payload refinement needed)
 - ✅ Idiomatic patterns (list operations validated)
@@ -70,7 +70,7 @@ def _request(method: str, endpoint: str, data: dict = None) -> dict:
 - **Timeout**: User-defined (any duration)
 - **Grace Period**: User-defined buffer before alert
 - **Ping Frequency**: Unlimited (no rate limits discovered)
-- **Integrations**: Email, Telegram, Slack, Discord, webhooks (all free)
+- **Integrations**: Email, Pushover, Slack, Discord, webhooks (all free)
 - **Heartbeat Monitoring**: ✅ Free (key advantage over UptimeRobot)
 
 **No API endpoint for account details** - check dashboard for limits.
@@ -253,26 +253,26 @@ def get_channels() -> list[dict]:
 
 **Channel Kinds**:
 - `email` - Email notifications
-- `telegram` - Telegram bot messages ← **Target**
+- `pushover` - Pushover bot messages ← **Target**
 - `slack` - Slack webhook
 - `discord` - Discord webhook
 - `webhook` - Custom HTTP webhook
 - `pushover` - Pushover mobile notifications
 - `sms` - SMS (Twilio integration)
 
-### Get Telegram Channel ID
+### Get Pushover Channel ID
 
 ```python
-def get_telegram_channel_id() -> str | None:
-    """Find first Telegram channel."""
+def get_pushover_channel_id() -> str | None:
+    """Find first Pushover channel."""
     channels = get_channels()
     for channel in channels:
-        if channel.get('kind') == 'telegram':
+        if channel.get('kind') == 'pushover':
             return channel['id']
     return None
 ```
 
-**Current Status**: ⚠️ Returns `None` (Telegram not configured)
+**Current Status**: ⚠️ Returns `None` (Pushover not configured)
 
 ## Dead Man's Switch Pattern
 
@@ -345,7 +345,7 @@ gcloud run jobs update eth-collector \
     --region us-east1
 ```
 
-## Telegram Integration
+## Pushover Integration
 
 ### Manual Setup Steps (Required)
 
@@ -353,13 +353,13 @@ gcloud run jobs update eth-collector \
    - Go to https://healthchecks.io/projects
    - Log in with account credentials
 
-2. **Add Telegram Integration**:
+2. **Add Pushover Integration**:
    - Navigate to "Integrations" tab
    - Click "Add Integration"
-   - Select "Telegram"
+   - Select "Pushover"
 
 3. **Bot Interaction**:
-   - Start chat with @HealthchecksBot on Telegram
+   - Start chat with Pushover integration on Pushover
    - Send `/start` to the bot
    - Copy confirmation code from bot
 
@@ -369,19 +369,19 @@ gcloud run jobs update eth-collector \
 
 5. **Verify Integration**:
    ```python
-   telegram_id = client.get_telegram_channel_id()
-   assert telegram_id is not None, "Telegram not configured"
+   pushover_id = client.get_pushover_channel_id()
+   assert pushover_id is not None, "Pushover not configured"
    ```
 
 **Status Check**:
 ```python
 channels = client.get_channels()
-telegram = next((c for c in channels if c['kind'] == 'telegram'), None)
+pushover = next((c for c in channels if c['kind'] == 'pushover'), None)
 
-if telegram:
-    print(f"✅ Telegram configured: {telegram['id']}")
+if pushover:
+    print(f"✅ Pushover configured: {pushover['id']}")
 else:
-    print("❌ Telegram not configured")
+    print("❌ Pushover not configured")
 ```
 
 ## Known Issues
@@ -458,12 +458,12 @@ api_key = os.popen(
 
 client = HealthchecksClient(api_key)
 
-# Verify Telegram integration
-telegram_id = client.get_telegram_channel_id()
-if not telegram_id:
-    print("⚠️ WARNING: Telegram not configured")
+# Verify Pushover integration
+pushover_id = client.get_pushover_channel_id()
+if not pushover_id:
+    print("⚠️ WARNING: Pushover not configured")
     print("Alerts will go to email only")
-    telegram_id = "*"  # Use all channels
+    pushover_id = "*"  # Use all channels
 
 # Create production check
 check = client.create_check(
@@ -471,7 +471,7 @@ check = client.create_check(
     timeout=7200,  # 2 hours
     grace=600,     # 10 minutes
     tags="production ethereum cloud-run",
-    channels=telegram_id
+    channels=pushover_id
 )
 
 ping_url = check["ping_url"]
@@ -518,7 +518,7 @@ def safe_ping(ping_url: str) -> bool:
 
 **Probe Files**: `/tmp/probe/healthchecks-io/`
 - `01_test_api_key.py` - ✅ Authentication validated
-- `02_list_channels.py` - ✅ Email found, Telegram missing
+- `02_list_channels.py` - ✅ Email found, Pushover missing
 - `03_create_test_check.py` - ⚠️ API field mismatch
 - `04_test_ping.py` - ❌ 400 error (payload refinement needed)
 - `05_idiomatic_patterns.py` - ⚠️ Partial validation
@@ -529,5 +529,5 @@ def safe_ping(ping_url: str) -> bool:
 - API key authentication works correctly
 - List operations validated
 - Check creation needs payload refinement
-- Telegram manual setup required
+- Pushover manual setup required
 - Free tier perfect for Dead Man's Switch monitoring

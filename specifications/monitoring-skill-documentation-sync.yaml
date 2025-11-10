@@ -1,0 +1,225 @@
+openapi: 3.1.1
+info:
+  title: Monitoring Skill Documentation Sync - Phase 4
+  version: 1.0.0
+  description: |
+    Sync skill documentation with validated API client code.
+    Resolves code-documentation mismatch that breaks user workflows.
+
+  x-metadata:
+    created: 2025-11-09
+    supersedes: []
+    depends_on:
+      - monitoring-skill-enhancement.yaml (Phase 1-2)
+      - monitoring-skill-enhancement-v2-findings.yaml (Phase 3)
+
+  x-problem-statement:
+    issue: "Skill documentation references Telegram methods that no longer exist"
+    impact: "Users following SKILL.md examples get method-not-found errors"
+    root_cause: "v2.0.0 changed API clients but not documentation"
+    evidence:
+      - "SKILL.md line 3: 'Includes Telegram integration'"
+      - "SKILL.md line 109: client.get_telegram_contact_id()"
+      - "SKILL.md line 168-173: Telegram integration section"
+      - "references/healthchecks-patterns.md: Full Telegram section"
+      - "references/uptimerobot-patterns.md: Telegram examples"
+
+  x-slos:
+    availability:
+      - Skill loads without errors in Claude Code CLI
+      - All example code executes successfully with valid API keys
+      - No references to non-existent methods
+
+    correctness:
+      - All examples use actual API client method names
+      - Rate limit documentation matches empirical measurements (10 req/min)
+      - Pushover kind code documented as "po" (not "pushover")
+      - 400 error troubleshooting reflects validated payload format
+
+    observability:
+      - Users can diagnose Pushover setup issues via troubleshooting guide
+      - Web UI requirement for Pushover clearly documented
+      - Rate limit behavior documented with retry strategies
+
+    maintainability:
+      - Official API documentation excerpts included in references/
+      - Version tracking in YAML frontmatter
+      - Empirical validation dates documented
+
+paths:
+  /phase-4/update-skill-description:
+    put:
+      summary: Update SKILL.md header and description
+      x-tasks:
+        - task_id: P4T1
+          name: Update skill description (line 3)
+          current: "Includes Telegram integration, validated API patterns"
+          new: "Includes Pushover integration, validated API patterns"
+          rationale: "v2.0.0 replaced Telegram with Pushover"
+
+  /phase-4/update-skill-examples:
+    put:
+      summary: Replace Telegram examples with Pushover
+      x-tasks:
+        - task_id: P4T2
+          name: Update Healthchecks.io example (lines 52-84)
+          changes:
+            - Remove Telegram channel references
+            - Update to use Pushover channel
+            - Document channels="*" for all configured integrations
+
+        - task_id: P4T3
+          name: Update UptimeRobot example (lines 86-113)
+          changes:
+            - "Line 109: get_telegram_contact_id() → get_pushover_contact_id()"
+            - Add comment about type=9 discovery
+
+        - task_id: P4T4
+          name: Update operation examples (lines 168-173)
+          changes:
+            - "Get Telegram Contact ID section → Get Pushover Contact ID"
+            - Update method name and error message
+
+  /phase-4/add-troubleshooting:
+    post:
+      summary: Add troubleshooting guidance
+      x-tasks:
+        - task_id: P4T5
+          name: Add Healthchecks.io 400 error troubleshooting
+          location: SKILL.md new section after examples
+          content: |
+            ## Troubleshooting
+
+            ### Healthchecks.io 400 Bad Request on Check Creation
+
+            **Symptom**: POST /api/v3/checks/ returns 400
+            **Cause**: Incorrect payload format
+            **Solution**: Use minimal payload with required fields only
+
+            ```python
+            # Minimal working payload
+            result = client.create_check(
+                name="My Check",
+                timeout=3600,   # seconds
+                grace=600       # seconds
+            )
+            ```
+
+            All fields are optional except name and timeout.
+
+        - task_id: P4T6
+          name: Update UptimeRobot rate limit documentation
+          location: "SKILL.md line 140 (currently says ~6)"
+          changes:
+            - "Rate limiting: ~6 operations → Rate limiting: 10 req/min"
+            - Add Retry-After header documentation (47 seconds observed)
+            - Add rate limit headers (X-RateLimit-Remaining, X-RateLimit-Limit)
+
+        - task_id: P4T7
+          name: Document Pushover web UI requirement
+          location: New section in SKILL.md
+          content: |
+            ### Pushover Integration Setup
+
+            **Important**: Pushover integration must be configured via web UI first.
+            API can only list and assign existing integrations.
+
+            1. Healthchecks.io: Settings → Integrations → Add Pushover
+            2. UptimeRobot: My Settings → Alert Contacts → Add Pushover
+            3. Verify with API: client.get_pushover_*_id() returns ID
+
+  /phase-4/update-reference-docs:
+    put:
+      summary: Update references/ documentation
+      x-tasks:
+        - task_id: P4T8
+          name: Update references/healthchecks-patterns.md
+          changes:
+            - Replace all "Telegram" → "Pushover"
+            - Update kind code: "telegram" → "po"
+            - Update channel ID to validated value
+            - Remove @HealthchecksBot instructions
+            - Add Pushover web UI setup steps
+
+        - task_id: P4T9
+          name: Update references/uptimerobot-patterns.md
+          changes:
+            - Replace all "Telegram" → "Pushover"
+            - Update type code documentation (add type=9)
+            - Update rate limit: ~6 → 10 req/min
+            - Add Retry-After header documentation
+
+        - task_id: P4T10
+          name: Add official API documentation excerpts
+          files:
+            - references/official-healthchecks-api-excerpts.md
+            - references/official-uptimerobot-api-excerpts.md
+          source: /tmp/probe/*/docs/api-reference.md
+          content: "Relevant sections from official docs with attribution"
+
+  /phase-4/repackage-and-release:
+    post:
+      summary: Package and version skill
+      x-tasks:
+        - task_id: P4T11
+          name: Re-package skill
+          command: |
+            cd .claude/skills/service-monitoring-setup
+            zip -r ../service-monitoring-setup-v2.1.zip . -x ".*" -x "__pycache__/*"
+          verification: "Ensure size > 20KB, includes all updated files"
+
+        - task_id: P4T12
+          name: Create conventional commit
+          type: "fix(skills)"
+          scope: "documentation"
+          message: "sync monitoring skill docs with Pushover API clients"
+          body: |
+            - Update SKILL.md examples: Telegram → Pushover
+            - Update references/: correct rate limits, add troubleshooting
+            - Add official API documentation excerpts
+            - Document Pushover web UI setup requirement
+
+            Fixes #ISSUE_NUMBER (documentation-code mismatch)
+
+        - task_id: P4T13
+          name: Invoke semantic-release
+          command: "export GH_TOKEN=$(gh auth token) && export CI=true && npm run release"
+          expected_version: "v2.0.1"
+          expected_changelog: "Bug fix for documentation sync"
+
+x-acceptance-criteria:
+  documentation_sync:
+    - "No references to get_telegram_*_id() methods in documentation"
+    - "All examples use get_pushover_*_id() methods"
+    - "Rate limit documented as 10 req/min (not ~6)"
+    - "Pushover kind code documented as 'po'"
+    - "400 error troubleshooting section added"
+    - "Web UI setup requirement documented"
+
+  code_execution:
+    - "All SKILL.md examples execute without method-not-found errors"
+    - "Troubleshooting examples work with valid API keys"
+
+  versioning:
+    - "Conventional commit created with fix(skills) type"
+    - "semantic-release generates v2.0.1 (patch bump)"
+    - "CHANGELOG.md updated with bug fix entry"
+    - "GitHub release created"
+
+x-timeline:
+  estimated: "45-60 minutes"
+  breakdown:
+    P4T1-P4T4: "15 minutes (SKILL.md updates)"
+    P4T5-P4T7: "15 minutes (troubleshooting sections)"
+    P4T8-P4T10: "15 minutes (references/ updates)"
+    P4T11-P4T13: "10 minutes (packaging and release)"
+
+x-dependencies:
+  requires:
+    - v2.0.0 released (API clients with Pushover methods)
+    - Phase 1-2 probe validation complete
+    - Official API docs saved to /tmp/probe/*/docs/
+
+  blocks:
+    - User adoption (documentation currently breaks workflows)
+    - Phase 5 capability matrices (need stable documentation first)

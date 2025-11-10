@@ -103,9 +103,48 @@ components:
             discovery_method:
               const: "POST getAlertContacts, search by name containing 'pushover'"
 
-  x-remaining-work:
-    phase_3_capability_matrices:
+  x-completion-status:
+    phase_1_documentation_research:
+      status: complete
+      completed:
+        - Official Healthchecks.io API docs fetched
+        - Official UptimeRobot API docs fetched
+        - Pushover integration patterns researched
+
+    phase_2_probe_validation:
+      status: complete
+      completed:
+        - Healthchecks.io 400 error resolved (minimal payload)
+        - Pushover kind code discovered ("po")
+        - UptimeRobot rate limit measured (10 req/min)
+        - Pushover type code discovered (9)
+        - All probe scripts validated
+
+    phase_3_api_client_updates:
+      status: complete
+      completed:
+        - scripts/healthchecks_client.py: get_pushover_channel_id() with "po" check
+        - scripts/uptimerobot_client.py: get_pushover_contact_id() with type=9
+        - v2.0.0 released with BREAKING CHANGE
+
+    phase_4_documentation_sync:
+      status: incomplete
+      problem: "Skill documentation out of sync with API client code"
+      impact: "Users following SKILL.md examples will get errors (method not found)"
+      remaining:
+        - Update SKILL.md description (remove "Telegram integration")
+        - Replace all Telegram examples with Pushover in SKILL.md
+        - Update references/healthchecks-patterns.md (Telegram → Pushover)
+        - Update references/uptimerobot-patterns.md (Telegram → Pushover)
+        - Add troubleshooting section for 400 errors
+        - Document rate limit (10 req/min, not ~6)
+        - Add official API docs to references/official-*
+        - Document web UI requirement for Pushover setup
+
+  x-deferred-work:
+    phase_5_capability_matrices:
       description: "Systematic validation of all documented endpoints"
+      reason: "Deferred per user Option B - focus on Pushover integration first"
       endpoints_to_test:
         healthchecks:
           - GET /api/v3/checks/<uuid>
@@ -120,24 +159,6 @@ components:
           - POST getMWindows
           - POST newMWindow
           - POST deleteMWindow
-
-    phase_4_skill_updates:
-      completed:
-        - Official API documentation saved to references/
-        - Pushover discovery scripts validated
-      remaining:
-        - Update scripts/healthchecks_client.py with "po" kind check
-        - Update scripts/uptimerobot_client.py with type 9 Pushover
-        - Update SKILL.md examples to use Pushover (not Telegram)
-        - Add rate limiting guidance to SKILL.md
-        - Add troubleshooting for 400 errors to references/
-
-    phase_5_versioning:
-      deferred:
-        - Package updated skill
-        - Create conventional commit
-        - Invoke semantic-release skill
-        - Generate CHANGELOG entry
 
   x-key-discoveries:
     healthchecks_api:
