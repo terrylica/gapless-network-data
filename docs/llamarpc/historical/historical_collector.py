@@ -4,12 +4,22 @@
 # ///
 
 """
-Complete example: Bulk historical Ethereum block fetching from LlamaRPC.
+Historical Ethereum Block Collector (LlamaRPC)
 
-Demonstrates:
+⚠️ REFERENCE DOCUMENTATION: This is example code from LlamaRPC research (2025-11-03).
+Production deployment uses BigQuery + Alchemy WebSocket (see deployment/vm/realtime_collector.py).
+
+This file demonstrates:
+- web3.py-style JSON-RPC integration patterns
+- LlamaRPC endpoint usage
+- Historical block fetching logic
 - Batch requests with rate limiting
 - Timestamp to block number conversion
 - CSV export for analysis
+
+For production code, see:
+- deployment/vm/realtime_collector.py (real-time Alchemy WebSocket)
+- deployment/backfill/historical_backfill.py (BigQuery historical backfill)
 """
 
 import requests
