@@ -8,8 +8,8 @@ Gapless Network Data is a multi-chain blockchain network metrics collection tool
 
 **Core Capability**: Collect complete historical blockchain network data with high-frequency granularity:
 
-- **Ethereum** (PRIMARY): Block-level data via LlamaRPC (~12 second intervals)
-- **Bitcoin**: Mempool snapshots via mempool.space (5-minute intervals)
+- **Ethereum** (PRIMARY): Block-level data via BigQuery + Alchemy dual-pipeline (~12 second intervals, 14.57M blocks operational)
+- **Bitcoin**: Mempool snapshots via mempool.space (5-minute intervals, future work)
 - **Multi-chain**: Extensible to Solana, Avalanche, Polygon, etc.
 
 **Version**: v0.1.0 (alpha)
@@ -66,22 +66,22 @@ Coordinates all project phases, specifications, and implementation work.
 
 **Current Status**:
 
-- **Phase**: Phase 1 (Historical Data Collection: 5-Year Backfill) - in progress
-- **Version**: v0.1.0 (alpha)
-- **Next Milestone**: v0.2.0 (Historical backfill complete: 13M Ethereum blocks)
-- **Timeline**: 3-4 weeks development + **110 days machine runtime on LlamaRPC free tier** (1.37 RPS sustained, empirically validated 2025-11-05) - **RPC provider decision required**
-- **Collection Mode**: Historical backfill PRIMARY, forward-only collection deferred to Phase 2+
+- **Phase**: Phase 1 (Historical Data Collection: 5-Year Backfill) - **COMPLETED** (2025-11-10)
+- **Version**: v2.2.1 (production operational)
+- **Data Loaded**: 14.57M Ethereum blocks (2020-2025) in MotherDuck
+- **Architecture**: BigQuery hourly batch + Alchemy real-time WebSocket (dual-pipeline operational)
+- **Monitoring**: Healthchecks.io + UptimeRobot + Pushover (all cloud-based)
 - **Authoritative Spec**: `/Users/terryli/eon/gapless-network-data/specifications/master-project-roadmap.yaml ` Phase 1
 - **Validation**: Empirical validation complete - see `/Users/terryli/eon/gapless-network-data/scratch/README.md ` and `/Users/terryli/eon/gapless-network-data/scratch/ethereum-collector-poc/ETHEREUM_COLLECTOR_POC_REPORT.md `
 
 **Key Decisions Logged**:
 
-1. Architecture: DuckDB PRIMARY for raw data storage (2025-11-04, supersedes Parquet approach)
-2. Separate databases for gapless-crypto-data and gapless-network-data (9-2 score)
-3. ASOF JOIN as P0 feature (prevents data leakage, 16x faster)
-4. Ethereum PRIMARY, Bitcoin SECONDARY (12s vs 5min granularity)
-5. Phase 1 Scope: Multi-chain (Option A) - Ethereum + Bitcoin in v0.2.0 (decided 2025-11-04)
-6. **RPC Rate Limiting**: LlamaRPC free tier sustainable rate is 1.37 RPS (not 50 RPS documented), requiring 110-day timeline - investigating alternative providers (2025-11-05)
+1. Architecture: MotherDuck cloud database for dual-pipeline ingestion (2025-11-09, operational)
+2. Data Sources: BigQuery public dataset (historical) + Alchemy WebSocket (real-time) - rejected LlamaRPC due to rate limits (2025-11-10)
+3. Separate databases for gapless-crypto-data and gapless-network-data (9-2 score)
+4. ASOF JOIN as P0 feature (prevents data leakage, 16x faster)
+5. Ethereum PRIMARY, Bitcoin SECONDARY (12s vs 5min granularity)
+6. Monitoring: Cloud-based only (Healthchecks.io Dead Man's Switch, UptimeRobot HTTP checks, Pushover alerts)
 
 ## Quick Navigation
 
@@ -116,21 +116,18 @@ Coordinates all project phases, specifications, and implementation work.
 
 **Focus**: On-chain network metrics (gas prices, mempool congestion, block data, transaction counts)
 
-**Verified Sources for High-Granularity Historical Data (3-5+ years)**:
+**Active Data Sources (Production)**:
 
-- **Ethereum**: LlamaRPC (block-level ~12s, 2015+, no auth) ⚠️ FREE TIER LIMITED
-  - [Official Docs](/Users/terryli/eon/gapless-network-data/docs/llamarpc/official/) - Capabilities, pricing, rate limits
-  - [Python SDK](/Users/terryli/eon/gapless-network-data/docs/llamarpc/sdk/) - web3.py recommended
-  - [Data Schema](/Users/terryli/eon/gapless-network-data/docs/llamarpc/schema/) - 26 block fields, 20+ metrics
-  - [Historical Access](/Users/terryli/eon/gapless-network-data/docs/llamarpc/historical/) - Bulk fetching strategies
-  - [Community](/Users/terryli/eon/gapless-network-data/docs/llamarpc/community/) - Collector patterns, RPC comparison
-  - **Rate Limiting**: Free tier sustainable rate 1.37 RPS (110-day timeline for 13M blocks) - see [POC Report](/Users/terryli/eon/gapless-network-data/scratch/ethereum-collector-poc/ETHEREUM_COLLECTOR_POC_REPORT.md)
-- **Bitcoin**: mempool.space (M5 recent / H12 historical, 2016+, no auth)
-- **Bitcoin**: blockchain.info (mempool size, ~H29, 2009+, no auth)
-- **Ethereum**: Alchemy RPC (300M CU/month free tier)
+- **Ethereum Historical**: BigQuery public dataset `bigquery-public-data.crypto_ethereum.blocks` (2015-2025, 14.57M blocks, free tier)
+- **Ethereum Real-Time**: Alchemy WebSocket API (300M CU/month free tier, ~12s block intervals)
+- **Storage**: MotherDuck cloud database (dual-pipeline with automatic deduplication)
+
+**Researched Sources (Not Used in Production)**:
+
+- **LlamaRPC**: Rejected due to rate limits (1.37 RPS sustained, 110-day timeline) - see [POC Report](/Users/terryli/eon/gapless-network-data/scratch/ethereum-collector-poc/ETHEREUM_COLLECTOR_POC_REPORT.md)
+  - Research documentation preserved: [LlamaRPC Deep Dive](/Users/terryli/eon/gapless-network-data/docs/llamarpc/INDEX.md)
+- **Bitcoin**: mempool.space (future work, M5 recent / H12 historical, 2016+, no auth)
 - **Multi-chain**: Dune Analytics (SQL aggregation, block-level, 2020+, free signup)
-
-**What This Research EXCLUDES**: Exchange OHLCV price data (Binance, Coinbase, Kraken) - not on-chain network metrics
 
 ## MotherDuck Integration
 
@@ -458,31 +455,29 @@ Project-specific skills that capture validated workflows from scratch investigat
 
 ## Current Architecture
 
-**Version**: v0.1.0 (alpha - initial implementation)
+**Version**: v2.2.1 (production operational)
 
-**Status**: Foundation phase - core modules implemented, full pipeline pending
+**Status**: Production operational - dual-pipeline architecture with 14.57M blocks
 
-**Implemented**:
+**Operational Infrastructure**:
+
+- **BigQuery Hourly Batch** (Cloud Run Job): Syncs latest blocks from BigQuery public dataset every hour (~578 blocks/run)
+- **Alchemy Real-Time Stream** (e2-micro VM): WebSocket subscription for real-time blocks (~12s intervals)
+- **MotherDuck Database**: Cloud-hosted DuckDB with automatic deduplication (INSERT OR REPLACE)
+- **Monitoring**: Healthchecks.io (Dead Man's Switch) + UptimeRobot (HTTP checks) + Pushover (alerts)
+
+**Data Pipeline**:
+
+- Historical data: 14.57M Ethereum blocks (2020-2025) loaded from BigQuery
+- Real-time streaming: Alchemy WebSocket feeds new blocks every ~12 seconds
+- Deduplication: Both pipelines write to same MotherDuck table with PRIMARY KEY on block number
+- Cost: $0/month (all within free tiers)
+
+**SDK Package** (future work):
 
 - Package structure (src/gapless_network_data/)
-- API interface (fetch_snapshots, get_latest_snapshot)
-- Basic collector (mempool.space REST client)
-- Validation models (MempoolValidationReport)
-- CLI entry point (command dispatch)
-- Type stubs (py.typed)
-- Structured exceptions (MempoolHTTPException, MempoolValidationException, MempoolRateLimitException)
-- Retry logic with exponential backoff (tenacity, max 3 retries)
-- Forward-collection-only enforcement
-
-**Pending**:
-
-- ETag caching
-- 5-layer validation pipeline
-- DuckDB validation storage
-- Gap detection and backfill
-- Anomaly detection
-- Comprehensive test suite
-- Documentation generation
+- API interface (fetch_snapshots, get_latest_snapshot) - pending implementation
+- Bitcoin mempool.space collector - deferred to Phase 2+
 
 ## DuckDB Architecture & Strategy
 
@@ -1023,35 +1018,35 @@ supersedes: []
 - [x] DuckDB investigation (23 features, performance validation)
 - [x] Documentation audit (6 findings resolved)
 
-**Phase 1: Historical Data Collection (5-Year Backfill)** (in planning)
+**Phase 1: Historical Data Collection (5-Year Backfill)** - **COMPLETED** (2025-11-10)
 
-**Goal**: Collect 5 years of historical data (2020-2025) for both Ethereum and Bitcoin
+**Goal**: Collect 5 years of historical data (2020-2025) for Ethereum ✅
 
-Ethereum Historical Backfill (PRIMARY):
+Ethereum Historical Backfill (PRIMARY) - **COMPLETED**:
 
-- [ ] LlamaRPC integration with archive node access (web3.py client)
-- [ ] 5-year Ethereum block collection (2020-2025, ~13M blocks)
-- [ ] Batch fetching with checkpoint/resume capability
-- [ ] Block number resolution (timestamp → block number via binary search)
-- [ ] Progress tracking (CLI with ETA, blocks/sec)
-- [ ] Retry & error handling (exponential backoff, skip consistently failed blocks)
-- [ ] DuckDB storage: INSERT INTO ethereum_blocks
-- [ ] Multi-chain API: fetch_snapshots(chain='ethereum', mode='historical')
+- [x] BigQuery public dataset integration (replaced LlamaRPC due to rate limits)
+- [x] 5-year Ethereum block collection (2020-2025, 14.57M blocks loaded)
+- [x] Batch fetching with 1-year chunking pattern (prevents OOM)
+- [x] MotherDuck cloud database: INSERT OR REPLACE INTO ethereum_mainnet.blocks
+- [x] Dual-pipeline architecture (BigQuery hourly + Alchemy real-time)
+- [x] Production monitoring (Healthchecks.io + UptimeRobot + Pushover)
+- [x] Cost optimization ($0/month, all free tiers)
+- [x] SLO compliance (Availability, Correctness, Observability, Maintainability)
 
-Bitcoin Historical Collection (SECONDARY):
+Bitcoin Historical Collection (SECONDARY) - **DEFERRED TO PHASE 2+**:
 
 - [ ] mempool.space historical API integration
 - [ ] 5-year Bitcoin mempool data (H12 granularity, 3,650 snapshots)
 - [ ] DuckDB storage: INSERT INTO bitcoin_mempool
 - [ ] Multi-chain API: fetch_snapshots(chain='bitcoin', mode='historical')
-- [ ] Basic validation (HTTP + schema)
-- [ ] Testing (70%+ coverage)
 
-Data Quality:
+Data Quality - **PARTIALLY IMPLEMENTED**:
 
-- [ ] Basic validation (Layer 1-2: HTTP/RPC + schema)
-- [ ] DuckDB CHECK constraints (fee ordering, non-negative values)
-- [ ] Schema validation (6 fields Ethereum, 9 fields Bitcoin)
+- [x] Schema validation (Ethereum blocks via MotherDuck table schema)
+- [x] Deduplication (INSERT OR REPLACE on block number PRIMARY KEY)
+- [x] Monitoring and alerting (cloud-based Dead Man's Switch)
+- [ ] DuckDB CHECK constraints (fee ordering, non-negative values) - pending
+- [ ] Complete 5-layer validation pipeline - deferred to Phase 2+
 
 **Phase 2: Real-Time Collection & Data Quality** (future)
 
