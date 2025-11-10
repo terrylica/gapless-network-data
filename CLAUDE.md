@@ -71,8 +71,8 @@ Coordinates all project phases, specifications, and implementation work.
 - **Data Loaded**: 14.57M Ethereum blocks (2020-2025) in MotherDuck
 - **Architecture**: Alchemy real-time WebSocket (VM-based streaming) + historical backfill via BigQuery
 - **Monitoring**: Healthchecks.io + UptimeRobot + Pushover (all cloud-based)
-- **Authoritative Spec**: `/Users/terryli/eon/gapless-network-data/specifications/master-project-roadmap.yaml ` Phase 1
-- **Validation**: Empirical validation complete - see `/Users/terryli/eon/gapless-network-data/scratch/README.md ` and `/Users/terryli/eon/gapless-network-data/scratch/ethereum-collector-poc/ETHEREUM_COLLECTOR_POC_REPORT.md `
+- **Authoritative Spec**: `/Users/terryli/eon/gapless-network-data/specifications/master-project-roadmap.yaml` Phase 1
+- **Validation**: Empirical validation complete - see `/Users/terryli/eon/gapless-network-data/scratch/README.md` and `/Users/terryli/eon/gapless-network-data/scratch/ethereum-collector-poc/ETHEREUM_COLLECTOR_POC_REPORT.md`
 
 **Key Decisions Logged**:
 
@@ -204,10 +204,10 @@ def get_secret(secret_id: str, project_id: str = GCP_PROJECT) -> str:
 
 ```bash
 # View execution history
-gcloud run jobs executions list --job eth-md-updater --region us-east1
+gcloud run jobs executions list --job eth-md-updater --region us-central1
 
 # Manual trigger
-gcloud run jobs execute eth-md-updater --region us-east1
+gcloud run jobs execute eth-md-updater --region us-central1
 ```
 
 **VM Service** (real-time collector):
@@ -351,7 +351,7 @@ See `.claude/skills/motherduck-pipeline-operations/` for complete workflows and 
 
 ## Project Skills
 
-**Location**: `/Users/terryli/eon/gapless-network-data/.claude/skills/ `
+**Location**: `/Users/terryli/eon/gapless-network-data/.claude/skills/`
 
 Project-specific skills that capture validated workflows from scratch investigations. These skills are committed to git and shared with team members.
 
@@ -436,12 +436,14 @@ Project-specific skills that capture validated workflows from scratch investigat
 **Primary Use Case**: Blockchain network metrics infrastructure (operational)
 
 **Operational (v2.4.0)**:
+
 - **Ethereum Block Data Collection**: 14.57M blocks (2020-2025) via VM-based real-time streaming
 - **Infrastructure**: Alchemy WebSocket → MotherDuck cloud storage
 - **Monitoring**: Healthchecks.io, UptimeRobot, Pushover
 - **Purpose**: Network metrics for ML feature engineering pipelines
 
 **Future Work**:
+
 - **Python SDK**: Programmatic API access (`import gapless_network_data`)
 - **Bitcoin Integration**: mempool.space data collection (experimental code exists)
 - **Package Distribution**: pip install (not yet published to PyPI)
@@ -490,9 +492,9 @@ Project-specific skills that capture validated workflows from scratch investigat
 **Operational Infrastructure**:
 
 - **Alchemy Real-Time Stream** (e2-micro VM): WebSocket subscription for real-time blocks (~12s intervals) - OPERATIONAL
-- **BigQuery Hourly Batch** (Cloud Run Job): Planned but not deployed - historical backfill completed via local scripts
+- **BigQuery Hourly Batch** (Cloud Run Job): Syncs latest blocks from BigQuery every hour (~578 blocks/run) - OPERATIONAL
 - **MotherDuck Database**: Cloud-hosted DuckDB with automatic deduplication (INSERT OR REPLACE)
-- **Monitoring**: Healthchecks.io (Dead Man's Switch) + UptimeRobot (HTTP checks) + Pushover (alerts)
+- **Monitoring**: Healthchecks.io (Dead Man's Switch) + Pushover (alerts)
 
 **Data Pipeline**:
 
@@ -761,7 +763,7 @@ All investigation materials with absolute paths:
 - `ethereum_blocks` - 14.57M Ethereum blocks (2020-2025, ~1.5 GB)
 - `bitcoin_mempool` - Deferred to Phase 2+ (Bitcoin is SECONDARY)
 
-**Complete Schema Specification**: See `/Users/terryli/eon/gapless-network-data/specifications/duckdb-schema-specification.yaml ` for:
+**Complete Schema Specification**: See `/Users/terryli/eon/gapless-network-data/specifications/duckdb-schema-specification.yaml` for:
 
 - DDL statements with constraints and indexes
 - Common query patterns (time_bucket, ASOF JOIN, window functions)
@@ -922,7 +924,7 @@ supersedes: []
 
 **Context**: Roadmap refocused (2025-11-04) to emphasize user-facing features (WHAT users get) rather than implementation architecture (HOW we build it).
 
-**Master Plan**: `/Users/terryli/eon/gapless-network-data/specifications/master-project-roadmap.yaml ` (Single Source of Truth)
+**Master Plan**: `/Users/terryli/eon/gapless-network-data/specifications/master-project-roadmap.yaml` (Single Source of Truth)
 
 **Key Insight**: DuckDB optimizations are implementation details supporting features, not features themselves.
 

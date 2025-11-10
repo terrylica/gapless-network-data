@@ -1,0 +1,317 @@
+openapi: 3.1.0
+info:
+  title: CLAUDE.md Updatedness Rectification Specification
+  version: 1.0.0
+  description: |
+    Systematic rectification of critical inconsistencies identified by 6-agent
+    parallel audit (2025-11-10) examining CLAUDE.md updatedness.
+
+    Audit Findings Summary:
+    - Version Consistency: CRITICAL - pyproject.toml (1.0.0) vs CLAUDE.md (v2.4.0)
+    - Infrastructure Claims: 7 false/conflict claims (71% accuracy)
+    - Implementation Status: 3 critical contradictions
+    - File Path Validity: 4 trailing spaces, 3 broken links
+    - Architectural Accuracy: 218-line MotherDuck section not updated
+    - Cross-Document Consistency: 13 inconsistencies across 4 documents
+
+    Target: 95%+ CLAUDE.md accuracy and consistency after P0+P1 fixes
+    Estimated Effort: 60-90 minutes (P0: 30-40m, P1: 30-50m)
+
+  x-metadata:
+    project: "gapless-network-data"
+    component: "CLAUDE.md Accuracy & Consistency"
+    created: "2025-11-10"
+    last_updated: "2025-11-10"
+    status: "planned"
+    environment: "documentation"
+    supersedes: []
+    audit_reports:
+      - "/tmp/claude-md-version-audit/VERSION_AUDIT_REPORT.md"
+      - "/tmp/claude-md-infrastructure-audit/AUDIT_REPORT.md"
+      - "/tmp/claude-md-implementation-audit/EXECUTIVE_SUMMARY.md"
+      - "/tmp/claude-md-paths-audit/AUDIT_REPORT.md"
+      - "/tmp/claude-md-architecture-audit/audit-report.md"
+      - "/tmp/claude-md-consistency-audit/FINAL_AUDIT_REPORT.md"
+
+  x-slos:
+    availability:
+      target: "Documentation accuracy prevents deployment errors"
+      measurement: "Zero contradictory infrastructure claims, zero broken operational commands"
+      failure_mode: "Users follow incorrect Cloud Run region/status, deployments fail"
+      error_handling: "Raise exception if git operations fail"
+
+    correctness:
+      target: "100% version consistency across all project documents"
+      measurement: |
+        - Version numbers: pyproject.toml matches git tags and CLAUDE.md
+        - Infrastructure claims: All verified against actual GCP deployment state
+        - Architecture descriptions: Consistent within CLAUDE.md and across documents
+        - File paths: All links valid, no trailing spaces
+      validation: |
+        - grep "version" pyproject.toml CLAUDE.md README.md specifications/master-project-roadmap.yaml
+        - gcloud run jobs describe eth-md-updater --region us-central1 (verify region)
+        - All file paths tested with Read tool
+        - No "dual-pipeline" claims remain in CLAUDE.md
+      failure_mode: "Version mismatch blocks PyPI publishing, infrastructure commands fail"
+
+    observability:
+      target: "All rectification operations tracked with git commits"
+      measurement: "Each phase committed separately with conventional commits"
+      log_format: "docs(accuracy): <action> - <rationale>"
+      failure_mode: "Changes not tracked in version control"
+
+    maintainability:
+      target: "<90 minutes for P0+P1 rectification"
+      measurement: "Time from audit completion to final commit"
+      operations:
+        version_fixes: "15 minutes (P0)"
+        infrastructure_contradictions: "25 minutes (P0)"
+        architectural_section_rewrite: "30 minutes (P1)"
+        path_hygiene: "10 minutes (P1)"
+        cross_doc_alignment: "10 minutes (P1)"
+
+  x-phases:
+    phase_1_critical_fixes:
+      name: "Fix critical version and deployment contradictions"
+      rationale: "Version mismatch blocks PyPI, Cloud Run contradictions break operations"
+      tasks:
+        - fix_pyproject_toml_version
+        - resolve_cloud_run_contradiction
+        - verify_and_fix_region_mismatch
+        - remove_trailing_spaces
+        - commit_phase_1
+      severity: "critical"
+      estimated_time: "30-40 minutes"
+      validation:
+        - "pyproject.toml version matches git tag v2.4.0"
+        - "No contradictory Cloud Run status claims in CLAUDE.md"
+        - "All gcloud commands use correct region"
+        - "No trailing spaces in file paths"
+
+    phase_2_architectural_consistency:
+      name: "Rewrite MotherDuck Integration section and fix architectural claims"
+      rationale: "218-line section not updated during dual-pipeline → VM-only transition"
+      tasks:
+        - rewrite_motherduck_integration_section
+        - fix_dual_pipeline_references
+        - resolve_uptimerobot_contradiction
+        - fix_false_pending_claims
+        - commit_phase_2
+      severity: "high"
+      estimated_time: "30-50 minutes"
+      validation:
+        - "MotherDuck Integration section describes VM-only + planned Cloud Run"
+        - "No operational dual-pipeline claims remain"
+        - "UptimeRobot consistently marked as removed"
+        - "OVERVIEW.md and DATA_FORMAT.md not marked pending"
+
+    phase_3_cross_document_alignment:
+      name: "Align pyproject.toml, README.md, and roadmap with CLAUDE.md"
+      rationale: "13 inconsistencies across documents create confusion"
+      tasks:
+        - update_pyproject_toml_description
+        - align_readme_monitoring_section
+        - update_roadmap_dual_pipeline_claims
+        - commit_phase_3
+      severity: "medium"
+      estimated_time: "10-15 minutes"
+      validation:
+        - "pyproject.toml description says Ethereum-only"
+        - "README.md monitoring matches CLAUDE.md"
+        - "master-project-roadmap.yaml consistent with CLAUDE.md"
+
+  x-implementation:
+    phase_1_critical_fixes:
+      task_1:
+        id: "fix_pyproject_toml_version"
+        intent: "Sync pyproject.toml with git tags and CLAUDE.md"
+        file: "pyproject.toml"
+        changes:
+          - line: 3
+            from: 'version = "1.0.0"'
+            to: 'version = "2.4.0"'
+        rationale: |
+          Critical: Package version must match git tags and documentation.
+          Publishing with 1.0.0 would mislead users about project maturity.
+        validation: "grep 'version = \"2.4.0\"' pyproject.toml"
+
+      task_2:
+        id: "resolve_cloud_run_contradiction"
+        intent: "Fix contradictory Cloud Run deployment status claims"
+        file: "CLAUDE.md"
+        investigation_required: true
+        steps:
+          - "Verify actual Cloud Run Job deployment state with gcloud"
+          - "Choose authoritative status (ACTIVE vs NOT DEPLOYED)"
+          - "Update all references consistently"
+        locations:
+          - line: 304 (claims ACTIVE)
+          - line: 495 (claims not deployed)
+        rationale: |
+          Developers cannot manage infrastructure with contradictory status.
+          Must verify empirically which claim is correct.
+
+      task_3:
+        id: "verify_and_fix_region_mismatch"
+        intent: "Verify Cloud Run region and fix all references"
+        investigation_required: true
+        steps:
+          - "Run: gcloud run jobs describe eth-md-updater --project eonlabs-ethereum-bq --format='get(metadata.region)'"
+          - "Update all us-east1/us-central1 references to match reality"
+        files: ["CLAUDE.md", "README.md"]
+        locations:
+          - "CLAUDE.md lines 207, 210"
+          - "README.md lines (varies)"
+        rationale: "Operational commands will fail with wrong region"
+
+      task_4:
+        id: "remove_trailing_spaces"
+        intent: "Fix paths with trailing spaces that break iTerm2 Cmd+click"
+        file: "CLAUDE.md"
+        changes:
+          - line: 74
+            pattern: "master-project-roadmap.yaml `"
+            fix: "master-project-roadmap.yaml`"
+          - line: 75
+            pattern: "README.md `"
+            fix: "README.md`"
+          - line: 75
+            pattern: "ETHEREUM_COLLECTOR_POC_REPORT.md `"
+            fix: "ETHEREUM_COLLECTOR_POC_REPORT.md`"
+          - line: 766
+            pattern: "duckdb-schema-specification.yaml `"
+            fix: "duckdb-schema-specification.yaml`"
+          - line: 927
+            pattern: "master-project-roadmap.yaml `"
+            fix: "master-project-roadmap.yaml`"
+        rationale: "Trailing spaces prevent iTerm2 users from Cmd+clicking to open files"
+
+    phase_2_architectural_consistency:
+      task_1:
+        id: "rewrite_motherduck_integration_section"
+        intent: "Update 218-line section to reflect VM-only architecture"
+        file: "CLAUDE.md"
+        section: "MotherDuck Integration (lines 132-350)"
+        current_architecture: "Dual-pipeline (BigQuery hourly + Alchemy real-time)"
+        correct_architecture: "VM-based real-time + historical backfill (completed) + Cloud Run (planned)"
+        key_changes:
+          - line: 62
+            from: "dual pipeline (operational 2025-11-09, SLOs met)"
+            to: "VM-based real-time collection (operational 2025-11-09, SLOs met)"
+          - lines: 139-144
+            from: "Dual-pipeline architecture... 1. BigQuery Hourly Batch (Cloud Run Job)... 2. Alchemy Real-Time Stream"
+            to: |
+              VM-based real-time collection architecture:
+
+              1. **Alchemy Real-Time Stream** (e2-micro VM): WebSocket subscription for real-time blocks (~12s intervals)
+              2. **Historical Backfill** (Completed): BigQuery → MotherDuck via local scripts (14.57M blocks, 2020-2025)
+              3. **Cloud Run Job** (Planned): Future hourly sync for redundancy (code ready, not deployed)
+          - line: 304
+            from: "Cloud Run eth-md-updater: ACTIVE"
+            to: "Cloud Run eth-md-updater: PLANNED (code ready, not deployed)"
+        rationale: |
+          This 218-line section was not updated during commit 21cd1b7 (2025-11-10).
+          Creates major confusion about actual deployment architecture.
+
+      task_2:
+        id: "fix_dual_pipeline_references"
+        intent: "Remove remaining dual-pipeline operational claims"
+        file: "specifications/master-project-roadmap.yaml"
+        changes:
+          - line: 250
+            from: "dual-pipeline operational"
+            to: "VM-based real-time collection operational"
+          - line: 33
+            from: "BigQuery + Alchemy dual-pipeline"
+            to: "VM-based Alchemy real-time stream + BigQuery historical backfill (completed)"
+        rationale: "Master roadmap must match actual deployment architecture"
+
+      task_3:
+        id: "resolve_uptimerobot_contradiction"
+        intent: "Consistently mark UptimeRobot as removed throughout CLAUDE.md"
+        file: "CLAUDE.md"
+        changes:
+          - line: 73
+            action: "Remove UptimeRobot from operational monitoring list"
+          - line: 84
+            action: "Remove UptimeRobot reference"
+          - line: 442
+            action: "Remove UptimeRobot reference"
+          - line: 497
+            action: "Keep '(removed)' note, remove from active list"
+          - line: 329
+            action: "Keep explanation of removal (Cloud Run incompatibility)"
+        rationale: "CLAUDE.md contradicts itself about UptimeRobot status"
+
+      task_4:
+        id: "fix_false_pending_claims"
+        intent: "Update false pending markers for existing documentation"
+        file: "CLAUDE.md"
+        changes:
+          - line: 90
+            from: "Architecture Overview (pending)"
+            to: "Architecture Overview"
+            evidence: "docs/architecture/OVERVIEW.md exists (3,536 bytes)"
+          - line: 91
+            from: "Data Format Specification (pending)"
+            to: "Data Format Specification"
+            evidence: "docs/architecture/DATA_FORMAT.md exists (5,048 bytes)"
+        rationale: "Files exist and are not pending - misleading to mark as pending"
+
+    phase_3_cross_document_alignment:
+      task_1:
+        id: "update_pyproject_toml_description"
+        intent: "Fix multi-chain overpromise in package description"
+        file: "pyproject.toml"
+        changes:
+          - field: "description"
+            from: "Multi-chain blockchain network metrics collection (Ethereum, Bitcoin, Solana, etc.)"
+            to: "Ethereum blockchain network metrics collection infrastructure (multi-chain support planned)"
+        rationale: |
+          Only Ethereum is operational. Bitcoin deferred to Phase 2+, Solana is future work.
+          PyPI description must accurately reflect current capabilities.
+
+      task_2:
+        id: "align_readme_monitoring_section"
+        intent: "Update README.md monitoring to match CLAUDE.md"
+        file: "README.md"
+        changes:
+          - section: "Monitoring Architecture"
+            action: "Remove UptimeRobot from active monitoring list"
+            add_note: "(UptimeRobot removed - Cloud Run Jobs don't expose HTTP endpoints)"
+        rationale: "README.md must match CLAUDE.md monitoring reality"
+
+      task_3:
+        id: "update_roadmap_dual_pipeline_claims"
+        intent: "Fix remaining dual-pipeline references in master roadmap"
+        file: "specifications/master-project-roadmap.yaml"
+        search_pattern: "dual.?pipeline"
+        action: "Update all matches to 'VM-based real-time collection + BigQuery backfill (completed)'"
+        rationale: "Master roadmap is SSoT, must be accurate"
+
+  x-validation:
+    post_phase_1:
+      - "pyproject.toml version = '2.4.0'"
+      - "CLAUDE.md has no contradictory Cloud Run status claims"
+      - "All Cloud Run region references consistent"
+      - "No file paths with trailing spaces"
+
+    post_phase_2:
+      - "MotherDuck Integration section describes VM-only architecture"
+      - "No 'dual-pipeline operational' claims in CLAUDE.md"
+      - "UptimeRobot consistently marked as removed"
+      - "OVERVIEW.md and DATA_FORMAT.md not marked pending"
+
+    post_phase_3:
+      - "pyproject.toml description says Ethereum-only"
+      - "README.md monitoring matches CLAUDE.md"
+      - "No dual-pipeline references in master-project-roadmap.yaml"
+
+    final:
+      - "Total commits: 3 (one per phase)"
+      - "All commits use conventional format (docs(accuracy):)"
+      - "semantic-release executed after each phase"
+      - "CLAUDE.md accuracy: 71% → 95%+ (target)"
+
+paths: {}
+components: {}
