@@ -69,26 +69,26 @@ Coordinates all project phases, specifications, and implementation work.
 - **Phase**: Phase 1 (Historical Data Collection: 5-Year Backfill) - **COMPLETED** (2025-11-10)
 - **Version**: v2.4.0 (production operational)
 - **Data Loaded**: 14.57M Ethereum blocks (2020-2025) in MotherDuck
-- **Architecture**: Alchemy real-time WebSocket (VM-based streaming) + historical backfill via BigQuery
-- **Monitoring**: Healthchecks.io + UptimeRobot + Pushover (all cloud-based)
+- **Architecture**: Dual-pipeline (Alchemy WebSocket VM + BigQuery hourly Cloud Run Job)
+- **Monitoring**: Healthchecks.io + Pushover (cloud-based, UptimeRobot removed)
 - **Authoritative Spec**: `/Users/terryli/eon/gapless-network-data/specifications/master-project-roadmap.yaml` Phase 1
 - **Validation**: Empirical validation complete - see `/Users/terryli/eon/gapless-network-data/scratch/README.md` and `/Users/terryli/eon/gapless-network-data/scratch/ethereum-collector-poc/ETHEREUM_COLLECTOR_POC_REPORT.md`
 
 **Key Decisions Logged**:
 
-1. Architecture: MotherDuck cloud database for VM-based real-time ingestion (2025-11-09, operational)
+1. Architecture: MotherDuck cloud database for dual-pipeline ingestion (2025-11-09, operational)
 2. Data Sources: BigQuery public dataset (historical) + Alchemy WebSocket (real-time) - rejected LlamaRPC due to rate limits (2025-11-10)
 3. Separate databases for gapless-crypto-data and gapless-network-data (9-2 score)
 4. ASOF JOIN as P0 feature (prevents data leakage, 16x faster)
 5. Ethereum PRIMARY, Bitcoin SECONDARY (12s vs 5min granularity)
-6. Monitoring: Cloud-based only (Healthchecks.io Dead Man's Switch, UptimeRobot HTTP checks, Pushover alerts)
+6. Monitoring: Cloud-based only (Healthchecks.io Dead Man's Switch, Pushover alerts)
 
 ## Quick Navigation
 
 ### Architecture
 
-- [Architecture Overview](/Users/terryli/eon/gapless-network-data/docs/architecture/OVERVIEW.md) - Core components, data flow, SLOs (pending)
-- [Data Format Specification](/Users/terryli/eon/gapless-network-data/docs/architecture/DATA_FORMAT.md) - Mempool snapshot schema (pending)
+- [Architecture Overview](/Users/terryli/eon/gapless-network-data/docs/architecture/OVERVIEW.md) - Core components, data flow, SLOs
+- [Data Format Specification](/Users/terryli/eon/gapless-network-data/docs/architecture/DATA_FORMAT.md) - Mempool snapshot schema
 - [Cross-Package Integration](/Users/terryli/eon/gapless-crypto-data/docs/architecture/cross-package-feature-integration.yaml) - How to use with gapless-crypto-data
 
 ### Usage Guides
@@ -439,7 +439,7 @@ Project-specific skills that capture validated workflows from scratch investigat
 
 - **Ethereum Block Data Collection**: 14.57M blocks (2020-2025) via VM-based real-time streaming
 - **Infrastructure**: Alchemy WebSocket → MotherDuck cloud storage
-- **Monitoring**: Healthchecks.io, UptimeRobot, Pushover
+- **Monitoring**: Healthchecks.io, Pushover
 - **Purpose**: Network metrics for ML feature engineering pipelines
 
 **Future Work**:
@@ -1075,7 +1075,7 @@ Ethereum Historical Backfill (PRIMARY) - **COMPLETED**:
 - [x] Batch fetching with 1-year chunking pattern (prevents OOM)
 - [x] MotherDuck cloud database: INSERT OR REPLACE INTO ethereum_mainnet.blocks
 - [x] Dual-pipeline architecture (BigQuery hourly + Alchemy real-time)
-- [x] Production monitoring (Healthchecks.io + UptimeRobot + Pushover)
+- [x] Production monitoring (Healthchecks.io + Pushover)
 - [x] Cost optimization ($0/month, all free tiers)
 - [x] SLO compliance (Availability, Correctness, Observability, Maintainability)
 
