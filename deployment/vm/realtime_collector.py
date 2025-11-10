@@ -6,13 +6,16 @@
 Alchemy WebSocket → MotherDuck Real-Time Ethereum Block Collector
 
 Subscribes to Alchemy's newHeads WebSocket stream for real-time block updates.
-Designed to run as a long-lived Cloud Run service or local daemon.
+Designed to run as a long-lived systemd service on VM.
 
 Environment Variables:
-    ALCHEMY_API_KEY: Alchemy API key for WebSocket access
-    MOTHERDUCK_TOKEN: MotherDuck authentication token
+    GCP_PROJECT: GCP project ID (default: eonlabs-ethereum-bq)
     MD_DATABASE: MotherDuck database name (default: ethereum_mainnet)
     MD_TABLE: MotherDuck table name (default: blocks)
+
+Secrets (Google Secret Manager):
+    alchemy-api-key: Alchemy API key (fetched via get_secret())
+    motherduck-token: MotherDuck authentication token (fetched via get_secret())
 """
 
 import os

@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: Gapless Network Data - Master Project Roadmap
-  version: 0.1.0
+  version: 2.4.0
   description: |
     Single Source of Truth (SSoT) for gapless-network-data project planning.
     Coordinates all phases, specifications, and implementation work.
@@ -17,7 +17,7 @@ info:
 
   x-metadata:
     project_name: "gapless-network-data"
-    project_version: "v2.2.1 (production operational)"
+    project_version: "v2.4.0 (production operational)"
     current_phase: "Phase 1: Historical Data Collection - COMPLETED (2025-11-10)"
     next_milestone: "Phase 2: Bitcoin mempool.space integration + SDK development"
     last_updated: "2025-11-10T17:30:00Z"
@@ -190,7 +190,7 @@ x-project-phases:
         name: "Ethereum 5-Year Historical Backfill via BigQuery"
         priority: "P0"
         effort: "2-4 hours total (< 1 hour data download + 2-3 hours implementation)"
-        status: "pending"
+        status: "completed (14.57M blocks, 2020-2025, dual-pipeline operational)"
         detailed_specification: "/Users/terryli/eon/gapless-network-data/.claude/skills/bigquery-ethereum-data-acquisition/"
 
         what_to_collect:

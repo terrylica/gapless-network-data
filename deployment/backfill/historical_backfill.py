@@ -8,13 +8,18 @@ Historical Ethereum Data Backfill (2020-2025)
 Loads 5 years of Ethereum blocks from BigQuery → MotherDuck
 
 Usage:
-    export MOTHERDUCK_TOKEN="your-token"
-    uv run historical_backfill.py
+    uv run historical_backfill.py [--start-year YEAR] [--end-year YEAR] [--dry-run]
 
 Options:
     --start-year YEAR    Start year (default: 2020)
     --end-year YEAR      End year (default: 2025)
     --dry-run            Show query without executing
+
+Secrets (Google Secret Manager):
+    motherduck-token: MotherDuck authentication token (fetched via get_secret())
+
+Environment Variables:
+    GCP_PROJECT: GCP project ID (default: eonlabs-ethereum-bq)
 """
 
 import os

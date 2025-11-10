@@ -12,10 +12,12 @@ Environment Variables:
     GCP_PROJECT: GCP project ID
     DATASET_ID: BigQuery dataset ID (default: crypto_ethereum)
     TABLE_ID: BigQuery table ID (default: blocks)
-    motherduck_token: MotherDuck authentication token (read/write)
     MD_DATABASE: MotherDuck database name (default: ethereum_mainnet)
     MD_TABLE: MotherDuck table name (default: blocks)
     LOOKBACK_HOURS: Hours to look back for new blocks (default: 2)
+
+Secrets (Google Secret Manager):
+    motherduck-token: MotherDuck authentication token (fetched via get_secret())
 """
 
 import os
