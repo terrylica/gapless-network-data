@@ -2,6 +2,19 @@
 
 One-time backfill script to load 5 years of historical Ethereum blocks from BigQuery to MotherDuck.
 
+## Execution Environment
+
+**These scripts run locally** (on your laptop/workstation) but orchestrate cloud resources:
+
+- `historical_backfill.py`: Runs locally, fetches from BigQuery, loads to MotherDuck cloud
+- `chunked_backfill.sh`: Runs locally, triggers Cloud Run Job executions via `gcloud`
+
+**Requirements**:
+- Local: `uv`, `gcloud` CLI (authenticated)
+- Cloud: GCP project access, BigQuery API enabled, Secret Manager access
+
+**Authentication**: Uses `gcloud auth` credentials (no manual token export needed)
+
 ## Files
 
 - `historical_backfill.py` - Python script for bulk historical data loading
