@@ -1,16 +1,21 @@
-# [2.6.0](https://github.com/terrylica/gapless-network-data/compare/v2.5.0...v2.6.0) (2025-11-11)
+# [2.7.0](https://github.com/terrylica/gapless-network-data/compare/v2.6.0...v2.7.0) (2025-11-11)
 
 
 ### Features
 
-* **monitoring:** add oracle cloud motherduck gap detection ([5abe058](https://github.com/terrylica/gapless-network-data/commit/5abe0588c892fb39a3d94c2f4d0ea5c932b2139d))
+* **monitoring:** add ULID unique identifiers to Pushover notifications ([bf60077](https://github.com/terrylica/gapless-network-data/commit/bf600776d12eea9d180246fc3442f947c414139e))
+
+# [2.6.0](https://github.com/terrylica/gapless-network-data/compare/v2.5.0...v2.6.0) (2025-11-11)
+
+### Features
+
+- **monitoring:** add oracle cloud motherduck gap detection ([5abe058](https://github.com/terrylica/gapless-network-data/commit/5abe0588c892fb39a3d94c2f4d0ea5c932b2139d))
 
 # [2.5.0](https://github.com/terrylica/gapless-network-data/compare/v2.4.0...v2.5.0) (2025-11-11)
 
-
 ### Features
 
-* **gap-detection:** implement automated gap detection system (Phase 2) ([7d9e035](https://github.com/terrylica/gapless-network-data/commit/7d9e03520531cd3ba8f674fa91370090f73777bb)), closes [#2](https://github.com/terrylica/gapless-network-data/issues/2)
+- **gap-detection:** implement automated gap detection system (Phase 2) ([7d9e035](https://github.com/terrylica/gapless-network-data/commit/7d9e03520531cd3ba8f674fa91370090f73777bb)), closes [#2](https://github.com/terrylica/gapless-network-data/issues/2)
 
 # [2.4.0](https://github.com/terrylica/gapless-network-data/compare/v2.3.0...v2.4.0) (2025-11-10)
 
