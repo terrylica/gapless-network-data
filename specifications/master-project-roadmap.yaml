@@ -903,6 +903,39 @@ x-sub-specifications:
       - "Git migration (6-9 hours, move production files to deployment/)"
       - "Historical backfill execution (2 hours, 13M blocks)"
 
+  oracle_motherduck_monitoring:
+    file: "/Users/terryli/eon/gapless-network-data/specifications/oracle-motherduck-monitoring.yaml"
+    status: "planned"
+    created_date: "2025-11-11"
+    updated_date: "2025-11-11"
+    scope: "Oracle Cloud-based data quality monitoring for MotherDuck database"
+    priority: "P1"
+    environment: "production"
+    deployment_status: "planned (specification complete, implementation pending)"
+    architecture: "OCI VM + cron + OCI Vault"
+    components:
+      - "OCI Compute: VM.Standard.A1.Flex (1 OCPU, 6 GB ARM) - pending"
+      - "OCI Vault: 4 secrets (motherduck-token, healthchecks-api-key, pushover credentials) - pending"
+      - "Gap detection script: motherduck_monitor.py with PEP 723 dependencies - pending"
+      - "Healthchecks.io Dead Man's Switch + Pushover emergency alerts - pending"
+    monitoring:
+      check_frequency: "every 3 hours (0 */3 * * *)"
+      gap_detection: "LAG() window function, 1 year → 3 min ago, >15s threshold"
+      alerting: "Pushover emergency (all results) + Healthchecks.io Dead Man's Switch"
+    slos:
+      availability: "Checks run every 3 hours without manual intervention"
+      correctness: "100% accurate gap detection, no false positives"
+      observability: "100% check execution logged + Pushover notifications"
+      maintainability: "<30 minutes for common operations"
+    cost: "$0/month (OCI Always Free Tier)"
+    rationale: |
+      User decision after iterative clarification loop: Oracle Cloud chosen over GCP for monitoring
+      (separate from GCP data collection), VM + cron simpler than Oracle Functions (Docker requirement),
+      OCI Vault best practice for secrets, PAYG upgrade prevents idle reclamation.
+    related_specs:
+      - "motherduck-data-quality-monitoring.yaml (GCP alternative, not deployed)"
+      - "motherduck-integration.yaml (data collection infrastructure)"
+
 x-implementation-findings:
   finding_1:
     date: "2025-11-03"
