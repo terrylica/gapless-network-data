@@ -35,7 +35,7 @@ info:
       - "Cloud Run Job: eth-md-updater (us-central1, hourly BigQuery sync)"
       - "e2-micro VM: eth-realtime-collector (us-east1-b, Alchemy WebSocket)"
       - "MotherDuck: ethereum_mainnet.blocks (cloud-hosted DuckDB)"
-      - "Monitoring: Healthchecks.io + UptimeRobot + Pushover (all cloud-based)"
+      - "Monitoring: Healthchecks.io + Pushover (cloud-based, UptimeRobot removed)"
     cost: "$0/month (all within free tiers)"
     decision: "Rejected LlamaRPC due to rate limits (1.37 RPS sustained, 110-day timeline)"
     slos_met:
