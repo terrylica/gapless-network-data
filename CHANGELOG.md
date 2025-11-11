@@ -1,9 +1,8 @@
 # [2.7.0](https://github.com/terrylica/gapless-network-data/compare/v2.6.0...v2.7.0) (2025-11-11)
 
-
 ### Features
 
-* **monitoring:** add ULID unique identifiers to Pushover notifications ([bf60077](https://github.com/terrylica/gapless-network-data/commit/bf600776d12eea9d180246fc3442f947c414139e))
+- **monitoring:** add ULID unique identifiers to Pushover notifications ([bf60077](https://github.com/terrylica/gapless-network-data/commit/bf600776d12eea9d180246fc3442f947c414139e))
 
 # [2.6.0](https://github.com/terrylica/gapless-network-data/compare/v2.5.0...v2.6.0) (2025-11-11)
 

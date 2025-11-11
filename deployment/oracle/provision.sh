@@ -99,8 +99,12 @@ check_prerequisites() {
 
 get_compartment_id() {
     # Get root compartment (tenancy) OCID
-    oci iam compartment list --query 'data[0].id' --raw-output 2>/dev/null || \
-        oci iam availability-domain list --query 'data[0]."compartment-id"' --raw-output
+    local compartment_id
+    compartment_id=$(oci iam compartment list --query 'data[0].id' --raw-output 2>/dev/null)
+    if [[ -z "$compartment_id" ]]; then
+        compartment_id=$(oci iam availability-domain list --query 'data[0]."compartment-id"' --raw-output)
+    fi
+    echo "$compartment_id"
 }
 
 get_availability_domain() {
@@ -113,8 +117,8 @@ get_availability_domain() {
 # ================================================================================
 
 provision_network() {
-    log "========================================
-log "Provisioning Network Infrastructure"
+    log "========================================"
+    log "Provisioning Network Infrastructure"
     log "========================================"
 
     COMPARTMENT_ID=$(get_compartment_id)
@@ -276,7 +280,6 @@ provision_vm() {
     log "========================================"
 
     COMPARTMENT_ID=$(get_compartment_id)
-    AVAILABILITY_DOMAIN=$(get_availability_domain)
 
     # Get VCN and Subnet IDs
     VCN_ID=$(oci network vcn list \
@@ -339,27 +342,46 @@ provision_vm() {
 
     log "✅ Image found: $IMAGE_ID"
 
-    # Create VM
-    log "Creating VM: $VM_NAME"
-    log "  Shape: $VM_SHAPE ($VM_OCPUS OCPU, ${VM_MEMORY_GB}GB RAM)"
-    log "  Availability Domain: $AVAILABILITY_DOMAIN"
+    # Get all availability domains
+    log "Getting all availability domains..."
+    AVAILABILITY_DOMAINS=$(oci iam availability-domain list --query 'data[*].name' --output json | jq -r '.[]')
 
-    VM_ID=$(oci compute instance launch \
-        --compartment-id "$COMPARTMENT_ID" \
-        --availability-domain "$AVAILABILITY_DOMAIN" \
-        --shape "$VM_SHAPE" \
-        --shape-config "{\"ocpus\":$VM_OCPUS,\"memoryInGBs\":$VM_MEMORY_GB}" \
-        --display-name "$VM_NAME" \
-        --image-id "$IMAGE_ID" \
-        --subnet-id "$SUBNET_ID" \
-        --assign-public-ip true \
-        --ssh-authorized-keys-file "$SSH_PUBLIC_KEY_PATH" \
-        --boot-volume-size-in-gbs "$VM_BOOT_VOLUME_GB" \
-        --wait-for-state RUNNING \
-        --query 'data.id' \
-        --raw-output)
+    # Try each availability domain until one succeeds
+    VM_ID=""
+    for AD in $AVAILABILITY_DOMAINS; do
+        log "Attempting to create VM in: $AD"
+        log "  Shape: $VM_SHAPE ($VM_OCPUS OCPU, ${VM_MEMORY_GB}GB RAM)"
 
-    log "✅ VM created: $VM_ID"
+        # Try to launch VM (suppress errors to continue to next AD)
+        VM_ID=$(oci compute instance launch \
+            --compartment-id "$COMPARTMENT_ID" \
+            --availability-domain "$AD" \
+            --shape "$VM_SHAPE" \
+            --shape-config "{\"ocpus\":$VM_OCPUS,\"memoryInGBs\":$VM_MEMORY_GB}" \
+            --display-name "$VM_NAME" \
+            --image-id "$IMAGE_ID" \
+            --subnet-id "$SUBNET_ID" \
+            --assign-public-ip true \
+            --ssh-authorized-keys-file "$SSH_PUBLIC_KEY_PATH" \
+            --boot-volume-size-in-gbs "$VM_BOOT_VOLUME_GB" \
+            --wait-for-state RUNNING \
+            --query 'data.id' \
+            --raw-output 2>&1 || true)
+
+        # Check if launch succeeded (VM_ID will be an OCID starting with "ocid1.instance")
+        if [[ "$VM_ID" == ocid1.instance* ]]; then
+            log "✅ VM created successfully in $AD: $VM_ID"
+            break
+        else
+            log "⚠️  Failed to create VM in $AD (capacity unavailable or other error)"
+            VM_ID=""
+        fi
+    done
+
+    # Check if VM was created in any AD
+    if [[ -z "$VM_ID" ]]; then
+        error "Failed to create VM in any availability domain (all out of capacity)"
+    fi
 
     # Wait for VM to be fully ready
     log "Waiting for VM to be fully ready..."
