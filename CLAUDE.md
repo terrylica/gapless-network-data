@@ -909,7 +909,7 @@ uv run ruff format src/
 ```yaml
 ---
 version: "1.0.0"
-last_updated: "2025-01-20"
+last_updated: "2025-11-10"
 supersedes: []
 ---
 ```
