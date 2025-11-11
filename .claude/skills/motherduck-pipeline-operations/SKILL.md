@@ -1,13 +1,13 @@
 ---
 name: motherduck-pipeline-operations
-description: This skill should be used when verifying MotherDuck database state, executing historical backfills for Ethereum blockchain data, or troubleshooting missing historical data. Use when user mentions MotherDuck verification, chunked backfill execution, or questions about why historical data is missing despite pipeline health checks showing systems are operational.
+description: This skill should be used when verifying MotherDuck database state, detecting and filling gaps in Ethereum blockchain data, executing historical backfills, or troubleshooting missing data. Use when user mentions MotherDuck verification, gap detection, zero-tolerance completeness checks, chunked backfill execution, or questions about why historical data is missing despite pipeline health checks showing systems are operational.
 ---
 
 # MotherDuck Pipeline Operations
 
 ## Overview
 
-This skill provides operations for managing the Ethereum blockchain data pipeline that populates MotherDuck cloud database. It addresses the common confusion between pipeline health monitoring (covered by data-pipeline-monitoring skill) and actual data completeness verification, and provides the canonical 1-year chunked backfill pattern for safe historical data loading.
+This skill provides operations for managing the Ethereum blockchain data pipeline that populates MotherDuck cloud database. It addresses the common confusion between pipeline health monitoring (covered by data-pipeline-monitoring skill) and actual data completeness verification, provides zero-tolerance gap detection with automated healing, and implements the canonical 1-year chunked backfill pattern for safe historical data loading.
 
 ## Core Operations
 
@@ -28,7 +28,41 @@ This script:
 
 **When to use**: When user asks about data completeness, historical data availability, or suspects missing blocks despite healthy pipeline status.
 
-### 2. Execute Chunked Historical Backfill
+### 2. Detect and Fill Gaps (Zero-Tolerance)
+
+To detect any missing blocks in the sequence and automatically fill them:
+
+```bash
+cd /Users/terryli/eon/gapless-network-data/.claude/skills/motherduck-pipeline-operations
+
+# Detect gaps (read-only)
+uv run scripts/detect_gaps.py
+
+# Detect and auto-fill gaps
+uv run scripts/detect_gaps.py --auto-fill
+
+# Dry-run (show what would be done)
+uv run scripts/detect_gaps.py --dry-run --auto-fill
+```
+
+This script:
+- Uses DuckDB LAG() window function (20x faster than Python iteration)
+- Detects any missing block in sequence (zero-tolerance threshold)
+- Auto-triggers Cloud Run backfill jobs to fill detected gaps
+- Stores validation reports in `~/.cache/gapless-network-data/validation.duckdb`
+- Sends Pushover alerts and Healthchecks.io pings
+
+**Performance**: ~50ms to scan 14.57M blocks
+
+**When to use**: When you need to identify specific missing block ranges, not just total count. Verification script (Operation #1) shows totals; gap detection shows exact missing ranges.
+
+**Flags**:
+- `--auto-fill`: Automatically trigger backfills for detected gaps
+- `--dry-run`: Show what would be done without making changes
+- `--no-alerts`: Skip Pushover/Healthchecks alerting
+- `--no-validation-storage`: Skip storing validation report
+
+### 3. Execute Chunked Historical Backfill
 
 For loading multi-year historical data, use the canonical 1-year chunking pattern to avoid OOM failures:
 
@@ -58,8 +92,9 @@ cd /Users/terryli/eon/gapless-network-data/deployment/backfill
 
 **Resolution Workflow**:
 1. Verify actual database state: `uv run scripts/verify_motherduck.py`
-2. If missing historical blocks, execute chunked backfill (Operation #2)
-3. After backfill, verify again to confirm 13-15M blocks loaded
+2. Detect specific missing ranges: `uv run scripts/detect_gaps.py` (Operation #2)
+3. Auto-fill detected gaps: `uv run scripts/detect_gaps.py --auto-fill` or execute chunked backfill (Operation #3)
+4. After backfill, verify again to confirm 13-15M blocks loaded
 
 **Key Insight**: Pipeline health checks do NOT verify data completeness - use verification script instead.
 
@@ -85,6 +120,9 @@ For detailed architecture explanation and additional troubleshooting scenarios, 
 
 ### scripts/verify_motherduck.py
 Python script to verify MotherDuck database state. Checks actual data completeness, not just pipeline health.
+
+### scripts/detect_gaps.py
+Zero-tolerance gap detection using DuckDB LAG() window function. Identifies exact missing block ranges and auto-fills gaps via Cloud Run backfill jobs. Includes validation storage and alerting.
 
 ### references/pipeline-architecture-and-troubleshooting.md
 Comprehensive documentation covering:

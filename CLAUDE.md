@@ -262,6 +262,31 @@ Expected output for complete 2020-2025 backfill:
 - Time range: 2020-01-01 → 2025-present
 - Yearly breakdown showing ~2-3M blocks per year
 
+**Gap Detection & Automated Healing**:
+
+Zero-tolerance gap detection using DuckDB LAG() window function:
+
+```bash
+cd /Users/terryli/eon/gapless-network-data/.claude/skills/motherduck-pipeline-operations
+
+# Detect gaps (read-only)
+uv run scripts/detect_gaps.py
+
+# Detect and auto-fill gaps
+uv run scripts/detect_gaps.py --auto-fill
+
+# Dry-run (show what would be done)
+uv run scripts/detect_gaps.py --dry-run --auto-fill
+```
+
+Features:
+
+- DuckDB LAG() query (20x faster than Python iteration, ~50ms for 14.57M blocks)
+- Zero-tolerance threshold (detects any missing block in sequence)
+- Automated backfill triggering via Cloud Run Jobs
+- Validation report storage in `~/.cache/gapless-network-data/validation.duckdb`
+- Pushover + Healthchecks.io alerting
+
 **Historical Backfill**:
 
 For loading multi-year historical data, use 1-year chunking pattern (canonical approach established 2025-11-10):
@@ -289,8 +314,9 @@ Root cause: Dual-pipeline architecture responsibilities:
 Resolution workflow:
 
 1. Verify database state with `verify_motherduck.py`
-2. If missing historical blocks, execute `chunked_backfill.sh`
-3. Re-verify to confirm 13-15M blocks loaded
+2. Detect specific missing ranges with `detect_gaps.py`
+3. Auto-fill gaps with `detect_gaps.py --auto-fill` or execute `chunked_backfill.sh`
+4. Re-verify to confirm 13-15M blocks loaded with zero gaps
 
 See `.claude/skills/motherduck-pipeline-operations/` for complete workflows and troubleshooting.
 
