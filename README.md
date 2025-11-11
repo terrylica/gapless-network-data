@@ -8,7 +8,7 @@ Operational Ethereum data pipeline collecting **14.57M blocks (2020-2025)** with
 
 **Architecture**: BigQuery hourly batch + Alchemy real-time WebSocket → MotherDuck cloud database
 
-**Status**: Production operational (v2.2.1)
+**Status**: Production operational (v2.4.0)
 
 **Cost**: $0/month (all within free tiers)
 
@@ -38,9 +38,10 @@ Operational Ethereum data pipeline collecting **14.57M blocks (2020-2025)** with
 ### 4. Monitoring (Cloud-Based)
 
 - **Healthchecks.io**: Dead Man's Switch monitoring (hourly pings)
-- **UptimeRobot**: HTTP endpoint monitoring
 - **Pushover**: Alert delivery for failures
 - **Cost**: $0/month (all free tiers)
+
+**Note**: UptimeRobot was removed due to Cloud Run Job incompatibility (no public HTTP endpoints)
 
 ## Data Access
 
@@ -217,7 +218,6 @@ Uses 1-year chunking pattern to prevent OOM failures (~1.5-2 min per chunk).
 All monitoring runs on the cloud (no local processes):
 
 - **Healthchecks.io**: Cloud Run Job pings after each execution (Dead Man's Switch)
-- **UptimeRobot**: HTTP checks for public endpoints
 - **Pushover**: Alert delivery to mobile/desktop
 
 **SLOs Met**:
@@ -238,7 +238,6 @@ All monitoring runs on the cloud (no local processes):
 | Compute Engine  | e2-micro VM    | 1 instance      | $0   |
 | MotherDuck      | 1.5 GB storage | 10 GB           | $0   |
 | Healthchecks.io | 1 check        | 20 checks       | $0   |
-| UptimeRobot     | 1 monitor      | 50 monitors     | $0   |
 | Pushover        | Alerts         | 10,000/month    | $0   |
 
 ## Security
@@ -278,7 +277,7 @@ All monitoring runs on the cloud (no local processes):
 
 ## Future Work (Phase 2+)
 
-- Python SDK with `fetch_snapshots()` API
+- Python SDK (`fetch_snapshots()` API exists experimentally at `src/gapless_network_data/api.py` but not production-ready)
 - Bitcoin mempool.space integration (5-minute intervals)
 - CLI commands (`collect`, `stream`, `validate`, `export`)
 - Complete 5-layer validation pipeline
