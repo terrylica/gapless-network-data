@@ -1,3 +1,10 @@
+# [2.5.0](https://github.com/terrylica/gapless-network-data/compare/v2.4.0...v2.5.0) (2025-11-11)
+
+
+### Features
+
+* **gap-detection:** implement automated gap detection system (Phase 2) ([7d9e035](https://github.com/terrylica/gapless-network-data/commit/7d9e03520531cd3ba8f674fa91370090f73777bb)), closes [#2](https://github.com/terrylica/gapless-network-data/issues/2)
+
 # [2.4.0](https://github.com/terrylica/gapless-network-data/compare/v2.3.0...v2.4.0) (2025-11-10)
 
 ### Features
