@@ -120,7 +120,7 @@ Coordinates all project phases, specifications, and implementation work.
 
 - **Ethereum Historical**: BigQuery public dataset `bigquery-public-data.crypto_ethereum.blocks` (2015-2025, 14.57M blocks, free tier)
 - **Ethereum Real-Time**: Alchemy WebSocket API (300M CU/month free tier, ~12s block intervals)
-- **Storage**: MotherDuck cloud database (VM-based real-time ingestion with automatic deduplication)
+- **Storage**: MotherDuck cloud database (dual-pipeline ingestion with automatic deduplication)
 
 **Researched Sources (Not Used in Production)**:
 
@@ -140,6 +140,7 @@ Dual-pipeline architecture for Ethereum data collection with automatic deduplica
 
 1. **BigQuery Hourly Batch** (Cloud Run Job): Syncs latest blocks from BigQuery public dataset every hour (~578 blocks/run)
 2. **Alchemy Real-Time Stream** (e2-micro VM): WebSocket subscription for real-time blocks (~12s intervals)
+3. **Data Quality Monitoring** (Cloud Run Job): Verifies data freshness every 5 minutes (<300s threshold)
 
 **Deduplication**: Both pipelines use `INSERT OR REPLACE` on MotherDuck table with `number` as PRIMARY KEY
 
@@ -223,6 +224,24 @@ gcloud compute ssh eth-realtime-collector --zone=us-east1-b --command='sudo syst
 gcloud compute ssh eth-realtime-collector --zone=us-east1-b --command='sudo systemctl restart eth-collector'
 ```
 
+### Data Quality Monitoring
+
+**Cloud Run Job** (data quality checks):
+
+```bash
+# View execution history
+gcloud run jobs executions list --job eth-md-data-quality-checker --region us-central1
+
+# Manual trigger
+gcloud run jobs execute eth-md-data-quality-checker --region us-central1
+```
+
+**Monitoring Schedule**: Every 5 minutes via Cloud Scheduler (`eth-md-data-quality`)
+
+**Purpose**: Queries MotherDuck for latest block timestamp and verifies data freshness (<300s threshold). Exits with code 1 if data is stale, triggering Cloud Run Job failure alerts.
+
+**Deployment**: `deployment/cloud-run/data_quality_checker.py`
+
 ### Database Verification & Operations
 
 **Important**: Pipeline health monitoring (whether services are running) is separate from data completeness verification (whether historical data exists in MotherDuck).
@@ -302,7 +321,9 @@ See `.claude/skills/motherduck-pipeline-operations/` for complete workflows and 
 - **VM eth-realtime-collector**: ACTIVE (real-time WebSocket streaming via Alchemy)
 - **eth-collector systemd service**: ACTIVE (streaming blocks every ~12 seconds)
 - **Cloud Run eth-md-updater**: ACTIVE (hourly BigQuery sync, last 2 hours)
+- **Cloud Run eth-md-data-quality-checker**: ACTIVE (data freshness monitoring every 5 minutes)
 - **Cloud Scheduler eth-md-hourly**: ENABLED (triggers hourly at :00)
+- **Cloud Scheduler eth-md-data-quality**: ENABLED (triggers every 5 minutes)
 - **MotherDuck ethereum_mainnet.blocks**: 14.57M blocks (2020-2025)
 
 **Infrastructure Recovery** (2025-11-10 07:00 UTC):
@@ -437,7 +458,7 @@ Project-specific skills that capture validated workflows from scratch investigat
 
 **Operational (v2.4.0)**:
 
-- **Ethereum Block Data Collection**: 14.57M blocks (2020-2025) via VM-based real-time streaming
+- **Ethereum Block Data Collection**: 14.57M blocks (2020-2025) via dual-pipeline architecture
 - **Infrastructure**: Alchemy WebSocket → MotherDuck cloud storage
 - **Monitoring**: Healthchecks.io, Pushover
 - **Purpose**: Network metrics for ML feature engineering pipelines
@@ -487,7 +508,7 @@ Project-specific skills that capture validated workflows from scratch investigat
 
 **Version**: v2.4.0 (production operational)
 
-**Status**: Production operational - VM-based real-time collection with 14.57M blocks
+**Status**: Production operational - dual-pipeline collection with 14.57M blocks
 
 **Operational Infrastructure**:
 
@@ -744,7 +765,7 @@ All investigation materials with absolute paths:
 - **Purpose**: Always up-to-date production data (14.57M blocks, 2020-2025)
 - **Access**: SDK queries this by default (`import gapless_network_data`)
 - **Deployment**: Maintained by cloud pipelines (no user setup required)
-- **Current Status**: Operational (VM-based real-time collection)
+- **Current Status**: Operational (dual-pipeline architecture)
 
 **Local Development (Optional)**:
 
