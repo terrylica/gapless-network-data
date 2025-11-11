@@ -25,6 +25,8 @@ Exit Codes:
 #   "duckdb>=1.4.0",
 #   "httpx>=0.27.0",
 #   "oci>=2.136.0",
+#   "python-ulid>=3.1.0",
+#   "typing-extensions>=4.15.0",
 # ]
 # ///
 
@@ -37,6 +39,7 @@ from pathlib import Path
 import duckdb
 import httpx
 import oci
+from ulid import ULID
 
 
 # ================================================================================
@@ -261,7 +264,7 @@ def send_pushover_notification(
     priority: int = 2
 ):
     """
-    Send Pushover notification.
+    Send Pushover notification with unique ULID identifier.
 
     Args:
         token: Pushover application token
@@ -275,11 +278,17 @@ def send_pushover_notification(
     """
     print(f"[PUSHOVER] Sending notification...")
 
+    # Generate ULID (26-char timestamped unique identifier)
+    ulid = str(ULID())
+
+    # Append ULID to message (at bottom)
+    message_with_id = f"{message}\n\nID: {ulid}"
+
     url = "https://api.pushover.net/1/messages.json"
     data = {
         "token": token,
         "user": user,
-        "message": message,
+        "message": message_with_id,
         "title": title,
         "priority": priority,
     }
@@ -288,7 +297,7 @@ def send_pushover_notification(
         response = client.post(url, data=data, timeout=10)
         response.raise_for_status()
 
-    print(f"  ✅ Notification sent")
+    print(f"  ✅ Notification sent (ID: {ulid})")
 
 
 def ping_healthchecks(ping_url: str, diagnostic_data: str, is_healthy: bool):

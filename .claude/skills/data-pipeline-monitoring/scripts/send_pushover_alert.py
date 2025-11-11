@@ -10,7 +10,7 @@ Error handling: Raise and propagate (no fallbacks/defaults/silent handling)
 """
 
 # /// script
-# dependencies = ["requests"]
+# dependencies = ["requests", "python-ulid", "typing-extensions"]
 # ///
 
 import argparse
@@ -19,6 +19,7 @@ import os
 import sys
 from typing import Dict, List
 import requests
+from ulid import ULID
 
 
 def get_pushover_credentials() -> tuple[str, str]:
@@ -48,7 +49,7 @@ def send_pushover_notification(
     sound: str = "pushover"
 ) -> Dict:
     """
-    Send Pushover notification.
+    Send Pushover notification with unique ULID identifier.
 
     Args:
         message: Notification message (required, max 1024 characters)
@@ -58,7 +59,7 @@ def send_pushover_notification(
         sound: Notification sound (default: "pushover")
 
     Returns:
-        API response dict with status and request ID
+        API response dict with status, request ID, and ULID
 
     Raises:
         requests.HTTPError: If API request fails
@@ -66,10 +67,16 @@ def send_pushover_notification(
     """
     token, user = get_pushover_credentials()
 
+    # Generate ULID (26-char timestamped unique identifier)
+    ulid = str(ULID())
+
+    # Append ULID to message (at bottom)
+    message_with_id = f"{message}\n\nID: {ulid}"
+
     payload = {
         "token": token,
         "user": user,
-        "message": message,
+        "message": message_with_id,
         "priority": priority,
         "sound": sound
     }
@@ -86,7 +93,9 @@ def send_pushover_notification(
     # Raise exception on HTTP error (no silent failures)
     response.raise_for_status()
 
-    return response.json()
+    result = response.json()
+    result["ulid"] = ulid  # Include ULID in response for logging
+    return result
 
 
 def format_health_check_alert(results: List[Dict]) -> tuple[str, str, int]:
@@ -157,6 +166,7 @@ def main():
                 if not args.quiet:
                     print(f"✅ Pushover alert sent: {title}")
                     print(f"   Request ID: {response.get('request')}")
+                    print(f"   ULID: {response.get('ulid')}")
                     print(f"   Status: {response.get('status')}")
             else:
                 if not args.quiet:
@@ -169,6 +179,7 @@ def main():
             if not args.quiet:
                 print(f"✅ Pushover alert sent")
                 print(f"   Request ID: {response.get('request')}")
+                print(f"   ULID: {response.get('ulid')}")
                 print(f"   Status: {response.get('status')}")
 
         else:
