@@ -1,21 +1,18 @@
 # [3.0.0](https://github.com/terrylica/gapless-network-data/compare/v2.7.0...v3.0.0) (2025-11-11)
 
-
 ### Features
 
-* **monitoring:** deploy MotherDuck gap detection to GCP Cloud Functions ([1eac100](https://github.com/terrylica/gapless-network-data/commit/1eac100adf153642360be2a13a3afb182cb1b158))
-
+- **monitoring:** deploy MotherDuck gap detection to GCP Cloud Functions ([1eac100](https://github.com/terrylica/gapless-network-data/commit/1eac100adf153642360be2a13a3afb182cb1b158))
 
 ### BREAKING CHANGES
 
-* **monitoring:** Oracle Cloud deployment superseded by GCP Cloud Functions
+- **monitoring:** Oracle Cloud deployment superseded by GCP Cloud Functions
 
 # [2.7.0](https://github.com/terrylica/gapless-network-data/compare/v2.6.0...v2.7.0) (2025-11-11)
 
-
 ### Features
 
-* **monitoring:** add ULID unique identifiers to Pushover notifications ([bf60077](https://github.com/terrylica/gapless-network-data/commit/bf600776d12eea9d180246fc3442f947c414139e))
+- **monitoring:** add ULID unique identifiers to Pushover notifications ([bf60077](https://github.com/terrylica/gapless-network-data/commit/bf600776d12eea9d180246fc3442f947c414139e))
 
 # [2.6.0](https://github.com/terrylica/gapless-network-data/compare/v2.5.0...v2.6.0) (2025-11-11)
 
