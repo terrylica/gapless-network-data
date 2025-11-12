@@ -408,6 +408,7 @@ Oracle Cloud-based monitoring for MotherDuck Ethereum database gap detection. Se
 **Architecture**: OCI Compute VM + cron + OCI Vault
 
 **Monitoring Scope**:
+
 - Gap Detection: Detect >15s gaps in Ethereum block timestamps (1 year → 3 min ago)
 - Staleness Detection: Alert if latest block >5 minutes old
 - Notifications: Pushover emergency alerts + Healthchecks.io Dead Man's Switch
@@ -416,29 +417,33 @@ Oracle Cloud-based monitoring for MotherDuck Ethereum database gap detection. Se
 
 ### Files
 
-| File | Purpose | Status |
-|------|---------|--------|
+| File                                               | Purpose                                        | Status      |
+| -------------------------------------------------- | ---------------------------------------------- | ----------- |
 | `specifications/oracle-motherduck-monitoring.yaml` | Complete OpenAPI 3.1.0 specification with SLOs | ✅ Complete |
-| `deployment/oracle/migrate_secrets.py` | Automated Doppler → OCI Vault migration | ✅ Complete |
-| `deployment/oracle/motherduck_monitor.py` | Gap detection + monitoring script | ✅ Complete |
-| `deployment/oracle/deploy.sh` | SCP deployment automation | ✅ Complete |
-| `deployment/oracle/provision.sh` | Infrastructure provisioning automation | ✅ Complete |
-| `deployment/oracle/keep_alive.sh` | Hourly CPU usage (prevents idle reclamation) | ✅ Complete |
-| `deployment/oracle/README.md` | Complete deployment guide | ✅ Complete |
+| `deployment/oracle/migrate_secrets.py`             | Automated Doppler → OCI Vault migration        | ✅ Complete |
+| `deployment/oracle/motherduck_monitor.py`          | Gap detection + monitoring script              | ✅ Complete |
+| `deployment/oracle/deploy.sh`                      | SCP deployment automation                      | ✅ Complete |
+| `deployment/oracle/provision.sh`                   | Infrastructure provisioning automation         | ✅ Complete |
+| `deployment/oracle/keep_alive.sh`                  | Hourly CPU usage (prevents idle reclamation)   | ✅ Complete |
+| `deployment/oracle/README.md`                      | Complete deployment guide                      | ✅ Complete |
 
 ### SLOs
 
 **Availability**: Monitoring checks execute every 3 hours without manual intervention
+
 - Measurement: Percentage of cron-triggered executions that complete successfully
 
 **Correctness**: 100% accurate gap detection with no false positives
+
 - Gap threshold: >15 seconds (Ethereum ~12s block time + 3s tolerance)
 - Time window: 1 year historical → 3 minutes recent (prevents false positives)
 
 **Observability**: 100% check execution tracking with diagnostic data
+
 - Notification format: Pushover emergency (all results) + Healthchecks.io Dead Man's Switch
 
 **Maintainability**: <30 minutes for common operations
+
 - Validated: Critical infrastructure failure resolved in <30 minutes
 
 ### Gap Detection Algorithm
@@ -466,8 +471,9 @@ SELECT * FROM gaps WHERE gap_seconds > 15
 **Solution**: Automated keep-alive mechanism (no PAYG upgrade required)
 
 **Keep-Alive Strategy**:
+
 - Script: `deployment/oracle/keep_alive.sh`
-- Schedule: Every hour via cron (0 * * * *)
+- Schedule: Every hour via cron (0 \* \* \* \*)
 - CPU Usage: ~25% for 30 seconds per hour
 - Method: `stress-ng` (precise control) or `dd + sha256sum` (fallback)
 - Logging: `~/keep_alive.log` with automatic rotation
@@ -505,11 +511,11 @@ vi ~/.env-motherduck  # Add secret OCIDs from migrate_secrets.py output
 
 ### Exit Codes
 
-| Code | Meaning | Action |
-|------|---------|--------|
-| 0 | Healthy (no gaps, data fresh) | None |
-| 1 | Unhealthy (gaps detected or stale) | Alert sent |
-| 2 | Fatal error (query failed) | Alert + manual investigation |
+| Code | Meaning                            | Action                       |
+| ---- | ---------------------------------- | ---------------------------- |
+| 0    | Healthy (no gaps, data fresh)      | None                         |
+| 1    | Unhealthy (gaps detected or stale) | Alert sent                   |
+| 2    | Fatal error (query failed)         | Alert + manual investigation |
 
 ## Project Skills
 
