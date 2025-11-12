@@ -45,7 +45,7 @@ TIME_WINDOW_START_DAYS = int(os.environ.get('TIME_WINDOW_START_DAYS', '365'))  #
 TIME_WINDOW_END_MINUTES = int(os.environ.get('TIME_WINDOW_END_MINUTES', '3'))  # 3 minutes from now (prevent false positives)
 
 # Staleness threshold
-STALE_THRESHOLD_SECONDS = int(os.environ.get('STALE_THRESHOLD_SECONDS', '300'))  # 5 minutes
+STALE_THRESHOLD_SECONDS = int(os.environ.get('STALE_THRESHOLD_SECONDS', '960'))  # 16 minutes
 
 # Healthchecks.io ping URL (from environment)
 HEALTHCHECKS_PING_URL = os.environ.get('HEALTHCHECKS_PING_URL', '')
