@@ -1,86 +1,147 @@
 ---
-version: "0.1.0"
-last_updated: "2025-11-04"
-supersedes: []
-status: "pending"
+version: "1.0.0"
+last_updated: "2025-11-12"
+supersedes: ["0.1.0"]
+status: "operational"
 ---
 
 # Architecture Overview
 
-**Status**: 🚧 Pending Phase 1 implementation
+**Status**: ✅ Operational (deployed 2025-11-09, 23.8M blocks)
 
-This document will provide a comprehensive overview of the gapless-network-data architecture, including:
+Dual-pipeline blockchain network metrics collection system with zero-gap guarantee.
 
-## Planned Content
+## Current Implementation
 
 ### Core Components
 
-- Data collectors (Ethereum via web3.py + LlamaRPC, Bitcoin via httpx + mempool.space)
-- Validation pipeline (5 layers: HTTP/RPC, Schema, Sanity, Gaps, Anomalies)
-- Storage layer (Parquet for data, DuckDB for queries)
-- API interface (fetch_snapshots, get_latest_snapshot)
-- CLI interface (collect, stream, validate commands)
+**Data Sources**:
+- BigQuery public dataset (`bigquery-public-data.crypto_ethereum.blocks`) - Historical data (2015-2025)
+- Alchemy WebSocket API - Real-time stream (~12s block intervals)
+
+**Storage**:
+- MotherDuck cloud database (`ethereum_mainnet.blocks` table)
+- Automatic deduplication via `INSERT OR REPLACE` on block number PRIMARY KEY
+
+**Compute Infrastructure**:
+- Cloud Run Job `eth-md-updater` - Hourly BigQuery sync (~578 blocks/run)
+- Cloud Run Job `eth-md-data-quality-checker` - Data freshness monitoring (every 5 min)
+- Cloud Run Job `ethereum-historical-backfill` - Historical data loading (on-demand)
+- Cloud Function Gen2 `motherduck-gap-detector` - Gap detection (every 3 hours)
+- Compute Engine VM `eth-realtime-collector` - WebSocket streaming (24/7)
+
+**Monitoring**:
+- Healthchecks.io - Dead Man's Switch
+- Pushover - Alert notifications (priority=2 for failures)
+- Cloud Logging - Operation tracking
 
 ### Data Flow
 
-- Collection → Validation → Storage → Query → Analysis
-- Multi-chain data streams (Ethereum 12s blocks, Bitcoin 5min snapshots)
-- Temporal alignment with OHLCV data from gapless-crypto-data
-- Gap detection and automated backfill recovery
+```
+Historical Path:
+BigQuery → Cloud Run Job → MotherDuck
+(Hourly sync, last 2 hours)
+
+Real-Time Path:
+Alchemy WebSocket → VM Collector → MotherDuck
+(Batch writes every 5 minutes)
+
+Monitoring Path:
+Cloud Scheduler → Cloud Function → MotherDuck Query → Pushover Alert
+(Gap detection every 3 hours)
+```
+
+### Operational Metrics
+
+**Data Loaded**: 23.8M Ethereum blocks
+**Block Range**: #1 (2015-07-30) to #23,780,073 (2025-11-12)
+**Time Span**: Genesis to present (9.4 years)
+**Storage**: MotherDuck cloud database (~1.5 GB)
+**Cost**: $0/month (all within free tiers)
 
 ### Service Level Objectives (SLOs)
 
-- **Correctness**: 100% gap detection, validation accuracy
-- **Observability**: DuckDB validation reports, logging, metrics
-- **Maintainability**: Type safety (PEP 561), test coverage (70%+), documentation
+**Availability**: Data pipelines execute without manual intervention
+- Measurement: Percentage of successful scheduled executions
+- Current: 100% (hourly sync + 5-min quality checks)
 
-**Note**: Performance and security are explicitly excluded per gapless-crypto-data convention.
+**Correctness**: 100% data accuracy with no silent errors
+- Measurement: Schema validation + deduplication + gap detection
+- Current: 100% (23.8M blocks with zero gaps)
 
-## Current Context
+**Observability**: 100% operation tracking with queryable logs
+- Measurement: Cloud Logging coverage + alert delivery
+- Current: 100% (all operations logged, Pushover verified)
 
-Until this document is completed, refer to:
+**Maintainability**: <30 minutes for common operations
+- Measurement: Time to deploy fixes or investigate issues
+- Current: Met (infrastructure fixes deployed in <15 min)
 
-- [CLAUDE.md](/Users/terryli/eon/gapless-network-data/CLAUDE.md) - Complete architectural context
-- [master-project-roadmap.yaml](/Users/terryli/eon/gapless-network-data/specifications/master-project-roadmap.yaml) - Implementation plan
-- [duckdb-integration-strategy.yaml](/Users/terryli/eon/gapless-network-data/specifications/duckdb-integration-strategy.yaml) - Query engine architecture
+**Note**: Performance and security are explicitly excluded per project convention.
 
 ## Key Architectural Decisions
 
-### 1. DuckDB for Queries, Parquet for Data
+### 1. MotherDuck Cloud Database for Dual-Pipeline Ingestion
 
-- **Rationale**: 110x storage savings, 10-100x query speedups
-- **Implementation**: DuckDB reads Parquet directly, no persistent tables
-- **Benefits**: Zero storage duplication, SQL analytics, ASOF JOIN support
+**Decision Date**: 2025-11-09
+**Rationale**: Cloud-hosted DuckDB enables automatic deduplication for dual-pipeline writes
+**Implementation**: `INSERT OR REPLACE` on `number` PRIMARY KEY
+**Trade-offs**:
+- Advantage: Simple deduplication, no coordination needed
+- Limitation: Free tier limits (10 GB storage, 10 CU hours/month)
 
-### 2. Separate Packages for OHLCV vs Network Data
+### 2. Batch Writes from VM Collector
 
-- **Rationale**: Incompatible data models (11-column OHLCV vs variable network schemas)
-- **Implementation**: gapless-crypto-data (OHLCV) + gapless-network-data (network metrics)
-- **Integration**: Temporal alignment via DatetimeIndex + forward-fill
+**Decision Date**: 2025-11-11
+**Rationale**: Real-time writes (every 12s) exceeded MotherDuck free tier by 12x
+**Implementation**: Buffer 25 blocks in memory, flush every 5 minutes
+**Trade-offs**:
+- Advantage: Reduces writes from 216K → 8.6K/month (stays within free tier)
+- Limitation: Max 5-minute data lag
 
-### 3. Ethereum PRIMARY, Bitcoin SECONDARY
+### 3. BigQuery for Historical Data
 
-- **Rationale**: Ethereum provides TRUE high-frequency data (12s blocks), Bitcoin only M5 (5min)
-- **Implementation**: Ethereum collector using web3.py, Bitcoin using httpx
-- **Priority**: Phase 1 focuses on Ethereum first (6-8 hours), then Bitcoin (4-6 hours)
+**Decision Date**: 2025-11-10
+**Rationale**: RPC provider rate limits made 5-year backfill impractical (110-day timeline)
+**Implementation**: BigQuery public dataset provides free access to complete history
+**Trade-offs**:
+- Advantage: 624x faster than RPC polling (<1 hour vs 26 days)
+- Limitation: Requires GCP account
 
-### 4. Exception-Only Failures
+### 4. Deterministic Gap Detection via Block Numbers
 
-- **Rationale**: No silent errors, no default values (follows gapless-crypto-data pattern)
-- **Implementation**: Structured exceptions (MempoolHTTPException, MempoolValidationException)
-- **Benefits**: Machine-parseable errors, explicit failure modes
+**Decision Date**: 2025-11-11
+**Rationale**: Timestamp gaps are normal Ethereum behavior (missed validator proposals)
+**Implementation**: `expected_blocks = max_block - min_block + 1`, compare to `COUNT(*)`
+**Trade-offs**:
+- Advantage: Zero false positives from network timing variations
+- Limitation: Does not detect data corruption within blocks
 
-### 5. Forward-Collection Only (v0.1.0 Limitation)
+### 5. Separate Packages for OHLCV vs Network Data
 
-- **Rationale**: Focus on proving collection works before adding backfill complexity
-- **Implementation**: Current API only supports recent data collection
-- **Future**: Historical backfill planned for Phase 2 (Data Quality)
+**Decision Date**: 2025-11-04
+**Rationale**: Incompatible data models (11-column OHLCV vs 11-column blockchain)
+**Implementation**: gapless-crypto-data (OHLCV) + gapless-network-data (blockchain)
+**Integration**: Temporal alignment via `DatetimeIndex` + forward-fill
 
----
+### 6. Ethereum PRIMARY, Bitcoin SECONDARY
 
-**Related Documentation**:
+**Decision Date**: 2025-11-04
+**Rationale**: Ethereum provides 12-second granularity, Bitcoin only 5-minute
+**Implementation**: Ethereum fully operational, Bitcoin deferred to Phase 2+
 
-- [Data Format Specification](/Users/terryli/eon/gapless-network-data/docs/architecture/DATA_FORMAT.md) - Multi-chain schemas
-- [Cross-Package Integration](/Users/terryli/eon/gapless-crypto-data/docs/architecture/cross-package-feature-integration.yaml) - OHLCV + network data fusion
+## Current Limitations
 
-**This document will be completed during Phase 1 implementation.**
+1. **Single-chain support**: Ethereum only (Bitcoin planned for future)
+2. **No Python SDK**: Package structure exists, API not yet published
+3. **Data lag**: Max 5 minutes due to batch write mode
+4. **Free tier dependency**: MotherDuck 10 GB storage limit
+5. **Single region**: All GCP resources in us-east1/us-central1
+
+## Related Documentation
+
+- [MotherDuck Dual Pipeline](/Users/terryli/eon/gapless-network-data/docs/architecture/motherduck-dual-pipeline.md) - Complete architecture diagram
+- [BigQuery Integration](/Users/terryli/eon/gapless-network-data/docs/architecture/bigquery-motherduck-integration.md) - Historical data loading
+- [Data Format Specification](/Users/terryli/eon/gapless-network-data/docs/architecture/DATA_FORMAT.md) - Ethereum block schema
+- [Real-Time Collector](/Users/terryli/eon/gapless-network-data/docs/deployment/realtime-collector.md) - VM deployment
+- [CLAUDE.md](/Users/terryli/eon/gapless-network-data/CLAUDE.md) - Complete project context

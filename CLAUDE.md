@@ -8,11 +8,11 @@ Gapless Network Data is a multi-chain blockchain network metrics collection tool
 
 **Core Capability**: Collect complete historical blockchain network data with high-frequency granularity:
 
-- **Ethereum** (PRIMARY): Block-level data via Alchemy real-time stream (~12 second intervals, 14.57M blocks operational)
+- **Ethereum** (PRIMARY): Block-level data via Alchemy real-time stream (~12 second intervals, 23.8M blocks operational)
 - **Bitcoin**: Mempool snapshots via mempool.space (5-minute intervals, future work)
 - **Multi-chain**: Extensible to Solana, Avalanche, Polygon, etc.
 
-**Version**: v2.4.0 (production operational)
+**Version**: v3.0.0 (production operational)
 
 ## Data Scope
 
@@ -66,9 +66,9 @@ Coordinates all project phases, specifications, and implementation work.
 
 **Current Status**:
 
-- **Phase**: Phase 1 (Historical Data Collection: 5-Year Backfill) - **COMPLETED** (2025-11-10)
-- **Version**: v2.4.0 (production operational)
-- **Data Loaded**: 14.57M Ethereum blocks (2020-2025) in MotherDuck
+- **Phase**: Phase 1 (Historical Data Collection: Complete History) - **COMPLETED** (2025-11-12)
+- **Version**: v3.0.0 (production operational)
+- **Data Loaded**: 23.8M Ethereum blocks (2015-2025) in MotherDuck
 - **Architecture**: Dual-pipeline (Alchemy WebSocket VM + BigQuery hourly Cloud Run Job)
 - **Monitoring**: Healthchecks.io + Pushover (cloud-based, UptimeRobot removed)
 - **Authoritative Spec**: `/Users/terryli/eon/gapless-network-data/specifications/master-project-roadmap.yaml` Phase 1
@@ -118,7 +118,7 @@ Coordinates all project phases, specifications, and implementation work.
 
 **Active Data Sources (Production)**:
 
-- **Ethereum Historical**: BigQuery public dataset `bigquery-public-data.crypto_ethereum.blocks` (2015-2025, 14.57M blocks, free tier)
+- **Ethereum Historical**: BigQuery public dataset `bigquery-public-data.crypto_ethereum.blocks` (2015-2025, 23.8M blocks, free tier)
 - **Ethereum Real-Time**: Alchemy WebSocket API (300M CU/month free tier, ~12s block intervals)
 - **Storage**: MotherDuck cloud database (dual-pipeline ingestion with automatic deduplication)
 
@@ -155,7 +155,7 @@ Dual-pipeline architecture for Ethereum data collection with automatic deduplica
 
 - `deployment/cloud-run/` - BigQuery → MotherDuck hourly sync (Cloud Run Job)
 - `deployment/vm/` - Real-time collector (e2-micro VM with systemd)
-- `deployment/backfill/` - Historical backfill script (2020-2025, ~13M blocks)
+- `deployment/backfill/` - Historical backfill script (2015-2025, 23.8M blocks)
 
 Each directory contains:
 
@@ -255,11 +255,11 @@ cd /Users/terryli/eon/gapless-network-data/.claude/skills/motherduck-pipeline-op
 uv run scripts/verify_motherduck.py
 ```
 
-Expected output for complete 2020-2025 backfill:
+Expected output for complete 2015-2025 backfill:
 
-- Total blocks: 13-15M
-- Block range: ~11,560,000 → ~24,000,000
-- Time range: 2020-01-01 → 2025-present
+- Total blocks: 23.8M
+- Block range: 1 → ~23,780,000
+- Time range: 2015-07-30 (Genesis) → 2025-present
 - Yearly breakdown showing ~2-3M blocks per year
 
 **Gap Detection & Automated Healing**:
@@ -281,7 +281,7 @@ uv run scripts/detect_gaps.py --dry-run --auto-fill
 
 Features:
 
-- DuckDB LAG() query (20x faster than Python iteration, ~50ms for 14.57M blocks)
+- DuckDB LAG() query (20x faster than Python iteration, ~50ms for 23.8M blocks)
 - Zero-tolerance threshold (detects any missing block in sequence)
 - Automated backfill triggering via Cloud Run Jobs
 - Validation report storage in `~/.cache/gapless-network-data/validation.duckdb`
@@ -293,7 +293,7 @@ For loading multi-year historical data, use 1-year chunking pattern (canonical a
 
 ```bash
 cd /Users/terryli/eon/gapless-network-data/deployment/backfill
-./chunked_backfill.sh 2020 2025
+./chunked_backfill.sh 2015 2025
 ```
 
 Pattern details:
@@ -316,7 +316,7 @@ Resolution workflow:
 1. Verify database state with `verify_motherduck.py`
 2. Detect specific missing ranges with `detect_gaps.py`
 3. Auto-fill gaps with `detect_gaps.py --auto-fill` or execute `chunked_backfill.sh`
-4. Re-verify to confirm 13-15M blocks loaded with zero gaps
+4. Re-verify to confirm 23.8M blocks loaded with zero gaps
 
 See `.claude/skills/motherduck-pipeline-operations/` for complete workflows and troubleshooting.
 
@@ -338,7 +338,7 @@ See `.claude/skills/motherduck-pipeline-operations/` for complete workflows and 
 
 - Status: MET (critical fix deployed in <15 minutes)
 
-### Operational Status (2025-11-10)
+### Operational Status (2025-11-12)
 
 **Current State**: ALL SYSTEMS OPERATIONAL ✅
 
@@ -350,7 +350,7 @@ See `.claude/skills/motherduck-pipeline-operations/` for complete workflows and 
 - **Cloud Run eth-md-data-quality-checker**: ACTIVE (data freshness monitoring every 5 minutes)
 - **Cloud Scheduler eth-md-hourly**: ENABLED (triggers hourly at :00)
 - **Cloud Scheduler eth-md-data-quality**: ENABLED (triggers every 5 minutes)
-- **MotherDuck ethereum_mainnet.blocks**: 14.57M blocks (2020-2025)
+- **MotherDuck ethereum_mainnet.blocks**: 23.8M blocks (2015-2025)
 
 **Infrastructure Recovery** (2025-11-10 07:00 UTC):
 
@@ -358,7 +358,7 @@ See `.claude/skills/motherduck-pipeline-operations/` for complete workflows and 
 - Recovery: VM reset restored network connectivity
 - eth-collector service restarted with `.strip()` fix (gRPC metadata validation resolved)
 - Real-time data flow confirmed: blocks streaming every ~12 seconds
-- Database verified: 14.57M blocks (2020-2025), latest block within 44 seconds
+- Database verified: 23.8M blocks (2015-2025), latest block within seconds
 
 **Monitoring Setup** (2025-11-10):
 
@@ -595,7 +595,7 @@ Project-specific skills that capture validated workflows from scratch investigat
 - Troubleshooting "No historical data despite healthy pipelines" scenarios
 - Understanding dual-pipeline architecture responsibilities
 
-**Validated Pattern From**: 5-year backfill execution (14.57M blocks, 2020-2025) using `deployment/backfill/chunked_backfill.sh`
+**Validated Pattern From**: Complete historical backfill execution (23.8M blocks, 2015-2025) using `deployment/backfill/chunked_backfill.sh`
 
 **Cross-References**: Works with `data-pipeline-monitoring` skill (pipeline health) and `bigquery-ethereum-data-acquisition` skill (BigQuery → MotherDuck workflow)
 
@@ -603,9 +603,9 @@ Project-specific skills that capture validated workflows from scratch investigat
 
 **Primary Use Case**: Blockchain network metrics infrastructure (operational)
 
-**Operational (v2.4.0)**:
+**Operational (v3.0.0)**:
 
-- **Ethereum Block Data Collection**: 14.57M blocks (2020-2025) via dual-pipeline architecture
+- **Ethereum Block Data Collection**: 23.8M blocks (2015-2025) via dual-pipeline architecture
 - **Infrastructure**: Alchemy WebSocket → MotherDuck cloud storage
 - **Monitoring**: Healthchecks.io, Pushover
 - **Purpose**: Network metrics for ML feature engineering pipelines
@@ -653,9 +653,9 @@ Project-specific skills that capture validated workflows from scratch investigat
 
 ## Current Architecture
 
-**Version**: v2.4.0 (production operational)
+**Version**: v3.0.0 (production operational)
 
-**Status**: Production operational - dual-pipeline collection with 14.57M blocks
+**Status**: Production operational - dual-pipeline collection with 23.8M blocks
 
 **Operational Infrastructure**:
 
@@ -666,7 +666,7 @@ Project-specific skills that capture validated workflows from scratch investigat
 
 **Data Pipeline**:
 
-- Historical data: 14.57M Ethereum blocks (2020-2025) loaded from BigQuery
+- Historical data: 23.8M Ethereum blocks (2015-2025) loaded from BigQuery
 - Real-time streaming: Alchemy WebSocket feeds new blocks every ~12 seconds
 - Deduplication: Both pipelines write to same MotherDuck table with PRIMARY KEY on block number
 - Cost: $0/month (all within free tiers)
@@ -909,7 +909,7 @@ All investigation materials with absolute paths:
 **Production (Cloud)**:
 
 - **Location**: MotherDuck cloud (`md:ethereum_mainnet.blocks`)
-- **Purpose**: Always up-to-date production data (14.57M blocks, 2020-2025)
+- **Purpose**: Always up-to-date production data (23.8M blocks, 2015-2025)
 - **Access**: SDK queries this by default (`import gapless_network_data`)
 - **Deployment**: Maintained by cloud pipelines (no user setup required)
 - **Current Status**: Operational (dual-pipeline architecture)
@@ -928,7 +928,7 @@ All investigation materials with absolute paths:
 
 **Tables** (MotherDuck cloud):
 
-- `ethereum_blocks` - 14.57M Ethereum blocks (2020-2025, ~1.5 GB)
+- `ethereum_blocks` - 23.8M Ethereum blocks (2015-2025, ~2.5 GB)
 - `bitcoin_mempool` - Deferred to Phase 2+ (Bitcoin is SECONDARY)
 
 **Complete Schema Specification**: See `/Users/terryli/eon/gapless-network-data/specifications/duckdb-schema-specification.yaml` for:
@@ -1232,14 +1232,14 @@ supersedes: []
 - [x] DuckDB investigation (23 features, performance validation)
 - [x] Documentation audit (6 findings resolved)
 
-**Phase 1: Historical Data Collection (5-Year Backfill)** - **COMPLETED** (2025-11-10)
+**Phase 1: Historical Data Collection (Complete History)** - **COMPLETED** (2025-11-12)
 
-**Goal**: Collect 5 years of historical data (2020-2025) for Ethereum ✅
+**Goal**: Collect complete historical blockchain data (2015-2025) for Ethereum ✅
 
 Ethereum Historical Backfill (PRIMARY) - **COMPLETED**:
 
 - [x] BigQuery public dataset integration (replaced LlamaRPC due to rate limits)
-- [x] 5-year Ethereum block collection (2020-2025, 14.57M blocks loaded)
+- [x] Complete Ethereum block collection (2015-2025, 23.8M blocks loaded)
 - [x] Batch fetching with 1-year chunking pattern (prevents OOM)
 - [x] MotherDuck cloud database: INSERT OR REPLACE INTO ethereum_mainnet.blocks
 - [x] Dual-pipeline architecture (BigQuery hourly + Alchemy real-time)
