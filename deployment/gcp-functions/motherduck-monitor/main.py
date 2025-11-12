@@ -50,6 +50,12 @@ STALE_THRESHOLD_SECONDS = int(os.environ.get('STALE_THRESHOLD_SECONDS', '300')) 
 # Healthchecks.io ping URL (from environment)
 HEALTHCHECKS_PING_URL = os.environ.get('HEALTHCHECKS_PING_URL', '')
 
+# Validation method: Deterministic block number continuity checking
+# Instead of timestamp gaps (which are normal network behavior), we check:
+# - Missing block numbers in sequence
+# - Parent hash chain continuity (future enhancement)
+# - Transaction index continuity within blocks (future enhancement)
+
 
 # ================================================================================
 # Secret Management (GCP Secret Manager)
@@ -103,7 +109,13 @@ def load_secrets() -> dict[str, str]:
 
 def detect_gaps(conn: duckdb.DuckDBPyConnection) -> tuple[list[dict], int]:
     """
-    Detect gaps in block timestamps using DuckDB LAG() window function.
+    Detect data collection gaps using deterministic block number validation.
+
+    Uses Ethereum's deterministic counters (block numbers) rather than timestamps
+    to detect actual missing data vs normal network timing variations.
+
+    Checks the ENTIRE blockchain history in the database (not just a time window)
+    since deterministic validation is computationally efficient.
 
     Args:
         conn: DuckDB connection
@@ -114,61 +126,80 @@ def detect_gaps(conn: duckdb.DuckDBPyConnection) -> tuple[list[dict], int]:
     Raises:
         Exception: If query fails
     """
-    print(f"[GAP DETECTION] Analyzing blocks...")
-    print(f"  Time window: {TIME_WINDOW_START_DAYS} days ago → {TIME_WINDOW_END_MINUTES} min ago")
-    print(f"  Gap threshold: >{GAP_THRESHOLD_SECONDS}s")
+    print(f"[GAP DETECTION] Analyzing complete block sequence...")
+    print(f"  Method: Block number continuity (deterministic)")
+    print(f"  Scope: Entire blockchain history in database")
 
-    query = f"""
-    WITH gaps AS (
-        SELECT
-            number AS block_number,
-            timestamp,
-            LAG(timestamp) OVER (ORDER BY timestamp) AS prev_timestamp,
-            EXTRACT(EPOCH FROM (timestamp - LAG(timestamp) OVER (ORDER BY timestamp))) AS gap_seconds
-        FROM {MD_TABLE}
-        WHERE timestamp BETWEEN (CURRENT_TIMESTAMP - INTERVAL '{TIME_WINDOW_START_DAYS} days')
-                            AND (CURRENT_TIMESTAMP - INTERVAL '{TIME_WINDOW_END_MINUTES} minutes')
-    )
-    SELECT
-        block_number,
-        timestamp,
-        prev_timestamp,
-        gap_seconds,
-        ROUND(gap_seconds / 60.0, 2) AS gap_minutes
-    FROM gaps
-    WHERE gap_seconds > {GAP_THRESHOLD_SECONDS}
-    ORDER BY gap_seconds DESC
-    LIMIT 100
-    """
-
-    result = conn.execute(query).fetchall()
-
-    # Count total blocks checked
-    count_query = f"""
-    SELECT COUNT(*)
+    # Get block range for entire database
+    range_query = f"""
+    SELECT MIN(number) as min_block, MAX(number) as max_block, COUNT(*) as total_blocks
     FROM {MD_TABLE}
-    WHERE timestamp BETWEEN (CURRENT_TIMESTAMP - INTERVAL '{TIME_WINDOW_START_DAYS} days')
-                        AND (CURRENT_TIMESTAMP - INTERVAL '{TIME_WINDOW_END_MINUTES} minutes')
     """
-    total_blocks = conn.execute(count_query).fetchone()[0]
+    range_result = conn.execute(range_query).fetchone()
+    min_block = range_result[0]
+    max_block = range_result[1]
+    total_blocks = range_result[2]
 
-    # Convert to list of dicts
+    expected_blocks = (max_block - min_block + 1) if min_block is not None else 0
+
+    print(f"  Block range: {min_block:,} → {max_block:,}")
+    print(f"  Expected blocks: {expected_blocks:,}")
+    print(f"  Actual blocks: {total_blocks:,}")
+
+    # Check for missing blocks using efficient comparison
+    # If expected == actual, no need to search for specific missing blocks
+    missing_count = expected_blocks - total_blocks
     gaps = []
-    for row in result:
-        gaps.append({
-            'block_number': row[0],
-            'timestamp': row[1],
-            'prev_timestamp': row[2],
-            'gap_seconds': row[3],
-            'gap_minutes': row[4],
-        })
 
-    print(f"  Blocks checked: {total_blocks:,}")
-    print(f"  Gaps found: {len(gaps)}")
+    if missing_count > 0:
+        # Only search for specific missing blocks if there are gaps
+        # Use efficient chunking to avoid memory issues
+        print(f"  Searching for {missing_count} missing blocks...")
 
-    if gaps:
-        max_gap = gaps[0]
-        print(f"  ⚠️  Largest gap: {max_gap['gap_seconds']:.0f}s ({max_gap['gap_minutes']:.1f} min)")
+        # Sample approach: Check gaps between consecutive blocks
+        gap_query = f"""
+        WITH block_gaps AS (
+            SELECT
+                number as current_block,
+                LAG(number) OVER (ORDER BY number) as prev_block,
+                number - LAG(number) OVER (ORDER BY number) - 1 as missing_count
+            FROM {MD_TABLE}
+            WHERE number BETWEEN {min_block} AND {max_block}
+        )
+        SELECT current_block, prev_block, missing_count
+        FROM block_gaps
+        WHERE missing_count > 0
+        ORDER BY missing_count DESC
+        LIMIT 20
+        """
+
+        result = conn.execute(gap_query).fetchall()
+
+        for row in result:
+            current_block = row[0]
+            prev_block = row[1]
+            gap_size = row[2]
+
+            # Report the first missing block in each gap
+            first_missing = prev_block + 1
+            gaps.append({
+                'block_number': first_missing,
+                'gap_type': 'missing_block',
+                'description': f'{int(gap_size)} blocks missing: {first_missing:,} to {current_block-1:,}',
+            })
+
+    print(f"  Missing blocks: {missing_count}")
+
+    if missing_count > 0:
+        print(f"  ⚠️  DATA COLLECTION ISSUE: {missing_count} blocks missing from sequence")
+        if missing_count <= 10:
+            for gap in gaps[:10]:
+                print(f"     Missing: Block {gap['block_number']:,}")
+        else:
+            print(f"     First missing: Block {gaps[0]['block_number']:,}")
+            print(f"     Last missing: Block {gaps[-1]['block_number']:,}")
+    else:
+        print(f"  ✅ All blocks present in sequence (no data gaps)")
 
     return gaps, total_blocks
 
@@ -246,7 +277,7 @@ def send_pushover_notification(
     ulid = str(ULID())
 
     # Append ULID to message (at bottom)
-    message_with_id = f"{message}\n\nID: {ulid}"
+    message_with_id = f"{message}\n\nULID: {ulid}"
 
     url = "https://api.pushover.net/1/messages.json"
     data = {
@@ -347,39 +378,61 @@ def monitor(request):
         if is_healthy:
             title = "✅ MOTHERDUCK HEALTHY"
             message = (
-                f"Blocks: {total_blocks_checked:,}\n"
+                f"Total blocks: {total_blocks_checked:,}\n"
                 f"Latest: {latest_block:,}\n"
-                f"Age: {age_seconds}s ago\n"
-                f"Gaps: 0\n\n"
-                f"Time window: {TIME_WINDOW_START_DAYS}d → {TIME_WINDOW_END_MINUTES}m ago"
+                f"Age: {age_seconds}s\n"
+                f"Missing blocks: 0\n"
+                f"Sequence: Complete\n\n"
+                f"Validation: Entire blockchain history"
             )
         else:
             issues = []
             if not is_fresh:
                 issues.append(f"STALE: {age_seconds}s ({age_seconds/60:.1f} min)")
             if gaps:
-                max_gap = gaps[0]
-                issues.append(f"GAPS: {len(gaps)} found, largest {max_gap['gap_seconds']:.0f}s")
+                issues.append(f"MISSING BLOCKS: {len(gaps)} blocks not in database")
 
             title = "❌ MOTHERDUCK UNHEALTHY"
+
+            # Build gap details for missing blocks
+            gap_details = ""
+            if gaps:
+                if len(gaps) <= 5:
+                    # Show all missing blocks if <= 5
+                    missing_list = ", ".join([str(g['block_number']) for g in gaps])
+                    gap_details = f"\n\nMissing blocks: {missing_list}"
+                else:
+                    # Show first and last if > 5
+                    first_missing = gaps[0]['block_number']
+                    last_missing = gaps[-1]['block_number']
+                    gap_details = (
+                        f"\n\nMissing blocks:\n"
+                        f"First: {first_missing:,}\n"
+                        f"Last: {last_missing:,}\n"
+                        f"Total: {len(gaps)}"
+                    )
+
             message = (
                 f"Issues: {', '.join(issues)}\n\n"
                 f"Latest block: {latest_block:,}\n"
                 f"Age: {age_seconds}s\n"
-                f"Gaps: {len(gaps)}\n\n"
-                f"Time window: {TIME_WINDOW_START_DAYS}d → {TIME_WINDOW_END_MINUTES}m ago"
+                f"Missing: {len(gaps)} blocks"
+                f"{gap_details}\n\n"
+                f"Validation: Entire blockchain history"
             )
 
         diagnostic_data = f"{title}\n\n{message}"
 
         # Step 7: Send notifications
         print("[NOTIFICATIONS]")
+        # Emergency priority only for actual problems, regular priority when healthy
+        notification_priority = 0 if is_healthy else 2
         send_pushover_notification(
             secrets["pushover_token"],
             secrets["pushover_user"],
             message,
             title,
-            priority=2  # Emergency
+            priority=notification_priority
         )
 
         if HEALTHCHECKS_PING_URL:
