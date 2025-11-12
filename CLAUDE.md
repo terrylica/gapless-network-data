@@ -111,7 +111,7 @@ Coordinates all project phases, specifications, and implementation work.
 ### Data Sources Research
 
 - [Research Index](/Users/terryli/eon/gapless-network-data/docs/research/INDEX.md) - Free on-chain network metrics sources (2025-11-03)
-- [LlamaRPC Deep Dive](/Users/terryli/eon/gapless-network-data/docs/llamarpc/INDEX.md) - Comprehensive Ethereum RPC research (2025-11-03)
+- [LlamaRPC Deep Dive](/Users/terryli/eon/gapless-network-data/docs/archive/llamarpc-research/INDEX.md) - Comprehensive Ethereum RPC research (archived 2025-11-12)
 - [Ethereum Collector POC](/Users/terryli/eon/gapless-network-data/scratch/ethereum-collector-poc/ETHEREUM_COLLECTOR_POC_REPORT.md) - Rate limiting validation and RPC provider options (2025-11-05)
 
 **Focus**: On-chain network metrics (gas prices, mempool congestion, block data, transaction counts)
@@ -125,7 +125,7 @@ Coordinates all project phases, specifications, and implementation work.
 **Researched Sources (Not Used in Production)**:
 
 - **LlamaRPC**: Rejected due to rate limits (1.37 RPS sustained, 110-day timeline) - see [POC Report](/Users/terryli/eon/gapless-network-data/scratch/ethereum-collector-poc/ETHEREUM_COLLECTOR_POC_REPORT.md)
-  - Research documentation preserved: [LlamaRPC Deep Dive](/Users/terryli/eon/gapless-network-data/docs/llamarpc/INDEX.md)
+  - Research documentation archived: [LlamaRPC Deep Dive](/Users/terryli/eon/gapless-network-data/docs/archive/llamarpc-research/INDEX.md)
 - **Bitcoin**: mempool.space (future work, M5 recent / H12 historical, 2016+, no auth)
 - **Multi-chain**: Dune Analytics (SQL aggregation, block-level, 2020+, free signup)
 

@@ -1,0 +1,251 @@
+openapi: 3.1.0
+info:
+  title: Project Cleanup Phase - SSoT Plan
+  version: 1.0.0
+  description: |
+    Systematic cleanup of legacy code, outdated documentation, and build artifacts.
+    Addresses findings from 2025-11-12 comprehensive project survey.
+
+    Status: In Progress
+    Started: 2025-11-12
+    Target: Same-day completion
+
+paths: {}
+
+components:
+  schemas:
+    ProjectCleanupPhase:
+      type: object
+      required:
+        - phase_id
+        - status
+        - tasks
+        - slos
+      properties:
+        phase_id:
+          type: string
+          enum: [project-cleanup-immediate]
+        status:
+          type: string
+          enum: [in_progress, completed]
+        started:
+          type: string
+          format: date-time
+        completed:
+          type: string
+          format: date-time
+        tasks:
+          type: array
+          items:
+            $ref: '#/components/schemas/Task'
+        slos:
+          $ref: '#/components/schemas/SLOs'
+
+    Task:
+      type: object
+      required:
+        - task_id
+        - intent
+        - status
+        - validation
+      properties:
+        task_id:
+          type: string
+        intent:
+          type: string
+          description: What needs to be achieved (not how)
+        status:
+          type: string
+          enum: [pending, in_progress, completed, blocked]
+        files:
+          type: array
+          items:
+            type: string
+          description: Files to be modified or deleted
+        validation:
+          $ref: '#/components/schemas/Validation'
+        completed_at:
+          type: string
+          format: date-time
+
+    Validation:
+      type: object
+      required:
+        - method
+        - criteria
+      properties:
+        method:
+          type: string
+          enum: [file_exists_check, grep, git_status, tree_structure]
+        criteria:
+          type: string
+          description: Success criteria for validation
+
+    SLOs:
+      type: object
+      required:
+        - availability
+        - correctness
+        - observability
+        - maintainability
+      properties:
+        availability:
+          type: string
+          description: Uptime/execution success rate target
+        correctness:
+          type: string
+          description: Accuracy target for cleanup operations
+        observability:
+          type: string
+          description: Ability to verify cleanup was successful
+        maintainability:
+          type: string
+          description: Time to execute cleanup operations
+
+x-plan:
+  phase_id: project-cleanup-immediate
+  status: in_progress
+  started: "2025-11-12T02:45:00Z"
+
+  tasks:
+    - task_id: CLEANUP-001
+      intent: Remove git-tracked build artifacts (coverage reports)
+      status: pending
+      files:
+        - .coverage
+        - coverage.json
+      changes_required:
+        - Execute git rm --cached for coverage artifacts
+        - Verify .gitignore contains coverage patterns
+        - Confirm files removed from git index
+      validation:
+        method: git_status
+        criteria: |
+          - git status must NOT show .coverage or coverage.json as tracked
+          - Files can exist on disk but not in git index
+          - git ls-files .coverage coverage.json must return empty
+
+    - task_id: CLEANUP-002
+      intent: Remove system metadata files (.DS_Store)
+      status: pending
+      files:
+        - All .DS_Store files (16 found via find command)
+      changes_required:
+        - Execute find . -name .DS_Store -delete
+        - Stage deletion with git add -u
+        - Verify .gitignore contains .DS_Store pattern
+      validation:
+        method: file_exists_check
+        criteria: |
+          - find . -name .DS_Store must return empty
+          - git status must show deletions staged
+          - .gitignore must contain .DS_Store pattern (line 57)
+
+    - task_id: CLEANUP-003
+      intent: Remove link checker temporary artifacts
+      status: pending
+      files:
+        - .lychee-results.json
+        - .lychee-results.txt
+        - .lycheecache
+      changes_required:
+        - Delete files if they exist
+        - Verify .gitignore contains lychee patterns
+      validation:
+        method: file_exists_check
+        criteria: |
+          - Files must not exist on disk
+          - .gitignore lines 43-45 must contain lychee patterns
+
+    - task_id: CLEANUP-004
+      intent: Archive LlamaRPC research documentation (88 files)
+      status: pending
+      files:
+        - docs/llamarpc/ (entire directory)
+      changes_required:
+        - Create docs/archive/ directory
+        - Move docs/llamarpc/ to docs/archive/llamarpc-research/
+        - Update CLAUDE.md reference to archived path
+        - Add archive README.md explaining superseded status
+      validation:
+        method: tree_structure
+        criteria: |
+          - docs/llamarpc/ must NOT exist
+          - docs/archive/llamarpc-research/ must exist with 88 files
+          - docs/archive/README.md must explain archive purpose
+          - CLAUDE.md must reference archived path
+
+    - task_id: CLEANUP-005
+      intent: Update test version assertion to match current version
+      status: pending
+      files:
+        - tests/test_api.py
+      changes_required:
+        - Change line 12 from "0.1.0" to "3.1.0" (current version)
+        - OR use dynamic version check from package metadata
+      validation:
+        method: grep
+        criteria: |
+          - tests/test_api.py must NOT contain assert for "0.1.0"
+          - Must contain current version "3.1.0" or dynamic check
+
+    - task_id: CLEANUP-006
+      intent: Determine GCP Cloud Functions deployment status
+      status: blocked
+      depends_on: user_clarification
+      files:
+        - deployment/gcp-functions/motherduck-monitor/
+      question: |
+        GCP Cloud Functions (deployment/gcp-functions/motherduck-monitor/) vs
+        Oracle Cloud (deployment/oracle/):
+
+        - Are BOTH active (dual monitoring)?
+        - Did Oracle REPLACE GCP Functions?
+        - Should GCP Functions be deleted or README updated?
+      validation:
+        method: grep
+        criteria: |
+          Based on user response:
+          - If DELETED: directory must not exist
+          - If KEPT: README must explain relationship with Oracle Cloud
+          - CLAUDE.md must accurately reflect deployment status
+
+  slos:
+    availability:
+      target: "100%"
+      measurement: All cleanup operations execute without errors
+
+    correctness:
+      target: "100%"
+      measurement: |
+        File operations match intent:
+        - Deleted files no longer exist
+        - Moved files in correct location
+        - Git index reflects changes
+        - No unintended deletions
+
+    observability:
+      target: "100%"
+      measurement: |
+        All changes verifiable via:
+        - git status (tracked file changes)
+        - find/ls commands (file existence)
+        - tree command (directory structure)
+        - grep (content verification)
+
+    maintainability:
+      target: "<30 minutes"
+      measurement: Time from task start to all validations passing
+
+  dependencies:
+    - Git working directory must be clean before starting
+    - User clarification needed for GCP Functions status (CLEANUP-006)
+
+  risks:
+    - Accidental deletion of needed files (mitigated by git)
+    - Breaking references to archived LlamaRPC docs (addressed in CLEANUP-004)
+
+x-version-history:
+  - version: 1.0.0
+    date: "2025-11-12"
+    changes: Initial plan for project cleanup and pruning
