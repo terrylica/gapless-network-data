@@ -1,3 +1,14 @@
+# [3.1.0](https://github.com/terrylica/gapless-network-data/compare/v3.0.0...v3.1.0) (2025-11-12)
+
+
+### Features
+
+* **monitoring:** add gap analysis utility scripts ([dc21b35](https://github.com/terrylica/gapless-network-data/commit/dc21b356066fe47e13f04dce0cb4e7c92162a899))
+* **monitoring:** increase staleness threshold to 960s (16 min) for batch mode compatibility ([eb8145f](https://github.com/terrylica/gapless-network-data/commit/eb8145f11e931613da4e961de4fe8e3ed3b3bd19))
+* **monitoring:** replace timestamp-based gap detection with deterministic block number validation ([0b836a4](https://github.com/terrylica/gapless-network-data/commit/0b836a425d077ff98c5181de0fad324b023083b7))
+* **oracle:** add automatic retry script for ARM instance provisioning ([444bf06](https://github.com/terrylica/gapless-network-data/commit/444bf0657991c5ab060876db66aac15f07fdae36))
+* **vm:** add batch write mode to reduce MotherDuck compute units by 25x ([21d4506](https://github.com/terrylica/gapless-network-data/commit/21d4506d838637e2fc98559999b258378bdef01e))
+
 # [3.0.0](https://github.com/terrylica/gapless-network-data/compare/v2.7.0...v3.0.0) (2025-11-11)
 
 ### Features
