@@ -67,6 +67,35 @@ Alchemy WebSocket (newHeads) → realtime_collector.py → MotherDuck (ethereum_
 ```
 
 **Collection rate**: ~12 seconds per block (matches Ethereum block time)
+**Write mode**: Batch (default) or Real-time
+
+### Batch vs Real-Time Modes
+
+**Batch Mode (Default, Recommended)**:
+
+- Buffers blocks in memory for 5 minutes (~25 blocks)
+- Writes all buffered blocks in a single batch INSERT
+- **Reduces MotherDuck compute units by 25x** (216K → 8.6K writes/month)
+- **Stays within free tier** (8.6K × 2 CU = 17,280 CU/month < 36,000 limit)
+- Data lag: Max 5 minutes
+- Set via: `Environment="BATCH_INTERVAL_SECONDS=300"` (default in service file)
+
+**Real-Time Mode (Optional)**:
+
+- Writes each block immediately upon receipt (~12 second lag)
+- **Exceeds free tier** (216K × 2 CU = 432,000 CU/month >> 36,000 limit)
+- Requires MotherDuck paid plan ($25/month minimum)
+- Set via: `Environment="BATCH_INTERVAL_SECONDS=0"`
+
+**Switching Modes**:
+
+```bash
+# Edit service file to change BATCH_INTERVAL_SECONDS
+gcloud compute ssh eth-realtime-collector --zone=us-east1-b --command='sudo nano /etc/systemd/system/eth-collector.service'
+
+# Reload systemd and restart service
+gcloud compute ssh eth-realtime-collector --zone=us-east1-b --command='sudo systemctl daemon-reload && sudo systemctl restart eth-collector'
+```
 
 ## Security
 

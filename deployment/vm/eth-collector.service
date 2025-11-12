@@ -1,12 +1,13 @@
 [Unit]
-Description=Ethereum Real-Time Block Collector (Secure with Secret Manager)
+Description=Ethereum Real-Time Block Collector (Batch Mode: 5min flush)
 After=network.target
 
 [Service]
 Type=simple
-User=%i
-WorkingDirectory=/home/%i/eth-collector
-ExecStart=/usr/bin/python3 /home/%i/eth-collector/realtime_collector.py
+User=terry_eonlabs_com
+WorkingDirectory=/home/terry_eonlabs_com/eth-collector
+Environment="BATCH_INTERVAL_SECONDS=300"
+ExecStart=/usr/bin/python3 -u /home/terry_eonlabs_com/eth-collector/realtime_collector.py
 Restart=always
 RestartSec=10
 StandardOutput=journal
