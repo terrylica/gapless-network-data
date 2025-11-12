@@ -1,0 +1,211 @@
+openapi: 3.1.0
+info:
+  title: Documentation Fix Phase - SSoT Plan
+  version: 1.0.0
+  description: |
+    Immediate documentation fixes to align with operational production system.
+    Addresses critical gaps identified in 2025-11-12 audit.
+
+    Status: In Progress
+    Started: 2025-11-12
+    Target: Same-day completion
+
+paths: {}
+
+components:
+  schemas:
+    DocumentationFixPhase:
+      type: object
+      required:
+        - phase_id
+        - status
+        - tasks
+        - slos
+      properties:
+        phase_id:
+          type: string
+          enum: [documentation-fix-immediate]
+        status:
+          type: string
+          enum: [in_progress, completed]
+        started:
+          type: string
+          format: date-time
+        completed:
+          type: string
+          format: date-time
+        tasks:
+          type: array
+          items:
+            $ref: '#/components/schemas/Task'
+        slos:
+          $ref: '#/components/schemas/SLOs'
+
+    Task:
+      type: object
+      required:
+        - task_id
+        - intent
+        - status
+        - validation
+      properties:
+        task_id:
+          type: string
+        intent:
+          type: string
+          description: What needs to be achieved (not how)
+        status:
+          type: string
+          enum: [pending, in_progress, completed, blocked]
+        target_file:
+          type: string
+        validation:
+          $ref: '#/components/schemas/Validation'
+        completed_at:
+          type: string
+          format: date-time
+
+    Validation:
+      type: object
+      required:
+        - method
+        - criteria
+      properties:
+        method:
+          type: string
+          enum: [grep, diff, gcloud_query, duckdb_query]
+        criteria:
+          type: string
+          description: Success criteria for validation
+
+    SLOs:
+      type: object
+      required:
+        - availability
+        - correctness
+        - observability
+        - maintainability
+      properties:
+        availability:
+          type: string
+          description: Uptime/execution success rate target
+        correctness:
+          type: string
+          description: Accuracy target for documentation
+        observability:
+          type: string
+          description: Ability to verify documentation accuracy
+        maintainability:
+          type: string
+          description: Time to update documentation
+
+x-plan:
+  phase_id: documentation-fix-immediate
+  status: in_progress
+  started: "2025-11-12T02:10:00Z"
+
+  tasks:
+    - task_id: DOC-001
+      intent: Reflect operational dual-pipeline architecture in OVERVIEW.md
+      status: pending
+      target_file: docs/architecture/OVERVIEW.md
+      changes_required:
+        - Remove "Pending implementation" status
+        - Document BigQuery + Alchemy WebSocket sources
+        - Document MotherDuck cloud storage
+        - Add 23.8M blocks operational status
+        - Update version to 1.0.0
+      validation:
+        method: grep
+        criteria: |
+          - Must contain "operational"
+          - Must contain "BigQuery"
+          - Must contain "MotherDuck"
+          - Must contain "23.8M blocks"
+          - Must NOT contain "LlamaRPC"
+          - Must NOT contain "Parquet files"
+          - Must NOT contain "Pending"
+
+    - task_id: DOC-002
+      intent: Provide complete Ethereum block schema in DATA_FORMAT.md
+      status: pending
+      target_file: docs/architecture/DATA_FORMAT.md
+      changes_required:
+        - Add 5 missing fields (difficulty, total_difficulty, size, blob_gas_used, excess_blob_gas)
+        - Document snake_case naming convention
+        - Document PRIMARY KEY on number field
+        - Update storage from Parquet to MotherDuck
+      validation:
+        method: grep
+        criteria: |
+          - Must contain all 11 fields: timestamp, number, gas_limit, gas_used,
+            base_fee_per_gas, transaction_count, difficulty, total_difficulty,
+            size, blob_gas_used, excess_blob_gas
+          - Must contain "PRIMARY KEY"
+          - Must contain "snake_case"
+
+    - task_id: DOC-003
+      intent: Correct version and data scope in CLAUDE.md
+      status: pending
+      target_file: CLAUDE.md
+      changes_required:
+        - Update version from v2.4.0 to v3.0.0
+        - Update block count from 14.57M to 23.8M
+        - Update date range from 2020-2025 to 2015-2025
+      validation:
+        method: grep
+        criteria: |
+          - Must contain "v3.0.0"
+          - Must contain "23.8M blocks"
+          - Must contain "2015-2025"
+          - Must NOT contain "v2.4.0"
+          - Must NOT contain "14.57M"
+
+    - task_id: DOC-004
+      intent: Verify documentation matches production reality
+      status: pending
+      validation:
+        method: gcloud_query
+        criteria: |
+          - GCP resources exist and are RUNNING
+          - MotherDuck block count >= 23.8M
+          - Git tag v3.0.0 exists
+
+  slos:
+    availability:
+      target: "100%"
+      measurement: All 3 documentation files updated without errors
+
+    correctness:
+      target: "100%"
+      measurement: |
+        Documentation matches production reality:
+        - Version matches git tags
+        - Block count within 1% of actual
+        - Architecture matches deployed GCP resources
+
+    observability:
+      target: "100%"
+      measurement: |
+        All changes verifiable via:
+        - grep patterns
+        - git diff
+        - gcloud queries
+
+    maintainability:
+      target: "<30 minutes"
+      measurement: Time from task start to all validations passing
+
+  dependencies:
+    - Git version v3.0.0 must exist or be created
+    - GCP resources must be operational
+    - MotherDuck database must be accessible
+
+  risks:
+    - Block count may increase during fix (acceptable if within 5%)
+    - Git tag v3.0.0 may not exist (will create via semantic-release)
+
+x-version-history:
+  - version: 1.0.0
+    date: "2025-11-12"
+    changes: Initial plan for immediate documentation fixes
