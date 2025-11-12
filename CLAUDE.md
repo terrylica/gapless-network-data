@@ -396,55 +396,33 @@ See `.claude/skills/motherduck-pipeline-operations/` for complete workflows and 
 - Compute Engine: $0 (e2-micro within free tier)
 - MotherDuck: $0 (1.5 GB storage, <10 GB queries within free tier)
 
-## Oracle Cloud Monitoring
+## Gap Detection Monitoring
 
-**Status**: Implementation complete (2025-11-11)
-**Specification**: `/Users/terryli/eon/gapless-network-data/specifications/oracle-motherduck-monitoring.yaml`
+**Status**: Operational (deployed 2025-11-11)
+**Platform**: GCP Cloud Functions gen2 (Python 3.12)
+**Location**: `deployment/gcp-functions/motherduck-monitor/`
 
 ### Overview
 
-Oracle Cloud-based monitoring for MotherDuck Ethereum database gap detection. Separate from GCP data collection infrastructure.
+Serverless monitoring for MotherDuck Ethereum database gaps and staleness, separate from data collection infrastructure.
 
-**Architecture**: OCI Compute VM + cron + OCI Vault
+**Architecture**: Cloud Function + Cloud Scheduler + Secret Manager
 
 **Monitoring Scope**:
 
-- Gap Detection: Detect >15s gaps in Ethereum block timestamps (1 year → 3 min ago)
-- Staleness Detection: Alert if latest block >5 minutes old
-- Notifications: Pushover emergency alerts + Healthchecks.io Dead Man's Switch
+- Gap Detection: Deterministic block number continuity validation (entire blockchain history)
+- Staleness Detection: Alert if latest block >960s old (16 min threshold for batch mode)
+- Notifications: Pushover (priority=2, all executions) + Healthchecks.io Dead Man's Switch
 
-**Cost**: $0/month (OCI Always Free Tier)
+**Cost**: $0/month (240 invocations << 2M free tier)
 
-### Files
+### Operational Status
 
-| File                                               | Purpose                                        | Status      |
-| -------------------------------------------------- | ---------------------------------------------- | ----------- |
-| `specifications/oracle-motherduck-monitoring.yaml` | Complete OpenAPI 3.1.0 specification with SLOs | ✅ Complete |
-| `deployment/oracle/migrate_secrets.py`             | Automated Doppler → OCI Vault migration        | ✅ Complete |
-| `deployment/oracle/motherduck_monitor.py`          | Gap detection + monitoring script              | ✅ Complete |
-| `deployment/oracle/deploy.sh`                      | SCP deployment automation                      | ✅ Complete |
-| `deployment/oracle/provision.sh`                   | Infrastructure provisioning automation         | ✅ Complete |
-| `deployment/oracle/keep_alive.sh`                  | Hourly CPU usage (prevents idle reclamation)   | ✅ Complete |
-| `deployment/oracle/README.md`                      | Complete deployment guide                      | ✅ Complete |
-
-### SLOs
-
-**Availability**: Monitoring checks execute every 3 hours without manual intervention
-
-- Measurement: Percentage of cron-triggered executions that complete successfully
-
-**Correctness**: 100% accurate gap detection with no false positives
-
-- Gap threshold: >15 seconds (Ethereum ~12s block time + 3s tolerance)
-- Time window: 1 year historical → 3 minutes recent (prevents false positives)
-
-**Observability**: 100% check execution tracking with diagnostic data
-
-- Notification format: Pushover emergency (all results) + Healthchecks.io Dead Man's Switch
-
-**Maintainability**: <30 minutes for common operations
-
-- Validated: Critical infrastructure failure resolved in <30 minutes
+**Function**: `motherduck-gap-detector` - ACTIVE (us-east1)
+**Last Updated**: 2025-11-12 02:05:59
+**Scheduler**: `motherduck-monitor-trigger` - ENABLED
+**Schedule**: Every 3 hours (`0 */3 * * *`)
+**Last Execution**: 2025-11-12 20:00:15
 
 ### Gap Detection Algorithm
 
@@ -454,60 +432,31 @@ Uses DuckDB LAG() window function (20x faster than Python iteration):
 WITH gaps AS (
     SELECT
         number AS block_number,
-        timestamp,
-        LAG(timestamp) OVER (ORDER BY timestamp) AS prev_timestamp,
-        EXTRACT(EPOCH FROM (timestamp - LAG(timestamp) OVER (ORDER BY timestamp))) AS gap_seconds
+        LAG(number) OVER (ORDER BY number) AS prev_block,
+        number - LAG(number) OVER (ORDER BY number) AS gap_size
     FROM ethereum_mainnet.blocks
-    WHERE timestamp BETWEEN (CURRENT_TIMESTAMP - INTERVAL '1 year')
-                        AND (CURRENT_TIMESTAMP - INTERVAL '3 minutes')
 )
-SELECT * FROM gaps WHERE gap_seconds > 15
+SELECT * FROM gaps WHERE gap_size > 1
 ```
-
-### Idle Reclamation Prevention
-
-**Oracle Cloud Policy**: VMs with <20% CPU/network/memory for 7 consecutive days are reclaimed on Free Tier accounts.
-
-**Solution**: Automated keep-alive mechanism (no PAYG upgrade required)
-
-**Keep-Alive Strategy**:
-
-- Script: `deployment/oracle/keep_alive.sh`
-- Schedule: Every hour via cron (0 \* \* \* \*)
-- CPU Usage: ~25% for 30 seconds per hour
-- Method: `stress-ng` (precise control) or `dd + sha256sum` (fallback)
-- Logging: `~/keep_alive.log` with automatic rotation
 
 ### Deployment
 
-Complete deployment requires user action (OCI account required):
-
 ```bash
-# 1. Provision infrastructure
-cd deployment/oracle
-./provision.sh full
+cd deployment/gcp-functions/motherduck-monitor
 
-# 2. Migrate secrets from Doppler to OCI Vault
-uv run migrate_secrets.py
-
-# 3. Deploy monitoring script to VM
-./deploy.sh deploy
-
-# 4. Configure secrets on VM
-ssh -i ~/.ssh/motherduck-monitor opc@<VM_IP>
-vi ~/.env-motherduck  # Add secret OCIDs from migrate_secrets.py output
-
-# 5. Test manual execution
-./deploy.sh test
-
-# 6. Configure monitoring cron (every 3 hours)
-./deploy.sh cron
-
-# 7. Configure keep-alive (prevents idle reclamation)
-./deploy.sh keep-alive
+gcloud functions deploy motherduck-gap-detector \
+  --gen2 \
+  --runtime=python312 \
+  --region=us-east1 \
+  --source=. \
+  --entry-point=monitor \
+  --trigger-http \
+  --no-allow-unauthenticated \
+  --service-account=motherduck-monitor-sa@eonlabs-ethereum-bq.iam.gserviceaccount.com \
+  --max-instances=1 \
+  --timeout=540s \
+  --memory=512MB
 ```
-
-**Documentation**: See `deployment/oracle/README.md` for complete guide, troubleshooting, and verification commands.
 
 ### Exit Codes
 
