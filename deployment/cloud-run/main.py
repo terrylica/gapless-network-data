@@ -133,7 +133,7 @@ def load_to_motherduck(pa_table):
     os.environ['motherduck_token'] = token
 
     # Connect
-    conn = duckdb.connect('md:')
+    conn = duckdb.connect('md:', config={'connect_timeout': 30000})  # 30 seconds
     print(f"✅ Connected to MotherDuck")
 
     # Create database and use it
@@ -213,6 +213,10 @@ def main():
             print("\n" + "=" * 80)
             print("✅ UPDATE COMPLETE (no new blocks)")
             print("=" * 80)
+
+            # Ping Healthchecks.io on success (no new blocks is OK)
+            ping_healthcheck(success=True)
+
             return 0
 
         # Load to MotherDuck

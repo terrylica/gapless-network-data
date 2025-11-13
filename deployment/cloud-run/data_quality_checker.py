@@ -12,11 +12,11 @@ Environment Variables:
     GCP_PROJECT: GCP project ID (default: eonlabs-ethereum-bq)
     MD_DATABASE: MotherDuck database name (default: ethereum_mainnet)
     MD_TABLE: MotherDuck table name (default: blocks)
-    STALE_THRESHOLD_SECONDS: Maximum age before alert (default: 960)
+    STALE_THRESHOLD_SECONDS: Maximum age before alert (default: 600)
 
 Exit Codes:
-    0: Data is fresh (<960s old)
-    1: Data is stale (>960s old) or query failed
+    0: Data is fresh (<600s old)
+    1: Data is stale (>600s old) or query failed
 """
 
 import os
@@ -31,7 +31,7 @@ import requests
 GCP_PROJECT = os.environ.get('GCP_PROJECT', 'eonlabs-ethereum-bq')
 MD_DATABASE = os.environ.get('MD_DATABASE', 'ethereum_mainnet')
 MD_TABLE = os.environ.get('MD_TABLE', 'blocks')
-STALE_THRESHOLD_SECONDS = int(os.environ.get('STALE_THRESHOLD_SECONDS', '960'))
+STALE_THRESHOLD_SECONDS = int(os.environ.get('STALE_THRESHOLD_SECONDS', '600'))
 
 
 def get_secret(secret_id: str, project_id: str = GCP_PROJECT) -> str:
@@ -67,7 +67,10 @@ def check_data_freshness():
     healthcheck_url = get_secret('healthchecks-data-quality-url')
 
     print(f"[2/3] Querying MotherDuck: {MD_DATABASE}.{MD_TABLE}")
-    conn = duckdb.connect(f'md:{MD_DATABASE}?motherduck_token={motherduck_token}')
+    conn = duckdb.connect(
+        f'md:{MD_DATABASE}?motherduck_token={motherduck_token}',
+        config={'connect_timeout': 30000}  # 30 seconds
+    )
 
     result = conn.execute(f"""
         SELECT MAX(number), MAX(timestamp), COUNT(*)
@@ -150,6 +153,20 @@ def main():
         print(f"\n❌ FATAL ERROR: {e}")
         import traceback
         traceback.print_exc()
+
+        # Ping Healthchecks.io /fail (best-effort)
+        try:
+            healthcheck_url = get_secret('healthchecks-data-quality-url')
+            requests.post(
+                f"{healthcheck_url}/fail",
+                data=f"Fatal error: {e.__class__.__name__}: {e}",
+                timeout=10
+            )
+            print(f"   ✅ Pinged Healthchecks.io /fail")
+        except Exception as ping_error:
+            print(f"   ⚠️  Failed to ping Healthchecks.io: {ping_error}")
+            pass  # Don't mask original error
+
         return 1
 
 

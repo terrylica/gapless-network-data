@@ -118,7 +118,7 @@ def init_motherduck():
     """Initialize MotherDuck connection and ensure table exists."""
     print(f"[INIT] Connecting to MotherDuck database: {MD_DATABASE}")
 
-    conn = duckdb.connect('md:')
+    conn = duckdb.connect('md:', config={'connect_timeout': 30000})  # 30 seconds
 
     # Create database if needed
     conn.execute(f"CREATE DATABASE IF NOT EXISTS {MD_DATABASE}")

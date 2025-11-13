@@ -359,7 +359,7 @@ def monitor(request):
         # Step 2: Connect to MotherDuck
         print(f"[MOTHERDUCK] Connecting to {MD_DATABASE}...")
         conn_string = f'md:{MD_DATABASE}?motherduck_token={secrets["motherduck_token"]}'
-        conn = duckdb.connect(conn_string)
+        conn = duckdb.connect(conn_string, config={'connect_timeout': 30000})  # 30 seconds
         print(f"  ✅ Connected")
         print()
 
@@ -454,4 +454,21 @@ def monitor(request):
         print(f"\n❌ FATAL ERROR: {e}")
         import traceback
         traceback.print_exc()
+
+        # Ping Healthchecks.io /fail (best-effort)
+        if HEALTHCHECKS_PING_URL:
+            try:
+                diagnostic_data = f"❌ FATAL ERROR\n\n{e.__class__.__name__}: {e}"
+                with httpx.Client() as client:
+                    response = client.post(
+                        f"{HEALTHCHECKS_PING_URL}/fail",
+                        content=diagnostic_data,
+                        timeout=10
+                    )
+                    response.raise_for_status()
+                print(f"  ✅ Pinged Healthchecks.io /fail")
+            except Exception as ping_error:
+                print(f"  ⚠️  Failed to ping Healthchecks.io: {ping_error}")
+                pass  # Don't mask original error
+
         return ({"status": "fatal_error", "error": str(e)}, 503)

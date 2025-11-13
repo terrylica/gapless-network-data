@@ -122,7 +122,7 @@ def load_to_motherduck(pa_table):
 
     # Connect
     print(f"   Connecting to MotherDuck...")
-    conn = duckdb.connect('md:')
+    conn = duckdb.connect('md:', config={'connect_timeout': 30000})  # 30 seconds
 
     # Create database if needed
     conn.execute(f"CREATE DATABASE IF NOT EXISTS {MD_DATABASE}")
