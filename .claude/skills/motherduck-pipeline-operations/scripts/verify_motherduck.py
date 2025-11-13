@@ -46,7 +46,10 @@ def verify_database():
     token = get_motherduck_token()
 
     try:
-        conn = duckdb.connect(f'md:?motherduck_token={token}')
+        conn = duckdb.connect(
+            f'md:?motherduck_token={token}',
+            config={'connect_timeout': 30000}  # 30 seconds
+        )
 
         # Query database state
         result = conn.execute("""

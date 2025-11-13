@@ -129,7 +129,10 @@ def get_motherduck_token() -> str:
 def connect_motherduck() -> duckdb.DuckDBPyConnection:
     """Connect to MotherDuck database."""
     token = get_motherduck_token()
-    return duckdb.connect(f'md:?motherduck_token={token}')
+    return duckdb.connect(
+        f'md:?motherduck_token={token}',
+        config={'connect_timeout': 30000}  # 30 seconds
+    )
 
 
 # =============================================================================
