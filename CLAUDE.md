@@ -120,17 +120,9 @@ Coordinates all project phases, specifications, and implementation work.
 
 **Complete Documentation**: See [Dual Pipeline Architecture](./docs/architecture/motherduck-dual-pipeline.md) for architecture diagrams, failure modes, monitoring, SLOs, and operational status.
 
-**Critical Commands**:
-
-```bash
-# Cloud Run Job (BigQuery sync)
-gcloud run jobs execute eth-md-updater --region us-central1
-
-# VM Service (real-time collector)
-gcloud compute ssh eth-realtime-collector --zone=us-east1-b --command='sudo systemctl restart eth-collector'
-```
-
-**Database Operations**: Use `motherduck-pipeline-operations` skill for verification, gap detection, and backfill workflows.
+**Operations**:
+- **VM Management**: Use `vm-infrastructure-ops` skill for service restarts, log viewing, troubleshooting
+- **Database Operations**: Use `motherduck-pipeline-operations` skill for verification, gap detection, and backfill workflows
 
 **Monitoring**: Gap detection runs every 3 hours via GCP Cloud Functions (DuckDB LAG() query, Pushover + Healthchecks.io alerts)
 
