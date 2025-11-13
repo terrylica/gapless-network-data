@@ -1,0 +1,511 @@
+openapi: 3.2.0
+info:
+  title: Documentation Normalization Phase - Hub-and-Spoke Knowledge Graph
+  version: 1.0.0
+  description: |
+    Specification for normalizing CLAUDE*.md ecosystem into DRY, conflict-free
+    hub-and-spoke architecture with root CLAUDE.md as essential context hub,
+    child CLAUDE.md files as local navigation spokes, and content canonicalized
+    under docs/.
+
+    Eliminates 850 lines of duplication (68% of root CLAUDE.md), extracts 2
+    atomic skills, creates 4 child CLAUDE.md spokes, and standardizes all links
+    to relative GFM format.
+  contact:
+    name: Documentation Infrastructure Team
+x-plan:
+  phase_id: doc-normalization-hub-and-spoke
+  status: planned
+  created: "2025-11-13"
+  parent_phase: post-monitoring-fixes
+  depends_on:
+    - monitoring-fixes-production-hardening
+  research_source:
+    - location: /tmp/doc-normalization-research/
+      summary: Comprehensive analysis of 1,256-line root CLAUDE.md finding 850 duplicate lines
+
+x-slos:
+  correctness:
+    definition: "Zero content duplication across CLAUDE*.md files"
+    measurement: "Grep-based duplication detection on normalized content"
+    target: "0 duplicated paragraphs (>3 lines) across documentation"
+
+  observability:
+    definition: "All documentation discoverable via hub navigation"
+    measurement: "Link coverage from root CLAUDE.md to all docs/"
+    target: "100% of docs/*.md files reachable via ≤2 hops from root"
+
+  maintainability:
+    definition: "Documentation updates require single-location edits"
+    measurement: "Number of files requiring edits for content changes"
+    target: "1 file per topic (DRY principle enforced)"
+
+  availability:
+    definition: "Links remain valid across refactoring"
+    measurement: "Relative link integrity via existing link checker"
+    target: "0 broken internal links after normalization"
+
+x-architectural-decisions:
+  - id: MADR-0005
+    title: "Root CLAUDE.md Scope and Essential Context Strategy"
+    status: proposed
+    file: docs/decisions/0005-root-claude-scope.md
+
+  - id: MADR-0006
+    title: "Child CLAUDE.md Spoke Architecture"
+    status: proposed
+    file: docs/decisions/0006-child-claude-spokes.md
+
+  - id: MADR-0007
+    title: "Skills Extraction Criteria and Structure"
+    status: proposed
+    file: docs/decisions/0007-skills-extraction.md
+
+  - id: MADR-0008
+    title: "Link Format Standardization (Relative GFM)"
+    status: proposed
+    file: docs/decisions/0008-link-format.md
+
+paths:
+  /docs/normalization/phase1:
+    summary: Phase 1 - Root CLAUDE.md Normalization
+    description: |
+      Reduce root CLAUDE.md from 1,256 lines to 500-600 lines by extracting
+      duplicate content to canonical locations under docs/, converting absolute
+      paths to relative GFM links.
+
+    post:
+      operationId: normalizeRootClaude
+      tags: [normalization]
+      x-tasks:
+        - task_id: N1-1
+          title: "Extract MotherDuck Integration content (340 → 20 lines)"
+          x-adr-id: [MADR-0005]
+          intent: "Remove duplication with docs/architecture/motherduck-integration.md"
+          status: pending
+          priority: P0
+          effort_hours: 1.0
+          blast_radius: medium
+          slo_impact:
+            correctness: "Eliminates 340-line duplication"
+            maintainability: "MotherDuck updates in single location"
+
+          implementation:
+            extract_to: "docs/architecture/motherduck-dual-pipeline.md (already exists)"
+            keep_in_root: |
+              - 2-3 line summary: "Dual-pipeline: BigQuery hourly + Alchemy real-time"
+              - Link to detailed doc: "./docs/architecture/motherduck-dual-pipeline.md"
+              - Critical commands: gcloud run jobs execute, systemctl restart
+            remove_from_root:
+              - Detailed architecture descriptions
+              - Service management commands (move to skill)
+              - Cost breakdown tables
+              - SLO tracking details
+
+          validation:
+            method: grep_deduplication
+            criteria: "No paragraphs >3 lines duplicated between root and architecture docs"
+
+        - task_id: N1-2
+          title: "Extract DuckDB Architecture content (225 → 15 lines)"
+          x-adr-id: [MADR-0005]
+          intent: "Consolidate DuckDB rationale in architecture docs"
+          status: pending
+          priority: P0
+          effort_hours: 1.0
+          blast_radius: medium
+          slo_impact:
+            correctness: "Eliminates 225-line duplication"
+            maintainability: "DuckDB strategy in single location"
+
+          implementation:
+            create_file: "docs/architecture/duckdb-strategy.md"
+            content_from_root:
+              - "DuckDB for Everything principle"
+              - 23 features table
+              - Performance benchmarks (10-100x speedups)
+              - Use cases (validation storage, gap detection, ASOF JOIN)
+              - Alternatives comparison (pandas, Polars, Spark)
+            keep_in_root: |
+              - 1-2 line statement: "DuckDB PRIMARY for time-series analytics (10-100x faster)"
+              - Link: "./docs/architecture/duckdb-strategy.md"
+
+          validation:
+            method: file_creation
+            criteria: "docs/architecture/duckdb-strategy.md exists with all DuckDB content"
+
+        - task_id: N1-3
+          title: "Extract Project Skills documentation (82 → 5 lines)"
+          x-adr-id: [MADR-0005]
+          intent: "Create dedicated skills hub file"
+          status: pending
+          priority: P0
+          effort_hours: 0.5
+          blast_radius: low
+          slo_impact:
+            correctness: "Eliminates 82-line duplication"
+            observability: "Skills discoverable via dedicated hub"
+
+          implementation:
+            create_file: ".claude/skills/README.md"
+            content_from_root:
+              - All 5 project skills descriptions
+              - All 2 managed skills (anthropic-agent-skills plugins)
+              - When-to-use guidance
+            keep_in_root: |
+              - Count: "7 skills (5 project, 2 managed)"
+              - Link: "./.claude/skills/README.md"
+
+          validation:
+            method: file_creation
+            criteria: ".claude/skills/README.md lists all 7 skills with descriptions"
+
+        - task_id: N1-4
+          title: "Consolidate data sources documentation (70 lines duplicated)"
+          x-adr-id: [MADR-0005]
+          intent: "Single source of truth for data source decisions"
+          status: pending
+          priority: P0
+          effort_hours: 0.5
+          blast_radius: low
+          slo_impact:
+            correctness: "Eliminates cross-section duplication"
+            maintainability: "Data source changes in single file"
+
+          implementation:
+            create_file: "docs/research/data-sources.md"
+            consolidate_from:
+              - "Data Sources Research" section
+              - "Active Data Sources (Production)" section
+              - "Researched Sources (Not Used)" section
+            keep_in_root: |
+              - Primary sources: "BigQuery (historical) + Alchemy (real-time)"
+              - Link: "./docs/research/data-sources.md"
+
+          validation:
+            method: grep_deduplication
+            criteria: "LlamaRPC, BigQuery, Alchemy mentioned only in data-sources.md + brief root reference"
+
+        - task_id: N1-5
+          title: "Convert absolute paths to relative GFM links (47 links)"
+          x-adr-id: [MADR-0008]
+          intent: "Portable, lychee-compatible links"
+          status: pending
+          priority: P0
+          effort_hours: 1.0
+          blast_radius: high
+          slo_impact:
+            availability: "Links work in GitHub, locally, and CI/CD"
+            maintainability: "Links survive repository moves"
+
+          implementation:
+            pattern_before: "/Users/terryli/eon/gapless-network-data/docs/X.md"
+            pattern_after: "./docs/X.md"
+            scope: "All CLAUDE.md files"
+            count: 47
+
+          validation:
+            method: link_check
+            criteria: "All internal links use relative paths, 0 absolute paths remain"
+
+  /docs/normalization/phase2:
+    summary: Phase 2 - Skills Extraction
+    description: |
+      Extract 2 highly prescriptive workflows as atomic skills following Skill
+      Architecture pattern: VM infrastructure operations and historical backfill
+      execution.
+
+    post:
+      operationId: extractSkills
+      tags: [skills]
+      x-tasks:
+        - task_id: N2-1
+          title: "Create vm-infrastructure-ops skill"
+          x-adr-id: [MADR-0007]
+          intent: "Atomic skill for VM troubleshooting and operations"
+          status: pending
+          priority: P1
+          effort_hours: 1.5
+          blast_radius: low
+          slo_impact:
+            observability: "VM operations invokable via Skill tool"
+            maintainability: "Operations workflow in dedicated skill"
+
+          implementation:
+            create_directory: ".claude/skills/vm-infrastructure-ops/"
+            files:
+              - path: "SKILL.md"
+                content: |
+                  Description: Troubleshoot GCP e2-micro VM running eth-realtime-collector
+                  When to use: systemd failures, log analysis, service restarts
+                  Workflows: status check, log viewing, service restart, VM reset
+              - path: "scripts/check_vm_status.sh"
+                content: "Automated status check via gcloud"
+              - path: "scripts/restart_collector.sh"
+                content: "Safe restart with pre-checks"
+              - path: "references/vm-failure-modes.md"
+                content: "Common issues and resolutions"
+
+            source_content:
+              - "CLAUDE.md Service Management section (~40 lines)"
+              - "deployment/vm/README.md systemd commands"
+
+          validation:
+            method: skill_architecture
+            criteria: |
+              - SKILL.md exists with when-to-use section
+              - scripts/ contains operational scripts
+              - references/ contains troubleshooting guide
+              - No CLAUDE.md in skill directory
+
+        - task_id: N2-2
+          title: "Create historical-backfill-execution skill"
+          x-adr-id: [MADR-0007]
+          intent: "Atomic skill for chunked backfill operations"
+          status: pending
+          priority: P1
+          effort_hours: 1.5
+          blast_radius: low
+          slo_impact:
+            observability: "Backfill workflow invokable via Skill tool"
+            maintainability: "Canonical 1-year chunking pattern in dedicated skill"
+
+          implementation:
+            create_directory: ".claude/skills/historical-backfill-execution/"
+            files:
+              - path: "SKILL.md"
+                content: |
+                  Description: Execute chunked historical blockchain data backfills
+                  When to use: Multi-year data loads, gap filling, OOM prevention
+                  Canonical pattern: 1-year chunks, ~2min/chunk, <4GB memory
+              - path: "scripts/validate_chunk_size.py"
+                content: "Check memory requirements before execution"
+              - path: "scripts/chunked_executor.sh"
+                content: "Wrapper for deployment/backfill/chunked_backfill.sh"
+              - path: "references/backfill-patterns.md"
+                content: "1-year chunking rationale, troubleshooting"
+
+            source_content:
+              - "CLAUDE.md Historical Backfill section (~35 lines)"
+              - "deployment/backfill/README.md chunking patterns"
+
+          validation:
+            method: skill_architecture
+            criteria: |
+              - SKILL.md documents 1-year chunking pattern
+              - scripts/ contains execution wrappers
+              - references/ explains rationale (established 2025-11-10)
+
+        - task_id: N2-3
+          title: "Rename bigquery skill CLAUDE.md → DECISION_RATIONALE.md"
+          x-adr-id: [MADR-0007]
+          intent: "Enforce zero child CLAUDE.md in skills (except as DECISION_RATIONALE)"
+          status: pending
+          priority: P1
+          effort_hours: 0.5
+          blast_radius: low
+          slo_impact:
+            correctness: "Consistent skills architecture (6/6 skills aligned)"
+            maintainability: "Clear separation: SKILL.md for usage, DECISION_RATIONALE for why"
+
+          implementation:
+            rename_file:
+              from: ".claude/skills/bigquery-ethereum-data-acquisition/CLAUDE.md"
+              to: ".claude/skills/bigquery-ethereum-data-acquisition/DECISION_RATIONALE.md"
+            rationale: "Preserves architectural reasoning (BigQuery vs RPC polling) while enforcing skills standard"
+
+          validation:
+            method: file_rename
+            criteria: "No CLAUDE.md files exist in any skill directory"
+
+  /docs/normalization/phase3:
+    summary: Phase 3 - Child CLAUDE.md Spokes
+    description: |
+      Create child CLAUDE.md files as local navigation hubs (link farms) in
+      docs/ subdirectories: architecture, deployment, decisions, motherduck.
+
+    post:
+      operationId: createChildSpokes
+      tags: [spokes]
+      x-tasks:
+        - task_id: N3-1
+          title: "Create docs/architecture/CLAUDE.md spoke"
+          x-adr-id: [MADR-0006]
+          intent: "Local navigation hub for architecture documents"
+          status: pending
+          priority: P2
+          effort_hours: 0.5
+          blast_radius: low
+          slo_impact:
+            observability: "Architecture docs discoverable via local hub"
+            maintainability: "Navigation links colocated with content"
+
+          implementation:
+            create_file: "docs/architecture/CLAUDE.md"
+            content: |
+              Link farm (80 lines) listing:
+              - OVERVIEW.md - Core components, data flow, SLOs
+              - DATA_FORMAT.md - Schema specification
+              - motherduck-dual-pipeline.md - Dual-pipeline architecture
+              - bigquery-motherduck-integration.md - PyArrow zero-copy
+              - duckdb-strategy.md - [NEW] DuckDB PRIMARY rationale
+              All links relative: ./OVERVIEW.md, ./DATA_FORMAT.md, etc.
+
+          validation:
+            method: link_coverage
+            criteria: "All *.md files in docs/architecture/ linked from CLAUDE.md"
+
+        - task_id: N3-2
+          title: "Create docs/deployment/CLAUDE.md spoke"
+          x-adr-id: [MADR-0006]
+          intent: "Local navigation hub for deployment guides"
+          status: pending
+          priority: P2
+          effort_hours: 0.5
+          blast_radius: low
+          slo_impact:
+            observability: "Deployment guides discoverable via local hub"
+
+          implementation:
+            create_file: "docs/deployment/CLAUDE.md"
+            content: |
+              Link farm (60 lines) listing:
+              - realtime-collector.md - VM systemd setup
+              - secret-manager-migration.md - Doppler → GCP
+              - oracle/ - Oracle Cloud monitoring
+              - Pointers to ../deployment/cloud-run/, ../deployment/vm/
+
+          validation:
+            method: link_coverage
+            criteria: "All deployment guides linked from CLAUDE.md"
+
+        - task_id: N3-3
+          title: "Create docs/decisions/CLAUDE.md spoke"
+          x-adr-id: [MADR-0006]
+          intent: "Local navigation hub for ADR files"
+          status: pending
+          priority: P2
+          effort_hours: 0.5
+          blast_radius: low
+          slo_impact:
+            observability: "All ADRs discoverable via local hub"
+
+          implementation:
+            create_file: "docs/decisions/CLAUDE.md"
+            content: |
+              Link farm (50 lines) for MADR-0001 through MADR-0008:
+              - 0001: Healthchecks.io grace period calibration
+              - 0002: Exception handler notifications
+              - 0003: MotherDuck timeout and fallback
+              - 0004: Staleness threshold calibration
+              - 0005: Root CLAUDE.md scope [NEW]
+              - 0006: Child CLAUDE.md spokes [NEW]
+              - 0007: Skills extraction [NEW]
+              - 0008: Link format [NEW]
+
+          validation:
+            method: link_coverage
+            criteria: "All MADR-*.md files linked from CLAUDE.md"
+
+        - task_id: N3-4
+          title: "Create docs/motherduck/CLAUDE.md spoke"
+          x-adr-id: [MADR-0006]
+          intent: "Local navigation hub for MotherDuck-specific docs"
+          status: pending
+          priority: P2
+          effort_hours: 0.5
+          blast_radius: low
+          slo_impact:
+            observability: "MotherDuck docs discoverable via local hub"
+
+          implementation:
+            create_file: "docs/motherduck/CLAUDE.md"
+            content: |
+              Link farm (40 lines) for:
+              - dual-pipeline.md
+              - bigquery-integration.md
+              - integration.md
+
+            alternative: "Consider merging docs/motherduck/ → docs/architecture/ (only 3 files)"
+
+          validation:
+            method: link_coverage
+            criteria: "All docs/motherduck/*.md files linked from CLAUDE.md"
+
+x-validation:
+  bootstrap_script: /tmp/doc-normalization-validation/bootstrap.sh
+  validation_scripts:
+    - verify_no_duplication.py
+    - verify_link_format.py
+    - verify_skills_structure.sh
+    - verify_hub_coverage.py
+
+  autonomous_validation:
+    pre_commit:
+      - Run grep-based deduplication check
+      - Verify all relative links resolve
+      - Check skills follow architecture pattern
+      - Confirm root CLAUDE.md <600 lines
+
+    post_deploy:
+      - Run existing link checker (lychee)
+      - Verify 100% doc coverage from root hub
+      - Confirm 0 absolute paths remain
+      - Check child CLAUDE.md files <100 lines each
+
+x-release:
+  semantic_versioning: true
+  conventional_commits: true
+  changelog_generation: automatic
+  github_release: true
+
+  commit_format:
+    - "docs(claude): normalize root to essential hub with relative links (N1-1 through N1-5)"
+    - "feat(skills): extract VM ops and historical backfill workflows (N2-1 through N2-3)"
+    - "docs(spokes): create child CLAUDE.md navigation hubs (N3-1 through N3-4)"
+
+  version_bump: minor
+  expected_version: v3.2.0
+
+  adr_linkage:
+    - "See MADR-0005 for root CLAUDE.md scope rationale"
+    - "See MADR-0006 for child spoke architecture"
+    - "See MADR-0007 for skills extraction criteria"
+    - "See MADR-0008 for link format standardization"
+
+components:
+  schemas:
+    DocumentMetrics:
+      type: object
+      required: [file_path, line_count, duplication_score]
+      properties:
+        file_path:
+          type: string
+          example: "CLAUDE.md"
+        line_count:
+          type: integer
+          minimum: 0
+          description: "Total lines in file"
+        duplication_score:
+          type: number
+          minimum: 0
+          maximum: 1
+          description: "Percentage of content duplicated elsewhere (0.0-1.0)"
+
+    ValidationResult:
+      type: object
+      required: [task_id, status, criteria_met]
+      properties:
+        task_id:
+          type: string
+          example: "N1-1"
+        status:
+          type: string
+          enum: [passed, failed, skipped]
+        criteria_met:
+          type: array
+          items:
+            type: string
+        evidence:
+          type: object
+          description: "File paths, line counts, link checks"
