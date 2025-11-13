@@ -1,3 +1,10 @@
+## [3.1.1](https://github.com/terrylica/gapless-network-data/compare/v3.1.0...v3.1.1) (2025-11-13)
+
+
+### Bug Fixes
+
+* **monitoring:** restore Healthchecks.io monitoring for motherduck-gap-detector ([b826013](https://github.com/terrylica/gapless-network-data/commit/b8260139a048514bba31e8e87ca47151ad3b3b7f))
+
 # [3.1.0](https://github.com/terrylica/gapless-network-data/compare/v3.0.0...v3.1.0) (2025-11-12)
 
 ### Features
