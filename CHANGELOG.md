@@ -1,3 +1,10 @@
+## [3.1.2](https://github.com/terrylica/gapless-network-data/compare/v3.1.1...v3.1.2) (2025-11-13)
+
+
+### Bug Fixes
+
+* **monitoring:** P0 critical issues - grace periods, fatal paths, timeouts ([e038b01](https://github.com/terrylica/gapless-network-data/commit/e038b0111534bb51392da889c18d0340e452ac16))
+
 ## [3.1.1](https://github.com/terrylica/gapless-network-data/compare/v3.1.0...v3.1.1) (2025-11-13)
 
 ### Bug Fixes
