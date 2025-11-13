@@ -1,0 +1,482 @@
+openapi: 3.2.0
+info:
+  title: Monitoring Fixes Phase - Production Hardening
+  version: 1.0.0
+  description: |
+    Specification for fixing 10 critical monitoring issues discovered through
+    adversarial audit by 6 parallel investigation agents.
+
+    Addresses false positive risk, monitoring blind spots, and single points
+    of failure in the gapless-network-data production monitoring system.
+  contact:
+    name: Monitoring Infrastructure Team
+x-plan:
+  phase_id: monitoring-fixes-production-hardening
+  status: planned
+  created: "2025-11-13"
+  parent_phase: post-audit-rectification-phase
+  depends_on:
+    - motherduck-integration
+  audit_source:
+    - agent: configuration-consistency
+      output: /tmp/monitoring-audit-config/
+    - agent: failure-mode-analysis
+      output: /tmp/monitoring-audit-failures/
+    - agent: alert-routing-validation
+      output: /tmp/monitoring-audit-alerts/
+    - agent: dead-mans-switch-coverage
+      output: /tmp/monitoring-audit-deadmans/
+    - agent: threshold-validation
+      output: /tmp/monitoring-audit-thresholds/
+    - agent: documentation-accuracy
+      output: /tmp/monitoring-audit-docs/
+
+x-slos:
+  availability:
+    definition: "Monitoring checks execute without manual intervention"
+    measurement: "Percentage of scheduled executions that complete successfully"
+    target: "99.5% (allowing 3.6 hours downtime per month)"
+
+  correctness:
+    definition: "False positive rate + False negative rate"
+    measurement: "Alert accuracy over 30-day rolling window"
+    targets:
+      false_positive: "<1% (max 4 false alerts per month at 15 checks/day)"
+      false_negative: "0% (zero tolerance for missed real failures)"
+
+  observability:
+    definition: "Time to detection for critical failures"
+    measurement: "P95 latency from failure occurrence to alert delivery"
+    targets:
+      critical: "<1 minute (direct Pushover)"
+      non_critical: "<10 minutes (Dead Man's Switch)"
+
+  maintainability:
+    definition: "Time to resolve common operational issues"
+    measurement: "P95 resolution time for documented scenarios"
+    target: "<30 minutes for grace period adjustments, config changes"
+
+x-architectural-decisions:
+  - id: MADR-0001
+    title: "Healthchecks.io Grace Period Calibration Strategy"
+    status: proposed
+    file: docs/decisions/0001-healthchecks-grace-period-calibration.md
+
+  - id: MADR-0002
+    title: "Exception Handler Notification Strategy"
+    status: proposed
+    file: docs/decisions/0002-exception-handler-notifications.md
+
+  - id: MADR-0003
+    title: "MotherDuck Connection Timeout and Fallback Architecture"
+    status: proposed
+    file: docs/decisions/0003-motherduck-timeout-fallback.md
+
+  - id: MADR-0004
+    title: "Staleness Threshold Empirical Calibration"
+    status: proposed
+    file: docs/decisions/0004-staleness-threshold-calibration.md
+
+paths:
+  /monitoring/fixes/p0:
+    summary: Priority 0 - Deploy Immediately (< 4 hours)
+    description: |
+      Critical issues causing monitoring blind spots and false positive risk.
+      Must be deployed within 24 hours to prevent alert fatigue and missed failures.
+
+    post:
+      operationId: deployP0Fixes
+      tags: [critical]
+      x-tasks:
+        - task_id: P0-1
+          title: "Investigate motherduck-monitor DOWN status"
+          x-adr-id: []
+          intent: "Restore gap detection monitoring (blind spot for 29+ hours)"
+          status: pending
+          priority: P0
+          effort_hours: 1.0
+          blast_radius: high
+          slo_impact:
+            availability: "Monitoring not executing"
+            correctness: "Gap detection disabled (false negative)"
+            observability: "Complete blockchain history not validated"
+
+          implementation:
+            verification:
+              - cmd: gcloud scheduler jobs describe motherduck-monitor-trigger --location=us-east1
+                expect: "state: ENABLED"
+              - cmd: gcloud functions logs read motherduck-gap-detector --region=us-east1 --gen2 --limit=10
+                expect: "✅ HEALTH CHECK PASSED"
+
+            actions:
+              - gcloud scheduler jobs run motherduck-monitor-trigger --location=us-east1
+              - Check logs for errors
+              - If persistent failure, check IAM permissions
+              - Verify Healthchecks.io ping received
+
+          validation:
+            method: empirical
+            criteria: |
+              - Healthchecks.io "motherduck-monitor" status = "up"
+              - Last ping < 30 minutes ago
+              - Cloud Function logs show successful execution
+              - No gaps detected in latest run
+
+        - task_id: P0-2
+          title: "Update Healthchecks.io grace periods (API)"
+          x-adr-id: [MADR-0001]
+          intent: "Prevent false positive alerts during normal operational variance"
+          status: pending
+          priority: P0
+          effort_hours: 0.5
+          blast_radius: medium
+          slo_impact:
+            correctness: "Reduces false positive rate from ~7% to <1%"
+            maintainability: "Eliminates routine false alerts"
+
+          rationale: |
+            Current grace periods are 1.0-1.67× their intervals, industry
+            best practice is 3.0×. All 4 checks at risk of false positives.
+
+          changes:
+            - check: motherduck-monitor
+              current: {grace: 600, timeout: 12600}
+              target: {grace: 1800, timeout: 12600}
+              ratio: "10 min → 30 min (10% → 16.7% of timeout)"
+
+            - check: VM Collector
+              current: {grace: 300, timeout: 600}
+              target: {grace: 900, timeout: 600}
+              ratio: "5 min → 15 min (1× → 3× heartbeat)"
+
+            - check: Hourly Updater
+              current: {grace: 600, timeout: 3900}
+              target: {grace: 1800, timeout: 3900}
+              ratio: "10 min → 30 min (16% → 46% of interval)"
+
+            - check: Data Quality Checker
+              current: {grace: 300, timeout: 600}
+              target: {grace: 900, timeout: 600}
+              ratio: "5 min → 15 min (1× → 3× check interval)"
+
+          implementation:
+            script: tmp/monitoring-fixes-validation/update_healthchecks_grace.py
+            method: Healthchecks.io API v3 POST
+
+          validation:
+            method: api_query
+            script: tmp/monitoring-fixes-validation/verify_grace_periods.py
+            criteria: "All 4 checks have grace >= 3× their intervals"
+
+        - task_id: P0-3
+          title: "Add exception handler pings (3 files)"
+          x-adr-id: [MADR-0002]
+          intent: "Close monitoring blind spots in fatal error paths"
+          status: pending
+          priority: P0
+          effort_hours: 1.0
+          blast_radius: low
+          slo_impact:
+            correctness: "Eliminates false negatives (silent failures)"
+            observability: "Fatal errors now trigger /fail pings"
+
+          files:
+            - file: deployment/cloud-run/data_quality_checker.py
+              lines: [149-153]
+              change: |
+                Wrap exception handler with:
+                if healthcheck_url:
+                    requests.post(f"{healthcheck_url}/fail",
+                                  data=f"Fatal error: {e}", timeout=10)
+
+            - file: deployment/gcp-functions/motherduck-monitor/main.py
+              lines: [453-457]
+              change: |
+                Add to exception handler:
+                if HEALTHCHECKS_PING_URL:
+                    httpx.post(f"{HEALTHCHECKS_PING_URL}/fail",
+                               data=diagnostic_data['error'], timeout=10)
+
+            - file: deployment/cloud-run/main.py
+              lines: [212-216]
+              change: |
+                Add to "no new blocks" path:
+                if healthcheck_url:
+                    requests.post(healthcheck_url,
+                                  data="No new blocks (within lookback)", timeout=10)
+
+          validation:
+            method: code_review
+            criteria: |
+              - All exception handlers ping Healthchecks.io /fail
+              - All early exits ping Healthchecks.io (success or fail)
+              - No execution path can skip notification
+
+        - task_id: P0-4
+          title: "Add MotherDuck connection timeouts (all components)"
+          x-adr-id: [MADR-0003]
+          intent: "Prevent indefinite hangs on MotherDuck outage"
+          status: pending
+          priority: P0
+          effort_hours: 1.5
+          blast_radius: medium
+          slo_impact:
+            availability: "Services fail fast instead of hanging"
+            observability: "Timeout errors visible in logs"
+
+          rationale: |
+            MotherDuck outage currently causes indefinite hangs. Services
+            enter "activating" state in systemd, never restart. Cloud Run
+            Jobs hang until 10-minute job timeout.
+
+          changes:
+            - component: All (6 components)
+              location: "duckdb.connect() calls"
+              add_parameter: "connect_timeout=30000"  # 30 seconds in milliseconds
+              error_handling: "Raise TimeoutError, propagate to monitoring"
+
+          implementation:
+            pattern: |
+              try:
+                  conn = duckdb.connect(
+                      f'md:{MD_DATABASE}?motherduck_token={token}',
+                      config={'connect_timeout': 30000}  # 30 seconds
+                  )
+              except Exception as e:
+                  # Ping Healthchecks.io /fail
+                  # Re-raise for visibility
+                  raise
+
+          validation:
+            method: empirical
+            script: tmp/monitoring-fixes-validation/test_motherduck_timeout.py
+            criteria: |
+              - Connection attempt times out in 30 seconds
+              - TimeoutError propagated to caller
+              - Healthchecks.io /fail ping sent
+              - Service restarts (systemd) or fails (Cloud Run)
+
+  /monitoring/fixes/p1:
+    summary: Priority 1 - This Week (9 hours)
+    description: |
+      High-impact reliability improvements. Should be deployed within 1 week
+      to improve detection speed and prevent catastrophic failures.
+
+    post:
+      operationId: deployP1Fixes
+      tags: [reliability]
+      x-tasks:
+        - task_id: P1-5
+          title: "Reduce staleness threshold to 600s"
+          x-adr-id: [MADR-0004]
+          intent: "Improve detection speed by 37.5% with zero false positives"
+          status: pending
+          priority: P1
+          effort_hours: 0.5
+          blast_radius: low
+          slo_impact:
+            observability: "Detection window: 21 min → 15 min (28.6% improvement)"
+            correctness: "0% false positives validated on 100 samples"
+
+          empirical_validation:
+            sample_size: 100
+            p99_age: 312  # seconds
+            current_threshold: 960
+            recommended_threshold: 600
+            safety_margin: "1.92× P99 (industry standard)"
+            false_positive_rate: "0% at 600s"
+
+          changes:
+            - file: deployment/cloud-run/data_quality_checker.py
+              line: 34
+              old: "STALE_THRESHOLD_SECONDS = int(os.environ.get('STALE_THRESHOLD_SECONDS', '960'))"
+              new: "STALE_THRESHOLD_SECONDS = int(os.environ.get('STALE_THRESHOLD_SECONDS', '600'))"
+
+            - file: deployment/cloud-run/data_quality_checker.py
+              line: 15
+              old: "STALE_THRESHOLD_SECONDS: Maximum age before alert (default: 960)"
+              new: "STALE_THRESHOLD_SECONDS: Maximum age before alert (default: 600)"
+
+            - file: deployment/cloud-run/data_quality_checker.py
+              lines: [18-19]
+              old: "0: Data is fresh (<960s old)\n    1: Data is stale (>960s old)"
+              new: "0: Data is fresh (<600s old)\n    1: Data is stale (>600s old)"
+
+            - component: Cloud Run Job
+              action: Update environment variable
+              cmd: |
+                gcloud run jobs update eth-md-data-quality-checker \
+                  --region us-central1 \
+                  --update-env-vars="STALE_THRESHOLD_SECONDS=600"
+
+          validation:
+            method: empirical
+            script: tmp/monitoring-fixes-validation/validate_threshold.py
+            criteria: |
+              - Query last 100 executions from logs
+              - Verify 0 would-be violations at 600s
+              - Confirm P99 < 600s
+              - Run for 24 hours, verify 0 false positives
+
+        - task_id: P1-6
+          title: "Add direct Pushover alerts for critical conditions"
+          x-adr-id: [MADR-0002]
+          intent: "Reduce alert latency from 10 min to <1 second"
+          status: deferred
+          priority: P1
+          effort_hours: 2.0
+          blast_radius: medium
+          reason_deferred: |
+            Requires architectural decision on Priority 0 vs Priority 1
+            for healthy state. Need MADR for Pushover priority schema.
+
+        - task_id: P1-7
+          title: "Add buffer size limit to real-time collector"
+          x-adr-id: []
+          intent: "Prevent OOM crash during MotherDuck outage"
+          status: deferred
+          priority: P1
+          effort_hours: 2.0
+          blast_radius: medium
+          reason_deferred: |
+            Requires decision on disk overflow strategy. Need MADR for
+            buffer management and data loss tolerance.
+
+        - task_id: P1-8
+          title: "Add timeouts to Secret Manager calls"
+          x-adr-id: [MADR-0003]
+          intent: "Prevent indefinite hangs on Secret Manager outage"
+          status: deferred
+          priority: P1
+          effort_hours: 0.5
+          blast_radius: low
+          reason_deferred: "Covered by P0-4 (same pattern, lower priority)"
+
+  /monitoring/fixes/p2:
+    summary: Priority 2 - Documentation (30 mins)
+    description: "Non-critical documentation fixes for accuracy"
+
+    post:
+      operationId: deployP2Fixes
+      tags: [documentation]
+      x-tasks:
+        - task_id: P2-9
+          title: "Fix README region mismatch"
+          x-adr-id: []
+          intent: "Correct deployment instructions"
+          status: pending
+          priority: P2
+          effort_hours: 0.1
+          blast_radius: none
+
+          changes:
+            - file: deployment/cloud-run/README.md
+              find: "us-east1"
+              replace: "us-central1"
+              context: "eth-md-updater deployment region"
+
+          validation:
+            method: grep
+            criteria: "README contains us-central1, not us-east1"
+
+        - task_id: P2-10
+          title: "Update stale Healthchecks.io check references"
+          x-adr-id: []
+          intent: "Remove reference to non-existent test check"
+          status: pending
+          priority: P2
+          effort_hours: 0.1
+          blast_radius: none
+
+          changes:
+            - file: CLAUDE.md
+              lines: [371-373]
+              old: "Check created: eth-pipeline-test"
+              new: |
+                Operational checks:
+                - motherduck-monitor (gap detection, every 3 hours)
+                - Cloud Run Job | BigQuery → MotherDuck | Hourly
+                - Data Quality | MotherDuck Growing & Gapless (every 5 min)
+                - VM Systemd | Alchemy → MotherDuck | Real-Time (12s)
+
+          validation:
+            method: grep
+            criteria: "CLAUDE.md does not reference 'eth-pipeline-test'"
+
+x-validation:
+  bootstrap_script: tmp/monitoring-fixes-validation/bootstrap.sh
+  validation_scripts:
+    - verify_grace_periods.py
+    - verify_exception_handlers.py
+    - test_motherduck_timeout.py
+    - validate_threshold.py
+    - verify_documentation.sh
+
+  autonomous_validation:
+    pre_commit:
+      - Run all validation scripts
+      - Verify 0 exit codes
+      - Check empirical criteria met
+
+    post_deploy:
+      - Wait 24 hours
+      - Query Healthchecks.io for false positives
+      - Verify 0 false alerts
+      - Confirm detection latencies within SLO
+
+x-release:
+  semantic_versioning: true
+  conventional_commits: true
+  changelog_generation: automatic
+  github_release: true
+
+  commit_format:
+    - "fix(monitoring): P0 issues (motherduck-monitor, grace periods, fatal paths, timeouts)"
+    - "fix(monitoring): P1 issues (staleness threshold)"
+    - "docs(monitoring): P2 documentation fixes"
+
+  version_bump: minor
+  expected_version: v3.2.0
+
+  adr_linkage:
+    - "See MADR-0001 for grace period calibration rationale"
+    - "See MADR-0002 for exception handler notification strategy"
+    - "See MADR-0003 for MotherDuck timeout architecture"
+    - "See MADR-0004 for staleness threshold empirical validation"
+
+components:
+  schemas:
+    HealthcheckConfiguration:
+      type: object
+      required: [check_id, grace, timeout]
+      properties:
+        check_id:
+          type: string
+          format: uuid
+          description: "Healthchecks.io check UUID"
+        grace:
+          type: integer
+          minimum: 0
+          description: "Grace period in seconds (3× interval recommended)"
+        timeout:
+          type: integer
+          minimum: 0
+          description: "Timeout in seconds (total expected interval)"
+
+    ValidationResult:
+      type: object
+      required: [task_id, status, criteria_met]
+      properties:
+        task_id:
+          type: string
+          example: "P0-2"
+        status:
+          type: string
+          enum: [passed, failed, skipped]
+        criteria_met:
+          type: array
+          items:
+            type: string
+        evidence:
+          type: object
+          description: "Empirical evidence (logs, API responses, metrics)"
