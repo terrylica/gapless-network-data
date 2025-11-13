@@ -188,7 +188,7 @@ info:
 
           **Monitoring Schedule**: Every 5 minutes via Cloud Scheduler (`eth-md-data-quality`)
 
-          **Purpose**: Queries MotherDuck for latest block timestamp and verifies data freshness (<300s threshold). Exits with code 1 if data is stale, triggering Cloud Run Job failure alerts.
+          **Purpose**: Queries MotherDuck for latest block timestamp and verifies data freshness (<960s / 16-minute threshold). Exits with code 1 if data is stale, triggering Cloud Run Job failure alerts. Threshold increased to accommodate batch mode 5-minute flush intervals.
 
           **Deployment**: `deployment/cloud-run/data_quality_checker.py`
         also_update:
