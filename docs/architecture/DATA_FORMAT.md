@@ -19,25 +19,26 @@ Multi-chain blockchain network metrics data format specification.
 
 ### Schema
 
-| Field | Type | Description | Validation |
-|-------|------|-------------|------------|
-| `timestamp` | TIMESTAMP WITH TIME ZONE | Block timestamp | ISO 8601 format |
-| `number` | BIGINT | Block number (PRIMARY KEY) | Strictly increasing |
-| `gas_limit` | BIGINT | Block gas limit | >= 0 |
-| `gas_used` | BIGINT | Total gas used in block | 0 to gas_limit |
-| `base_fee_per_gas` | BIGINT | Base fee per gas (wei, EIP-1559) | >= 0 |
-| `transaction_count` | BIGINT | Number of transactions in block | >= 0 |
-| `difficulty` | HUGEINT | Mining difficulty | >= 0 |
-| `total_difficulty` | HUGEINT | Cumulative chain difficulty | >= 0 |
-| `size` | BIGINT | Block size in bytes | > 0 |
-| `blob_gas_used` | BIGINT | Blob gas used (EIP-4844, Dencun upgrade) | >= 0 |
-| `excess_blob_gas` | BIGINT | Excess blob gas (EIP-4844) | >= 0 |
+| Field               | Type                     | Description                              | Validation          |
+| ------------------- | ------------------------ | ---------------------------------------- | ------------------- |
+| `timestamp`         | TIMESTAMP WITH TIME ZONE | Block timestamp                          | ISO 8601 format     |
+| `number`            | BIGINT                   | Block number (PRIMARY KEY)               | Strictly increasing |
+| `gas_limit`         | BIGINT                   | Block gas limit                          | >= 0                |
+| `gas_used`          | BIGINT                   | Total gas used in block                  | 0 to gas_limit      |
+| `base_fee_per_gas`  | BIGINT                   | Base fee per gas (wei, EIP-1559)         | >= 0                |
+| `transaction_count` | BIGINT                   | Number of transactions in block          | >= 0                |
+| `difficulty`        | HUGEINT                  | Mining difficulty                        | >= 0                |
+| `total_difficulty`  | HUGEINT                  | Cumulative chain difficulty              | >= 0                |
+| `size`              | BIGINT                   | Block size in bytes                      | > 0                 |
+| `blob_gas_used`     | BIGINT                   | Blob gas used (EIP-4844, Dencun upgrade) | >= 0                |
+| `excess_blob_gas`   | BIGINT                   | Excess blob gas (EIP-4844)               | >= 0                |
 
 **Naming Convention**: `snake_case` (matches BigQuery public dataset)
 
 **PRIMARY KEY**: `number` (enables automatic deduplication via `INSERT OR REPLACE`)
 
 **DDL**:
+
 ```sql
 CREATE TABLE ethereum_mainnet.blocks (
     timestamp TIMESTAMP WITH TIME ZONE NOT NULL,
@@ -57,11 +58,13 @@ CREATE TABLE ethereum_mainnet.blocks (
 ### Data Sources
 
 **Historical (2015-2025)**:
+
 - Source: BigQuery public dataset `bigquery-public-data.crypto_ethereum.blocks`
 - Method: Cloud Run Job hourly sync
 - Fields: All 11 fields
 
 **Real-Time (ongoing)**:
+
 - Source: Alchemy WebSocket API `eth_subscribe` newHeads
 - Method: VM collector with 5-minute batch writes
 - Fields: All 11 fields
@@ -69,13 +72,16 @@ CREATE TABLE ethereum_mainnet.blocks (
 ### Field Notes
 
 **EIP-1559 Fields** (London upgrade, 2021-08-05):
+
 - `base_fee_per_gas`: Algorithmic base fee, burned per transaction
 
 **EIP-4844 Fields** (Dencun upgrade, 2024-03-13):
+
 - `blob_gas_used`: Gas consumed by blob-carrying transactions
 - `excess_blob_gas`: Blob gas pricing mechanism
 
 **Legacy Fields**:
+
 - `difficulty`: Proof-of-work mining difficulty (0 after Merge, 2022-09-15)
 - `total_difficulty`: Cumulative difficulty (frozen after Merge)
 
@@ -93,17 +99,17 @@ CREATE TABLE ethereum_mainnet.blocks (
 
 **Status**: 🚧 Planned for Phase 2+
 
-| Field | Type | Description |
-|-------|------|-------------|
-| `timestamp` | TIMESTAMP WITH TIME ZONE | Snapshot timestamp |
-| `unconfirmed_count` | BIGINT | Number of unconfirmed transactions |
-| `vsize_mb` | DOUBLE | Total mempool virtual size (MB) |
-| `total_fee_btc` | DOUBLE | Total fees in mempool (BTC) |
-| `fastest_fee` | DOUBLE | Fee rate for next block (sat/vB) |
-| `half_hour_fee` | DOUBLE | Fee rate for ~30min confirmation (sat/vB) |
-| `hour_fee` | DOUBLE | Fee rate for ~1hr confirmation (sat/vB) |
-| `economy_fee` | DOUBLE | Fee rate for low-priority tx (sat/vB) |
-| `minimum_fee` | DOUBLE | Minimum relay fee (sat/vB) |
+| Field               | Type                     | Description                               |
+| ------------------- | ------------------------ | ----------------------------------------- |
+| `timestamp`         | TIMESTAMP WITH TIME ZONE | Snapshot timestamp                        |
+| `unconfirmed_count` | BIGINT                   | Number of unconfirmed transactions        |
+| `vsize_mb`          | DOUBLE                   | Total mempool virtual size (MB)           |
+| `total_fee_btc`     | DOUBLE                   | Total fees in mempool (BTC)               |
+| `fastest_fee`       | DOUBLE                   | Fee rate for next block (sat/vB)          |
+| `half_hour_fee`     | DOUBLE                   | Fee rate for ~30min confirmation (sat/vB) |
+| `hour_fee`          | DOUBLE                   | Fee rate for ~1hr confirmation (sat/vB)   |
+| `economy_fee`       | DOUBLE                   | Fee rate for low-priority tx (sat/vB)     |
+| `minimum_fee`       | DOUBLE                   | Minimum relay fee (sat/vB)                |
 
 **Sanity Check**: `fastest_fee >= half_hour_fee >= hour_fee >= economy_fee >= minimum_fee >= 1`
 
@@ -122,6 +128,7 @@ CREATE TABLE ethereum_mainnet.blocks (
 **Tier**: Free (10 GB storage, 10 CU hours/month)
 
 **Advantages**:
+
 - Automatic deduplication via PRIMARY KEY
 - SQL query interface
 - Column-oriented storage
@@ -129,6 +136,7 @@ CREATE TABLE ethereum_mainnet.blocks (
 - No local storage required
 
 **Limitations**:
+
 - 10 GB storage limit (sufficient for ~100M blocks)
 - 10 CU hours/month (batch writes stay within limit)
 - Single database instance
@@ -136,6 +144,7 @@ CREATE TABLE ethereum_mainnet.blocks (
 ### Alternative Storage (Future)
 
 **Local DuckDB** (optional caching):
+
 - Location: `~/.cache/gapless-network-data/data.duckdb`
 - Purpose: Offline analysis
 - Status: Not implemented
@@ -144,10 +153,10 @@ CREATE TABLE ethereum_mainnet.blocks (
 
 ## Data Granularity Comparison
 
-| Chain | Granularity | Blocks/Hour | Storage/Hour | Historical Depth | Status |
-|-------|-------------|-------------|--------------|------------------|--------|
-| **Ethereum** | ~12 seconds | 300 blocks | ~150 KB | 2015-07-30+ (Genesis) | ✅ **Operational** |
-| **Bitcoin** | 5 minutes | 12 snapshots | ~3 KB | 2016+ | 🚧 **Planned** |
+| Chain        | Granularity | Blocks/Hour  | Storage/Hour | Historical Depth      | Status             |
+| ------------ | ----------- | ------------ | ------------ | --------------------- | ------------------ |
+| **Ethereum** | ~12 seconds | 300 blocks   | ~150 KB      | 2015-07-30+ (Genesis) | ✅ **Operational** |
+| **Bitcoin**  | 5 minutes   | 12 snapshots | ~3 KB        | 2016+                 | 🚧 **Planned**     |
 
 **Rationale**: Ethereum provides 12-second granularity for network congestion analysis, while Bitcoin mempool updates are lower frequency (5-minute intervals).
 
@@ -156,12 +165,14 @@ CREATE TABLE ethereum_mainnet.blocks (
 ## Schema Evolution
 
 ### Version 1.0.0 (2025-11-12)
+
 - Ethereum schema deployed to MotherDuck
 - 11 fields including EIP-4844 blob gas fields
 - PRIMARY KEY on `number` for deduplication
 - BigQuery + Alchemy dual-pipeline sources
 
 ### Version 0.1.0 (2025-11-04)
+
 - Initial schema design
 - Parquet storage planned (superseded by MotherDuck)
 - LlamaRPC source planned (superseded by BigQuery + Alchemy)

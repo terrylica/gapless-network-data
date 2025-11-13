@@ -16,14 +16,17 @@ Dual-pipeline blockchain network metrics collection system with zero-gap guarant
 ### Core Components
 
 **Data Sources**:
+
 - BigQuery public dataset (`bigquery-public-data.crypto_ethereum.blocks`) - Historical data (2015-2025)
 - Alchemy WebSocket API - Real-time stream (~12s block intervals)
 
 **Storage**:
+
 - MotherDuck cloud database (`ethereum_mainnet.blocks` table)
 - Automatic deduplication via `INSERT OR REPLACE` on block number PRIMARY KEY
 
 **Compute Infrastructure**:
+
 - Cloud Run Job `eth-md-updater` - Hourly BigQuery sync (~578 blocks/run)
 - Cloud Run Job `eth-md-data-quality-checker` - Data freshness monitoring (every 5 min)
 - Cloud Run Job `ethereum-historical-backfill` - Historical data loading (on-demand)
@@ -31,6 +34,7 @@ Dual-pipeline blockchain network metrics collection system with zero-gap guarant
 - Compute Engine VM `eth-realtime-collector` - WebSocket streaming (24/7)
 
 **Monitoring**:
+
 - Healthchecks.io - Dead Man's Switch
 - Pushover - Alert notifications (priority=2 for failures)
 - Cloud Logging - Operation tracking
@@ -62,18 +66,22 @@ Cloud Scheduler → Cloud Function → MotherDuck Query → Pushover Alert
 ### Service Level Objectives (SLOs)
 
 **Availability**: Data pipelines execute without manual intervention
+
 - Measurement: Percentage of successful scheduled executions
 - Current: 100% (hourly sync + 5-min quality checks)
 
 **Correctness**: 100% data accuracy with no silent errors
+
 - Measurement: Schema validation + deduplication + gap detection
 - Current: 100% (23.8M blocks with zero gaps)
 
 **Observability**: 100% operation tracking with queryable logs
+
 - Measurement: Cloud Logging coverage + alert delivery
 - Current: 100% (all operations logged, Pushover verified)
 
 **Maintainability**: <30 minutes for common operations
+
 - Measurement: Time to deploy fixes or investigate issues
 - Current: Met (infrastructure fixes deployed in <15 min)
 
@@ -87,6 +95,7 @@ Cloud Scheduler → Cloud Function → MotherDuck Query → Pushover Alert
 **Rationale**: Cloud-hosted DuckDB enables automatic deduplication for dual-pipeline writes
 **Implementation**: `INSERT OR REPLACE` on `number` PRIMARY KEY
 **Trade-offs**:
+
 - Advantage: Simple deduplication, no coordination needed
 - Limitation: Free tier limits (10 GB storage, 10 CU hours/month)
 
@@ -96,6 +105,7 @@ Cloud Scheduler → Cloud Function → MotherDuck Query → Pushover Alert
 **Rationale**: Real-time writes (every 12s) exceeded MotherDuck free tier by 12x
 **Implementation**: Buffer 25 blocks in memory, flush every 5 minutes
 **Trade-offs**:
+
 - Advantage: Reduces writes from 216K → 8.6K/month (stays within free tier)
 - Limitation: Max 5-minute data lag
 
@@ -105,6 +115,7 @@ Cloud Scheduler → Cloud Function → MotherDuck Query → Pushover Alert
 **Rationale**: RPC provider rate limits made 5-year backfill impractical (110-day timeline)
 **Implementation**: BigQuery public dataset provides free access to complete history
 **Trade-offs**:
+
 - Advantage: 624x faster than RPC polling (<1 hour vs 26 days)
 - Limitation: Requires GCP account
 
@@ -114,6 +125,7 @@ Cloud Scheduler → Cloud Function → MotherDuck Query → Pushover Alert
 **Rationale**: Timestamp gaps are normal Ethereum behavior (missed validator proposals)
 **Implementation**: `expected_blocks = max_block - min_block + 1`, compare to `COUNT(*)`
 **Trade-offs**:
+
 - Advantage: Zero false positives from network timing variations
 - Limitation: Does not detect data corruption within blocks
 
