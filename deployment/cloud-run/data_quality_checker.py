@@ -12,11 +12,11 @@ Environment Variables:
     GCP_PROJECT: GCP project ID (default: eonlabs-ethereum-bq)
     MD_DATABASE: MotherDuck database name (default: ethereum_mainnet)
     MD_TABLE: MotherDuck table name (default: blocks)
-    STALE_THRESHOLD_SECONDS: Maximum age before alert (default: 300)
+    STALE_THRESHOLD_SECONDS: Maximum age before alert (default: 960)
 
 Exit Codes:
-    0: Data is fresh (<300s old)
-    1: Data is stale (>300s old) or query failed
+    0: Data is fresh (<960s old)
+    1: Data is stale (>960s old) or query failed
 """
 
 import os
@@ -31,7 +31,7 @@ import requests
 GCP_PROJECT = os.environ.get('GCP_PROJECT', 'eonlabs-ethereum-bq')
 MD_DATABASE = os.environ.get('MD_DATABASE', 'ethereum_mainnet')
 MD_TABLE = os.environ.get('MD_TABLE', 'blocks')
-STALE_THRESHOLD_SECONDS = int(os.environ.get('STALE_THRESHOLD_SECONDS', '300'))
+STALE_THRESHOLD_SECONDS = int(os.environ.get('STALE_THRESHOLD_SECONDS', '960'))
 
 
 def get_secret(secret_id: str, project_id: str = GCP_PROJECT) -> str:

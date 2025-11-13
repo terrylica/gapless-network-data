@@ -104,3 +104,49 @@ gcloud logging read \
 - All credentials fetched from Secret Manager at runtime
 - Container runs as non-root user (uid 1000)
 - `.strip()` applied to secrets to prevent gRPC metadata validation errors
+
+---
+
+## Data Quality Monitoring
+
+Separate Cloud Run Job (`eth-md-data-quality-checker`) monitors data freshness.
+
+### Configuration
+
+- **Schedule**: Every 5 minutes via Cloud Scheduler (`eth-md-data-quality`)
+- **Staleness Threshold**: 960 seconds (16 minutes) to accommodate batch mode
+- **Script**: `data_quality_checker.py`
+- **Dockerfile**: `Dockerfile.data-quality`
+
+### Environment Variables
+
+- `STALE_THRESHOLD_SECONDS`: `960` (default, 16 minutes)
+- `GCP_PROJECT`: `eonlabs-ethereum-bq`
+- `MD_DATABASE`: `ethereum_mainnet`
+- `MD_TABLE`: `blocks`
+
+### Manual Execution
+
+Run the data quality check manually:
+
+```bash
+gcloud run jobs execute eth-md-data-quality-checker \
+  --region us-central1 \
+  --project eonlabs-ethereum-bq
+```
+
+View execution history:
+
+```bash
+gcloud run jobs executions list \
+  --job eth-md-data-quality-checker \
+  --region us-central1 \
+  --project eonlabs-ethereum-bq
+```
+
+### Monitoring
+
+Healthchecks.io check: **Data Quality | MotherDuck Growing & Gapless**
+- Receives ping on success (data fresh)
+- Receives `/fail` ping if data stale (>960s)
+- Grace period: 10 minutes

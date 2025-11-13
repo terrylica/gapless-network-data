@@ -140,7 +140,7 @@ Dual-pipeline architecture for Ethereum data collection with automatic deduplica
 
 1. **BigQuery Hourly Batch** (Cloud Run Job): Syncs latest blocks from BigQuery public dataset every hour (~578 blocks/run)
 2. **Alchemy Real-Time Stream** (e2-micro VM): WebSocket subscription for real-time blocks (~12s intervals)
-3. **Data Quality Monitoring** (Cloud Run Job): Verifies data freshness every 5 minutes (<300s threshold)
+3. **Data Quality Monitoring** (Cloud Run Job): Verifies data freshness every 5 minutes (<960s threshold for batch mode compatibility)
 
 **Deduplication**: Both pipelines use `INSERT OR REPLACE` on MotherDuck table with `number` as PRIMARY KEY
 
@@ -238,7 +238,7 @@ gcloud run jobs execute eth-md-data-quality-checker --region us-central1
 
 **Monitoring Schedule**: Every 5 minutes via Cloud Scheduler (`eth-md-data-quality`)
 
-**Purpose**: Queries MotherDuck for latest block timestamp and verifies data freshness (<300s threshold). Exits with code 1 if data is stale, triggering Cloud Run Job failure alerts.
+**Purpose**: Queries MotherDuck for latest block timestamp and verifies data freshness (<960s / 16-minute threshold). Exits with code 1 if data is stale, triggering Cloud Run Job failure alerts. Threshold increased from 300s to accommodate batch mode 5-minute flush intervals.
 
 **Deployment**: `deployment/cloud-run/data_quality_checker.py`
 
