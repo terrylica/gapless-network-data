@@ -51,7 +51,7 @@ See `/Users/terryli/eon/gapless-crypto-data/docs/audit/mempool-probe-adversarial
 
 ## Single Source of Truth (SSoT)
 
-**Master Plan**: `/Users/terryli/eon/gapless-network-data/specifications/master-project-roadmap.yaml`
+**Master Plan**: `./specifications/master-project-roadmap.yaml`
 
 Coordinates all project phases, specifications, and implementation work.
 
@@ -71,8 +71,8 @@ Coordinates all project phases, specifications, and implementation work.
 - **Data Loaded**: 23.8M Ethereum blocks (2015-2025) in MotherDuck
 - **Architecture**: Dual-pipeline (Alchemy WebSocket VM + BigQuery hourly Cloud Run Job)
 - **Monitoring**: Healthchecks.io + Pushover (cloud-based, UptimeRobot removed)
-- **Authoritative Spec**: `/Users/terryli/eon/gapless-network-data/specifications/master-project-roadmap.yaml` Phase 1
-- **Validation**: Empirical validation complete - see `/Users/terryli/eon/gapless-network-data/scratch/README.md` and `/Users/terryli/eon/gapless-network-data/scratch/ethereum-collector-poc/ETHEREUM_COLLECTOR_POC_REPORT.md`
+- **Authoritative Spec**: `./specifications/master-project-roadmap.yaml` Phase 1
+- **Validation**: Empirical validation complete - see `./scratch/README.md` and `./scratch/ethereum-collector-poc/ETHEREUM_COLLECTOR_POC_REPORT.md`
 
 **Key Decisions Logged**:
 
@@ -87,469 +87,58 @@ Coordinates all project phases, specifications, and implementation work.
 
 ### Architecture
 
-- [Architecture Overview](/Users/terryli/eon/gapless-network-data/docs/architecture/OVERVIEW.md) - Core components, data flow, SLOs
-- [Data Format Specification](/Users/terryli/eon/gapless-network-data/docs/architecture/DATA_FORMAT.md) - Mempool snapshot schema
+- [Architecture Overview](./docs/architecture/OVERVIEW.md) - Core components, data flow, SLOs
+- [Data Format Specification](./docs/architecture/DATA_FORMAT.md) - Mempool snapshot schema
 - [Cross-Package Integration](/Users/terryli/eon/gapless-crypto-data/docs/architecture/cross-package-feature-integration.yaml) - How to use with gapless-crypto-data
 
 ### Usage Guides
 
-- [Data Collection Guide](/Users/terryli/eon/gapless-network-data/docs/guides/DATA_COLLECTION.md) - CLI usage, collection modes (pending)
-- [Python API Reference](/Users/terryli/eon/gapless-network-data/docs/guides/python-api.md) - `fetch_snapshots()`, `get_latest_snapshot()` (pending)
-- [Feature Engineering Guide](/Users/terryli/eon/gapless-network-data/docs/guides/FEATURE_ENGINEERING.md) - Temporal alignment, feature fusion (pending)
+- [Data Collection Guide](./docs/guides/DATA_COLLECTION.md) - CLI usage, collection modes (pending)
+- [Python API Reference](./docs/guides/python-api.md) - `fetch_snapshots()`, `get_latest_snapshot()` (pending)
+- [Feature Engineering Guide](./docs/guides/FEATURE_ENGINEERING.md) - Temporal alignment, feature fusion (pending)
 
 ### Validation System
 
-- [Validation Overview](/Users/terryli/eon/gapless-network-data/docs/validation/OVERVIEW.md) - 5-layer validation pipeline (pending)
-- [ValidationStorage Specification](/Users/terryli/eon/gapless-network-data/docs/validation/STORAGE.md) - Parquet-backed validation reports with DuckDB queries (pending)
+- [Validation Overview](./docs/validation/OVERVIEW.md) - 5-layer validation pipeline (pending)
+- [ValidationStorage Specification](./docs/validation/STORAGE.md) - Parquet-backed validation reports with DuckDB queries (pending)
 
 ### Development
 
-- [Development Setup](/Users/terryli/eon/gapless-network-data/docs/development/SETUP.md) - Environment setup (pending)
-- [Development Commands](/Users/terryli/eon/gapless-network-data/docs/development/COMMANDS.md) - Testing, linting, build (pending)
-- [Publishing Guide](/Users/terryli/eon/gapless-network-data/docs/development/PUBLISHING.md) - PyPI publishing workflow (pending)
+- [Development Setup](./docs/development/SETUP.md) - Environment setup (pending)
+- [Development Commands](./docs/development/COMMANDS.md) - Testing, linting, build (pending)
+- [Publishing Guide](./docs/development/PUBLISHING.md) - PyPI publishing workflow (pending)
 
-### Data Sources Research
+### Data Sources
 
-- [Research Index](/Users/terryli/eon/gapless-network-data/docs/research/INDEX.md) - Free on-chain network metrics sources (2025-11-03)
-- [LlamaRPC Deep Dive](/Users/terryli/eon/gapless-network-data/docs/archive/llamarpc-research/INDEX.md) - Comprehensive Ethereum RPC research (archived 2025-11-12)
-- [Ethereum Collector POC](/Users/terryli/eon/gapless-network-data/scratch/ethereum-collector-poc/ETHEREUM_COLLECTOR_POC_REPORT.md) - Rate limiting validation and RPC provider options (2025-11-05)
+**Production**: BigQuery (historical) + Alchemy (real-time) → MotherDuck cloud database
 
-**Focus**: On-chain network metrics (gas prices, mempool congestion, block data, transaction counts)
-
-**Active Data Sources (Production)**:
-
-- **Ethereum Historical**: BigQuery public dataset `bigquery-public-data.crypto_ethereum.blocks` (2015-2025, 23.8M blocks, free tier)
-- **Ethereum Real-Time**: Alchemy WebSocket API (300M CU/month free tier, ~12s block intervals)
-- **Storage**: MotherDuck cloud database (dual-pipeline ingestion with automatic deduplication)
-
-**Researched Sources (Not Used in Production)**:
-
-- **LlamaRPC**: Rejected due to rate limits (1.37 RPS sustained, 110-day timeline) - see [POC Report](/Users/terryli/eon/gapless-network-data/scratch/ethereum-collector-poc/ETHEREUM_COLLECTOR_POC_REPORT.md)
-  - Research documentation archived: [LlamaRPC Deep Dive](/Users/terryli/eon/gapless-network-data/docs/archive/llamarpc-research/INDEX.md)
-- **Bitcoin**: mempool.space (future work, M5 recent / H12 historical, 2016+, no auth)
-- **Multi-chain**: Dune Analytics (SQL aggregation, block-level, 2020+, free signup)
+**Complete Documentation**: See [Data Sources](./docs/research/data-sources.md) for production sources, rejected alternatives (LlamaRPC: 1.37 RPS sustained vs 50 RPS documented), and future multi-chain plans.
 
 ## MotherDuck Integration
 
-**Status**: Operational (deployed 2025-11-09)
-**Specification**: `/Users/terryli/eon/gapless-network-data/specifications/motherduck-integration.yaml`
+**Status**: Operational - Dual-pipeline (BigQuery hourly + Alchemy real-time) → MotherDuck cloud database with automatic deduplication
 
-### Overview
+**Complete Documentation**: See [Dual Pipeline Architecture](./docs/architecture/motherduck-dual-pipeline.md) for architecture diagrams, failure modes, monitoring, SLOs, and operational status.
 
-Dual-pipeline architecture for Ethereum data collection with automatic deduplication via MotherDuck:
-
-1. **BigQuery Hourly Batch** (Cloud Run Job): Syncs latest blocks from BigQuery public dataset every hour (~578 blocks/run)
-2. **Alchemy Real-Time Stream** (e2-micro VM): WebSocket subscription for real-time blocks (~12s intervals)
-3. **Data Quality Monitoring** (Cloud Run Job): Verifies data freshness every 5 minutes (<960s threshold for batch mode compatibility)
-
-**Deduplication**: Both pipelines use `INSERT OR REPLACE` on MotherDuck table with `number` as PRIMARY KEY
-
-### Architecture Documentation
-
-- [Dual Pipeline Architecture](/Users/terryli/eon/gapless-network-data/docs/architecture/motherduck-dual-pipeline.md) - Complete architecture diagram, failure modes, monitoring
-- [BigQuery Integration](/Users/terryli/eon/gapless-network-data/docs/architecture/bigquery-motherduck-integration.md) - PyArrow zero-copy transfer, performance analysis
-- [Real-Time Collector](/Users/terryli/eon/gapless-network-data/docs/deployment/realtime-collector.md) - VM deployment guide, systemd service configuration
-- [Secret Manager Migration](/Users/terryli/eon/gapless-network-data/docs/deployment/secret-manager-migration.md) - Migration from Doppler to GCP Secret Manager
-
-### Deployment Directories
-
-- `deployment/cloud-run/` - BigQuery → MotherDuck hourly sync (Cloud Run Job)
-- `deployment/vm/` - Real-time collector (e2-micro VM with systemd)
-- `deployment/backfill/` - Historical backfill script (2015-2025, 23.8M blocks)
-
-Each directory contains:
-
-- Production Python scripts
-- Infrastructure files (Dockerfile, systemd service)
-- README.md with deployment instructions
-
-### Secret Manager Best Practices
-
-**Production (Cloud Infrastructure)**: Google Cloud Secret Manager
-
-All production credentials stored in Google Cloud Secret Manager:
-
-**Secrets**:
-
-- `alchemy-api-key` - Alchemy WebSocket access
-- `motherduck-token` - MotherDuck authentication
-
-**Local Development (Optional)**: Doppler CLI
-
-Skills scripts (`.claude/skills/data-pipeline-monitoring/`) may use Doppler for local testing:
-
-- `PUSHOVER_TOKEN`, `PUSHOVER_USER` - Alert notifications
-- `HEALTHCHECKS_API_KEY` - Uptime tracking
-
-**IAM Permissions**:
-
-- VM service account: `893624294905-compute@developer.gserviceaccount.com` → `roles/secretmanager.secretAccessor`
-- Cloud Run service account: `eth-md-job-sa@eonlabs-ethereum-bq.iam.gserviceaccount.com` → `roles/secretmanager.secretAccessor`
-
-**Critical Pattern**:
-
-```python
-def get_secret(secret_id: str, project_id: str = GCP_PROJECT) -> str:
-    """Fetch secret from Google Secret Manager."""
-    client = secretmanager.SecretManagerServiceClient()
-    name = f"projects/{project_id}/secrets/{secret_id}/versions/latest"
-    response = client.access_secret_version(request={"name": name})
-    return response.payload.data.decode('UTF-8').strip()  # .strip() prevents gRPC errors
-```
-
-**Why `.strip()` is Critical**: Secrets stored via `gcloud secrets create` contain trailing newlines, causing gRPC metadata validation errors if not stripped.
-
-### Service Management
-
-**Cloud Run Job** (BigQuery sync):
+**Critical Commands**:
 
 ```bash
-# View execution history
-gcloud run jobs executions list --job eth-md-updater --region us-central1
-
-# Manual trigger
+# Cloud Run Job (BigQuery sync)
 gcloud run jobs execute eth-md-updater --region us-central1
-```
 
-**VM Service** (real-time collector):
-
-```bash
-# View logs
-gcloud compute ssh eth-realtime-collector --zone=us-east1-b --command='sudo journalctl -u eth-collector -f'
-
-# Check status
-gcloud compute ssh eth-realtime-collector --zone=us-east1-b --command='sudo systemctl status eth-collector'
-
-# Restart service
+# VM Service (real-time collector)
 gcloud compute ssh eth-realtime-collector --zone=us-east1-b --command='sudo systemctl restart eth-collector'
 ```
 
-### Data Quality Monitoring
+**Database Operations**: Use `motherduck-pipeline-operations` skill for verification, gap detection, and backfill workflows.
 
-**Cloud Run Job** (data quality checks):
-
-```bash
-# View execution history
-gcloud run jobs executions list --job eth-md-data-quality-checker --region us-central1
-
-# Manual trigger
-gcloud run jobs execute eth-md-data-quality-checker --region us-central1
-```
-
-**Monitoring Schedule**: Every 5 minutes via Cloud Scheduler (`eth-md-data-quality`)
-
-**Purpose**: Queries MotherDuck for latest block timestamp and verifies data freshness (<960s / 16-minute threshold). Exits with code 1 if data is stale, triggering Cloud Run Job failure alerts. Threshold increased from 300s to accommodate batch mode 5-minute flush intervals.
-
-**Deployment**: `deployment/cloud-run/data_quality_checker.py`
-
-### Database Verification & Operations
-
-**Important**: Pipeline health monitoring (whether services are running) is separate from data completeness verification (whether historical data exists in MotherDuck).
-
-**Verify MotherDuck Database State**:
-
-Use the `motherduck-pipeline-operations` skill for database verification:
-
-```bash
-cd /Users/terryli/eon/gapless-network-data/.claude/skills/motherduck-pipeline-operations
-uv run scripts/verify_motherduck.py
-```
-
-Expected output for complete 2015-2025 backfill:
-
-- Total blocks: 23.8M
-- Block range: 1 → ~23,780,000
-- Time range: 2015-07-30 (Genesis) → 2025-present
-- Yearly breakdown showing ~2-3M blocks per year
-
-**Gap Detection & Automated Healing**:
-
-Zero-tolerance gap detection using DuckDB LAG() window function:
-
-```bash
-cd /Users/terryli/eon/gapless-network-data/.claude/skills/motherduck-pipeline-operations
-
-# Detect gaps (read-only)
-uv run scripts/detect_gaps.py
-
-# Detect and auto-fill gaps
-uv run scripts/detect_gaps.py --auto-fill
-
-# Dry-run (show what would be done)
-uv run scripts/detect_gaps.py --dry-run --auto-fill
-```
-
-Features:
-
-- DuckDB LAG() query (20x faster than Python iteration, ~50ms for 23.8M blocks)
-- Zero-tolerance threshold (detects any missing block in sequence)
-- Automated backfill triggering via Cloud Run Jobs
-- Validation report storage in `~/.cache/gapless-network-data/validation.duckdb`
-- Pushover + Healthchecks.io alerting
-
-**Historical Backfill**:
-
-For loading multi-year historical data, use 1-year chunking pattern (canonical approach established 2025-11-10):
-
-```bash
-cd /Users/terryli/eon/gapless-network-data/deployment/backfill
-./chunked_backfill.sh 2015 2025
-```
-
-Pattern details:
-
-- Chunk size: 1 year (~2.6M blocks, ~1.5-2GB memory)
-- Execution time: ~1m40s-2m per chunk
-- Prevents OOM failures (Cloud Run 4GB limit)
-- Idempotent: `INSERT OR REPLACE` allows safe re-runs
-
-**Common Scenario**: "Pipeline health checks show OK, but no historical data exists"
-
-Root cause: Dual-pipeline architecture responsibilities:
-
-- Cloud Run `eth-md-updater`: Hourly sync of **last 2 hours only** (NOT historical)
-- VM `eth-realtime-collector`: Real-time streaming of **new blocks only** (NOT historical)
-- Historical backfill: **Separate one-time operation** using `ethereum-historical-backfill` Cloud Run Job
-
-Resolution workflow:
-
-1. Verify database state with `verify_motherduck.py`
-2. Detect specific missing ranges with `detect_gaps.py`
-3. Auto-fill gaps with `detect_gaps.py --auto-fill` or execute `chunked_backfill.sh`
-4. Re-verify to confirm 23.8M blocks loaded with zero gaps
-
-See `.claude/skills/motherduck-pipeline-operations/` for complete workflows and troubleshooting.
-
-### SLOs
-
-**Availability**: Data pipelines run without manual intervention
-
-- Status: MET (both pipelines operational)
-
-**Correctness**: 100% data accuracy with no silent errors
-
-- Status: MET (schema validation, exception-only failures, idempotent deduplication)
-
-**Observability**: 100% operation tracking with queryable logs
-
-- Status: MET (Cloud Logging for all operations)
-
-**Maintainability**: <30 minutes for common operations
-
-- Status: MET (critical fix deployed in <15 minutes)
-
-### Operational Status (2025-11-12)
-
-**Current State**: ALL SYSTEMS OPERATIONAL ✅
-
-**Infrastructure Components**:
-
-- **VM eth-realtime-collector**: ACTIVE (real-time WebSocket streaming via Alchemy)
-- **eth-collector systemd service**: ACTIVE (streaming blocks every ~12 seconds)
-- **Cloud Run eth-md-updater**: ACTIVE (hourly BigQuery sync, last 2 hours)
-- **Cloud Run eth-md-data-quality-checker**: ACTIVE (data freshness monitoring every 5 minutes)
-- **Cloud Scheduler eth-md-hourly**: ENABLED (triggers hourly at :00)
-- **Cloud Scheduler eth-md-data-quality**: ENABLED (triggers every 5 minutes)
-- **MotherDuck ethereum_mainnet.blocks**: 23.8M blocks (2015-2025)
-
-**Infrastructure Recovery** (2025-11-10 07:00 UTC):
-
-- VM network failure detected (DNS resolution failed, metadata server unreachable)
-- Recovery: VM reset restored network connectivity
-- eth-collector service restarted with `.strip()` fix (gRPC metadata validation resolved)
-- Real-time data flow confirmed: blocks streaming every ~12 seconds
-- Database verified: 23.8M blocks (2015-2025), latest block within seconds
-
-**Monitoring Setup** (2025-11-10):
-
-- **Pushover**: Implemented and tested (alert notifications for pipeline failures)
-  - Test alert sent successfully (Request ID: 10a4994f-a12e-44b7-8cf6-c9a646a8812c)
-  - Credentials sourced from Doppler (PUSHOVER_TOKEN, PUSHOVER_USER)
-  - Script: `.claude/skills/data-pipeline-monitoring/scripts/send_pushover_alert.py`
-
-- **Healthchecks.io**: Implemented and tested (uptime tracking)
-  - Operational checks:
-    - motherduck-monitor (gap detection, every 3 hours)
-    - Cloud Run Job | BigQuery → MotherDuck | Hourly
-    - Data Quality | MotherDuck Growing & Gapless (every 5 min)
-    - VM Systemd | Alchemy → MotherDuck | Real-Time (12s)
-  - Credentials sourced from Doppler (HEALTHCHECKS_API_KEY)
-  - Script: `.claude/skills/data-pipeline-monitoring/scripts/ping_healthchecks.py`
-
-- **UptimeRobot**: Removed (Cloud Run Jobs don't expose public HTTP endpoints)
-  - Lesson learned: UptimeRobot is for public HTTP endpoints only
-  - Cloud Run Jobs require Dead Man's Switch monitoring (Healthchecks.io)
-  - Attempted to monitor Kubernetes API endpoint caused false positive alerts
-
-**Scheduled Monitoring** (discovered existing setup):
-
-- Cloud Scheduler `eth-md-hourly` running in `us-central1`
-- Schedule: `0 * * * *` (hourly, America/New_York timezone)
-- Recent executions: 5/5 succeeded (03:00-07:00 UTC, avg 1m30s duration)
-- Service account: eth-md-scheduler-sa@eonlabs-ethereum-bq.iam.gserviceaccount.com
-
-**Maintainability SLO Achievement**: Critical infrastructure failure (VM network down) resolved in <30 minutes (VM reset + service restart + verification).
-
-### Cost
-
-**Total**: $0/month (all within free tiers)
-
-- BigQuery: $0 (10 MB queries within 1 TB/month free tier)
-- Cloud Run: $0 (720 executions within free tier)
-- Compute Engine: $0 (e2-micro within free tier)
-- MotherDuck: $0 (1.5 GB storage, <10 GB queries within free tier)
-
-## Gap Detection Monitoring
-
-**Status**: Operational (deployed 2025-11-11)
-**Platform**: GCP Cloud Functions gen2 (Python 3.12)
-**Location**: `deployment/gcp-functions/motherduck-monitor/`
-
-### Overview
-
-Serverless monitoring for MotherDuck Ethereum database gaps and staleness, separate from data collection infrastructure.
-
-**Architecture**: Cloud Function + Cloud Scheduler + Secret Manager
-
-**Monitoring Scope**:
-
-- Gap Detection: Deterministic block number continuity validation (entire blockchain history)
-- Staleness Detection: Alert if latest block >960s old (16 min threshold for batch mode)
-- Notifications: Pushover (priority=2, all executions) + Healthchecks.io Dead Man's Switch
-
-**Cost**: $0/month (240 invocations << 2M free tier)
-
-### Operational Status
-
-**Function**: `motherduck-gap-detector` - ACTIVE (us-east1)
-**Last Updated**: 2025-11-12 02:05:59
-**Scheduler**: `motherduck-monitor-trigger` - ENABLED
-**Schedule**: Every 3 hours (`0 */3 * * *`)
-**Last Execution**: 2025-11-12 20:00:15
-
-### Gap Detection Algorithm
-
-Uses DuckDB LAG() window function (20x faster than Python iteration):
-
-```sql
-WITH gaps AS (
-    SELECT
-        number AS block_number,
-        LAG(number) OVER (ORDER BY number) AS prev_block,
-        number - LAG(number) OVER (ORDER BY number) AS gap_size
-    FROM ethereum_mainnet.blocks
-)
-SELECT * FROM gaps WHERE gap_size > 1
-```
-
-### Deployment
-
-```bash
-cd deployment/gcp-functions/motherduck-monitor
-
-gcloud functions deploy motherduck-gap-detector \
-  --gen2 \
-  --runtime=python312 \
-  --region=us-east1 \
-  --source=. \
-  --entry-point=monitor \
-  --trigger-http \
-  --no-allow-unauthenticated \
-  --service-account=motherduck-monitor-sa@eonlabs-ethereum-bq.iam.gserviceaccount.com \
-  --max-instances=1 \
-  --timeout=540s \
-  --memory=512MB
-```
-
-### Exit Codes
-
-| Code | Meaning                            | Action                       |
-| ---- | ---------------------------------- | ---------------------------- |
-| 0    | Healthy (no gaps, data fresh)      | None                         |
-| 1    | Unhealthy (gaps detected or stale) | Alert sent                   |
-| 2    | Fatal error (query failed)         | Alert + manual investigation |
+**Monitoring**: Gap detection runs every 3 hours via GCP Cloud Functions (DuckDB LAG() query, Pushover + Healthchecks.io alerts)
 
 ## Project Skills
 
-**Location**: `/Users/terryli/eon/gapless-network-data/.claude/skills/`
+**Skills**: 5 project skills + 2 managed skills (blockchain RPC research, data collection validation, BigQuery acquisition, MotherDuck operations, pipeline monitoring)
 
-Project-specific skills that capture validated workflows from scratch investigations. These skills are committed to git and shared with team members.
-
-### blockchain-rpc-provider-research
-
-**Description**: Systematic workflow for researching and validating blockchain RPC providers. Use when evaluating RPC providers for historical data collection, rate limits, archive access, compute unit costs, or timeline estimation.
-
-**Key Principle**: Never trust documented rate limits—always validate empirically with POC testing.
-
-**What This Skill Provides**:
-
-- 5-step investigation workflow (Research → Calculate → Validate → Compare → Recommend)
-- Scripts: `calculate_timeline.py`, `test_rpc_rate_limits.py`
-- References: `validated-providers.md` (Alchemy vs LlamaRPC case study), `rpc-comparison-template.md`
-- Common pitfalls to avoid (burst vs sustained limits, parallel fetching on free tiers)
-
-**When to Use**:
-
-- Evaluating blockchain RPC providers for a new project
-- Planning historical data backfill timelines
-- Investigating rate limiting issues with current provider
-- Researching compute unit or API credit costs
-
-**Validated Pattern From**: `scratch/ethereum-collector-poc/` (LlamaRPC 1.37 RPS finding) and `scratch/rpc-provider-comparison/` (Alchemy 4.2x speedup discovery)
-
-### blockchain-data-collection-validation
-
-**Description**: Empirical validation workflow for blockchain data collection pipelines before production implementation. Use when validating data sources, testing DuckDB integration, building POC collectors, or verifying complete fetch-to-storage pipelines.
-
-**Key Principle**: Validate every component empirically before implementation—connectivity, schema, rate limits, storage, and complete pipeline.
-
-**What This Skill Provides**:
-
-- 5-step validation workflow (Connectivity → Schema → Rate Limits → Pipeline → Decision)
-- POC template scripts: `poc_single_block.py`, `poc_complete_pipeline.py`
-- DuckDB patterns: CHECKPOINT for durability, batch INSERT, CHECK constraints
-- References: `duckdb-patterns.md` (crash-tested patterns), `ethereum-collector-poc-findings.md` (complete case study)
-- Common pitfalls to avoid (forgetting CHECKPOINT, testing with too few blocks, parallel fetching on free tiers)
-
-**When to Use**:
-
-- Validating a new blockchain RPC provider before implementation
-- Testing DuckDB integration for blockchain data
-- Building POC collector for new blockchain
-- Verifying complete fetch-to-storage pipeline
-- Investigating data quality issues
-
-**Validated Pattern From**: `scratch/ethereum-collector-poc/` (5 POC scripts progression) and `scratch/duckdb-batch-validation/` (CHECKPOINT crash testing, 124K blocks/sec performance)
-
-### bigquery-ethereum-data-acquisition
-
-**Description**: Bulk download 5 years of Ethereum data from Google BigQuery free tier (624x faster than RPC polling: <1 hour vs 26 days). Empirically validated column selection (11 vs 23 columns, 97% cost savings).
-
-**Complete Documentation**: See `.claude/skills/bigquery-ethereum-data-acquisition/CLAUDE.md` for column selection rationale, research methodology, and implementation guide
-
-### motherduck-pipeline-operations
-
-**Description**: Operations for managing the Ethereum blockchain data pipeline that populates MotherDuck cloud database. Use when verifying MotherDuck database state, executing historical backfills, or troubleshooting missing historical data despite pipeline health checks showing systems are operational.
-
-**Key Principle**: Pipeline health monitoring (whether services are running) is separate from data completeness verification (whether historical data exists in MotherDuck).
-
-**What This Skill Provides**:
-
-- 3 core operations: Verify database state, Execute chunked backfill, Troubleshoot missing data
-- Scripts: `verify_motherduck.py` (database verification)
-- References: `pipeline-architecture-and-troubleshooting.md` (dual-pipeline architecture, common failure modes)
-- Canonical pattern: 1-year chunked backfills to prevent OOM failures (empirically validated 2025-11-10)
-
-**When to Use**:
-
-- Verifying actual MotherDuck database state (block counts, historical data presence)
-- Executing historical backfills for Ethereum blockchain data
-- Troubleshooting "No historical data despite healthy pipelines" scenarios
-- Understanding dual-pipeline architecture responsibilities
-
-**Validated Pattern From**: Complete historical backfill execution (23.8M blocks, 2015-2025) using `deployment/backfill/chunked_backfill.sh`
-
-**Cross-References**: Works with `data-pipeline-monitoring` skill (pipeline health) and `bigquery-ethereum-data-acquisition` skill (BigQuery → MotherDuck workflow)
+**Complete Catalog**: See [Skills Catalog](./.claude/skills/CATALOG.md) for descriptions, when-to-use guidance, and validated patterns from scratch investigations.
 
 ## Project Scope
 
@@ -631,228 +220,11 @@ Project-specific skills that capture validated workflows from scratch investigat
 
 ## DuckDB Architecture & Strategy
 
-**Version**: DuckDB PRIMARY architecture (2025-11-04)
-**Supersedes**: "Parquet for Data" architecture (2025-11-03)
+**Strategy**: DuckDB PRIMARY for time-series analytics (10-100x faster than pandas for ASOF JOIN, gap detection, z-score anomaly detection)
 
-### Architectural Principle: "DuckDB for Everything"
+**Complete Documentation**: See [DuckDB Strategy](./docs/architecture/duckdb-strategy.md) for 23 features, performance benchmarks, use cases, and integration with gapless-crypto-data.
 
-**Core Insight**: For historical data collection + flexible feature engineering, DuckDB PRIMARY storage provides maximum flexibility at negligible storage cost.
-
-**Architecture**:
-
-```
-Collection → DuckDB Tables (raw data) → SQL Queries → Features
-             ~/.cache/gapless-network-data/data.duckdb
-                 └── ethereum_blocks (~1.5 GB, 13M rows)
-```
-
-**Why This Approach**:
-
-- **Maximum flexibility**: Direct SQL resampling (time_bucket), temporal joins (ASOF JOIN), window functions
-- **10-100x faster**: DuckDB SQL vs Pandas operations for feature engineering
-- **Simplicity**: Single data.duckdb file, no file management complexity
-- **Compact storage**: ~1.5 GB for 5 years of Ethereum data (76-100 bytes/block empirically validated)
-- **Proven at scale**: DoorDash uses DuckDB for 1-min time-series with z-score anomaly detection
-
-### DuckDB Use Cases (23 Features Discovered)
-
-#### 1. Validation Storage (Parquet-Backed)
-
-**Pattern**: Write validation reports to Parquet, query with DuckDB
-
-```python
-# Write validation reports
-duckdb.execute("""
-    COPY (SELECT * FROM validation_results)
-    TO 'validation_reports/YYYYMMDD.parquet'
-    (FORMAT PARQUET, COMPRESSION ZSTD)
-""")
-
-# Query validation history
-duckdb.execute("""
-    SELECT validation_layer, severity, COUNT(*)
-    FROM read_parquet('validation_reports/*.parquet')
-    WHERE timestamp BETWEEN ? AND ?
-    GROUP BY validation_layer, severity
-""")
-```
-
-**Benefits**:
-
-- 110x smaller storage
-- Queryable validation history
-- No schema migrations (Parquet is immutable)
-
-#### 2. Gap Detection (LAG Window Function)
-
-**DuckDB Solution**: 20x faster than Python iteration
-
-```sql
-WITH gaps AS (
-    SELECT
-        timestamp,
-        LAG(timestamp) OVER (ORDER BY timestamp) AS prev_timestamp,
-        EXTRACT(EPOCH FROM (timestamp - LAG(timestamp) OVER (ORDER BY timestamp))) AS gap_seconds
-    FROM bitcoin_mempool
-)
-SELECT * FROM gaps WHERE gap_seconds > 90  -- Detect >90s gaps (1.5× expected 60s)
-```
-
-**Implementation**: Direct queries against DuckDB tables for zero-gap guarantee
-
-#### 3. Anomaly Detection (Z-Score with QUALIFY)
-
-**DuckDB Solution**: 10x faster, filters anomalies directly in SQL
-
-```sql
-SELECT timestamp, unconfirmed_count, z_score
-FROM (
-    SELECT
-        timestamp,
-        unconfirmed_count,
-        (unconfirmed_count - AVG(unconfirmed_count) OVER w) /
-        (STDDEV(unconfirmed_count) OVER w + 1e-10) AS z_score
-    FROM bitcoin_mempool
-    WINDOW w AS (ORDER BY timestamp ROWS BETWEEN 60 PRECEDING AND CURRENT ROW)
-)
-QUALIFY ABS(z_score) > 3  -- Filter anomalies (>3σ from mean)
-```
-
-**Production Evidence**: DoorDash case study (same algorithm, <10 min vs hours with Spark)
-
-#### 4. Temporal Alignment (ASOF JOIN)
-
-**DuckDB Solution**: 16x faster than pandas reindex, prevents lookahead bias
-
-```sql
--- Align mempool snapshots to OHLCV timestamps (forward-fill)
-SELECT ohlcv.*, mempool.* EXCLUDE (timestamp)
-FROM read_parquet('~/.cache/gapless-crypto-data/ohlcv/*.parquet') AS ohlcv
-ASOF LEFT JOIN bitcoin_mempool AS mempool
-ON ohlcv.timestamp >= mempool.timestamp
-```
-
-**Critical**: Prevents data leakage in trading models (no future information)
-**Performance**: 800ms → 50ms for 525K rows
-**Cross-package**: Queries OHLCV Parquet files from gapless-crypto-data + network data from DuckDB
-
-#### 5. Schema Validation (CHECK Constraints)
-
-**Pattern**: Database-level validation for fee ordering sanity check
-
-```sql
-CREATE TABLE mempool_snapshots (
-    timestamp TIMESTAMP NOT NULL,
-    fastest_fee DOUBLE,
-    half_hour_fee DOUBLE,
-    hour_fee DOUBLE,
-    economy_fee DOUBLE,
-    minimum_fee DOUBLE,
-    CHECK (fastest_fee >= half_hour_fee),
-    CHECK (half_hour_fee >= hour_fee),
-    CHECK (hour_fee >= economy_fee),
-    CHECK (economy_fee >= minimum_fee),
-    CHECK (minimum_fee >= 1)
-)
-```
-
-**Benefit**: Catches data corruption at ingestion time (exception-only failures)
-
-#### 6. Time-Series Aggregations (time_bucket)
-
-**Pattern**: Native function for bucketing timestamps
-
-```sql
--- Hourly aggregations
-SELECT
-    time_bucket(INTERVAL '1 hour', timestamp) AS hour,
-    AVG(fastest_fee) AS avg_fastest_fee,
-    MAX(unconfirmed_count) AS max_unconfirmed
-FROM bitcoin_mempool
-GROUP BY hour
-ORDER BY hour
-```
-
-### Performance Benchmarks (525K rows, 1 year of 1-min data)
-
-| Operation                  | Pandas | DuckDB | Speedup |
-| -------------------------- | ------ | ------ | ------- |
-| Rolling mean (10-period)   | 150ms  | 15ms   | **10x** |
-| ASOF JOIN (temporal align) | 800ms  | 50ms   | **16x** |
-| Gap detection              | 1200ms | 60ms   | **20x** |
-| Z-score (60-period)        | 300ms  | 30ms   | **10x** |
-| Full table scan            | N/A    | 0.15ms | N/A     |
-| Cross-package join         | N/A    | 2.3ms  | N/A     |
-
-**Source**: `/tmp/duckdb-analytics/SUMMARY.md` - Performance comparison table
-
-### Integration with gapless-crypto-data
-
-**Strategy**: Separate databases, parallel patterns (cross-package investigation confirmed this approach)
-
-- **gapless-crypto-data**: `~/.cache/gapless-crypto-data/validation.duckdb` (fully implemented, v3.3.0)
-- **gapless-network-data**: `~/.cache/gapless-network-data/validation.duckdb` (planned)
-
-**Cross-Package Analytics**:
-
-```python
-import duckdb
-
-# Option 1: Pandas join (recommended for simplicity)
-df_ohlcv = gcd.get_data(...)
-df_mempool = gmd.fetch_snapshots(...)
-df_features = df_ohlcv.join(df_mempool.reindex(df_ohlcv.index, method='ffill'))
-
-# Option 2: DuckDB ASOF join (16x faster, prevents data leakage)
-conn = duckdb.connect('~/.cache/gapless-network-data/data.duckdb')
-result = conn.execute("""
-    SELECT ohlcv.*, mempool.* EXCLUDE (timestamp)
-    FROM read_parquet('~/.cache/gapless-crypto-data/ohlcv/*.parquet') AS ohlcv
-    ASOF LEFT JOIN bitcoin_mempool AS mempool
-    ON ohlcv.timestamp >= mempool.timestamp
-""").df()
-```
-
-**Architecture**: OHLCV data from gapless-crypto-data (Parquet files) + network data from gapless-network-data (DuckDB tables)
-
-### Top 6 High-Priority Features (14-19 hours total)
-
-Prioritized by impact and effort:
-
-1. **ASOF JOIN** (2-4h) - Temporal alignment, core feature engineering use case
-2. **CHECK Constraints** (2-3h) - Schema validation (fee ordering, non-negative values)
-3. **Window Functions + QUALIFY** (3-4h) - Z-score anomaly detection
-4. **Gap Detection with LAG()** (3-4h) - Zero-gap guarantee implementation
-5. **time_bucket()** (1-2h) - Time-series aggregation primitive
-6. **Statistical Aggregates** (2-3h) - MEDIAN, MAD, PERCENTILE_CONT for validation reports
-
-**Full Feature List**: 23 features documented in `/tmp/duckdb-capabilities/feature-priority-matrix.md`
-
-### Why DuckDB vs Alternatives
-
-| Criteria                      | DuckDB               | pandas             | Polars        | Spark      |
-| ----------------------------- | -------------------- | ------------------ | ------------- | ---------- |
-| **Performance (time-series)** | 10-100x              | Baseline           | ~5x           | Overkill   |
-| **SQL Support**               | Modern SQL:2023      | N/A                | Limited       | SQL:2003   |
-| **Embedded**                  | ✅ Single file       | ✅ In-process      | ✅ In-process | ❌ Cluster |
-| **Parquet Integration**       | ✅ Native, zero-copy | ⚠️ Loads to memory | ✅ Native     | ✅ Native  |
-| **Installation Size**         | 50MB                 | 30MB               | 40MB          | 300MB+     |
-| **Production Evidence**       | DoorDash             | Ubiquitous         | Emerging      | Mature     |
-| **ASOF JOIN**                 | ✅ Native            | ⚠️ Manual reindex  | ✅ Native     | ❌ Manual  |
-
-**Decision**: DuckDB chosen for time-series primitives (ASOF JOIN, window functions, time_bucket), proven production use (DoorDash), and embedded architecture.
-
-### Investigation References
-
-All investigation materials with absolute paths:
-
-- **Capabilities Analysis**: `/tmp/duckdb-capabilities/EXECUTIVE_SUMMARY.md` - 23 features, priority matrix
-- **Current Usage Audit**: `/tmp/duckdb-current-usage/duckdb-usage-audit-report.md` - 0% implementation gap
-- **Parquet Integration**: `/tmp/duckdb-parquet/REPORT.md` - 110x storage savings, zero-copy queries
-- **Analytics Patterns**: `/tmp/duckdb-analytics/analytics_query_patterns_report.md` - 10-100x speedups
-- **Cross-Package Strategy**: `/tmp/duckdb-cross-package/EXECUTIVE_SUMMARY.md` - Separate databases confirmed
-
-**Total Investigation**: ~12,000 lines, 15 files, 5 perspectives
+**Key Features**: ASOF JOIN (16x faster, prevents data leakage), LAG() window function (20x faster gap detection), CHECK constraints (schema validation), time_bucket() aggregations.
 
 ## Data Format
 
@@ -883,7 +255,7 @@ All investigation materials with absolute paths:
 - `ethereum_blocks` - 23.8M Ethereum blocks (2015-2025, ~2.5 GB)
 - `bitcoin_mempool` - Deferred to Phase 2+ (Bitcoin is SECONDARY)
 
-**Complete Schema Specification**: See `/Users/terryli/eon/gapless-network-data/specifications/duckdb-schema-specification.yaml` for:
+**Complete Schema Specification**: See `./specifications/duckdb-schema-specification.yaml` for:
 
 - DDL statements with constraints and indexes
 - Common query patterns (time_bucket, ASOF JOIN, window functions)
@@ -1044,7 +416,7 @@ supersedes: []
 
 **Context**: Roadmap refocused (2025-11-04) to emphasize user-facing features (WHAT users get) rather than implementation architecture (HOW we build it).
 
-**Master Plan**: `/Users/terryli/eon/gapless-network-data/specifications/master-project-roadmap.yaml` (Single Source of Truth)
+**Master Plan**: `./specifications/master-project-roadmap.yaml` (Single Source of Truth)
 
 **Key Insight**: DuckDB optimizations are implementation details supporting features, not features themselves.
 
