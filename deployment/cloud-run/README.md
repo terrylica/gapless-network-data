@@ -36,7 +36,7 @@ Update Cloud Run Job:
 ```bash
 gcloud run jobs update eth-md-updater \
   --image gcr.io/eonlabs-ethereum-bq/eth-md-updater \
-  --region us-east1 \
+  --region us-central1 \
   --project eonlabs-ethereum-bq
 ```
 
@@ -46,7 +46,7 @@ Run the job manually:
 
 ```bash
 gcloud run jobs execute eth-md-updater \
-  --region us-east1 \
+  --region us-central1 \
   --project eonlabs-ethereum-bq
 ```
 
@@ -84,7 +84,7 @@ View job execution history:
 ```bash
 gcloud run jobs executions list \
   --job eth-md-updater \
-  --region us-east1 \
+  --region us-central1 \
   --project eonlabs-ethereum-bq
 ```
 
@@ -147,6 +147,7 @@ gcloud run jobs executions list \
 ### Monitoring
 
 Healthchecks.io check: **Data Quality | MotherDuck Growing & Gapless**
+
 - Receives ping on success (data fresh)
 - Receives `/fail` ping if data stale (>960s)
 - Grace period: 10 minutes

@@ -368,8 +368,11 @@ See `.claude/skills/motherduck-pipeline-operations/` for complete workflows and 
   - Script: `.claude/skills/data-pipeline-monitoring/scripts/send_pushover_alert.py`
 
 - **Healthchecks.io**: Implemented and tested (uptime tracking)
-  - Check created: eth-pipeline-test
-  - Pinged successfully via API v3
+  - Operational checks:
+    - motherduck-monitor (gap detection, every 3 hours)
+    - Cloud Run Job | BigQuery → MotherDuck | Hourly
+    - Data Quality | MotherDuck Growing & Gapless (every 5 min)
+    - VM Systemd | Alchemy → MotherDuck | Real-Time (12s)
   - Credentials sourced from Doppler (HEALTHCHECKS_API_KEY)
   - Script: `.claude/skills/data-pipeline-monitoring/scripts/ping_healthchecks.py`
 
