@@ -1,3 +1,8 @@
+---
+name: vm-infrastructure-ops
+description: Troubleshoot and manage GCP e2-micro VM running eth-realtime-collector. Use when VM service is down, systemd failures occur, real-time data stream stops, or VM network issues arise. Keywords systemd, journalctl, eth-collector, gcloud compute.
+---
+
 # VM Infrastructure Operations
 
 **Version**: 1.0.0
