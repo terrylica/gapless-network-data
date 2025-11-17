@@ -1,3 +1,8 @@
+---
+name: historical-backfill-execution
+description: Execute chunked historical blockchain data backfills using canonical 1-year pattern. Use when loading multi-year historical data, filling gaps in MotherDuck, or preventing OOM failures on Cloud Run. Keywords chunked_backfill.sh, BigQuery historical, gap filling, memory-safe backfill.
+---
+
 # Historical Backfill Execution
 
 **Version**: 1.0.0
