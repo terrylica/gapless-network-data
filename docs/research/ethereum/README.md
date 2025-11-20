@@ -2,7 +2,7 @@
 
 > **⚠️ Research Artifact**: This documentation describes LlamaRPC evaluation (2025-11-03).
 > **Production uses BigQuery + Alchemy** (empirical testing showed 1.37 RPS sustained vs 50 RPS documented).
-> See [Ethereum Collector POC Report](../../scratch/ethereum-collector-poc/ETHEREUM_COLLECTOR_POC_REPORT.md) for rate limit findings.
+> See [Ethereum Collector POC Report](../../../scratch/ethereum-collector-poc/ETHEREUM_COLLECTOR_POC_REPORT.md) for rate limit findings.
 
 **Research Date**: 2025-11-03
 **Objective**: Identify free APIs/datasets with M1/M5/M15+ frequency going back to 2022

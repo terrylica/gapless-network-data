@@ -33,6 +33,7 @@ MotherDuck operations are supported by dedicated skills:
 - **Deduplication**: Automatic via `INSERT OR REPLACE` on block number PRIMARY KEY
 
 **Verification**:
+
 ```bash
 uv run .claude/skills/motherduck-pipeline-operations/scripts/verify_motherduck.py
 ```

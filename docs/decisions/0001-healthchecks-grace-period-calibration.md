@@ -10,12 +10,12 @@ Adversarial monitoring audit (2025-11-13) discovered all 4 Healthchecks.io check
 
 ### Current Configuration
 
-| Check | Interval | Grace | Ratio | Risk |
-|-------|----------|-------|-------|------|
-| motherduck-monitor | 3 hours | 10 min | 5.5% of timeout | HIGH |
-| VM Collector | 5 min | 5 min | 1.0× heartbeat | HIGH |
-| Hourly Updater | 60 min | 10 min | 16% of interval | MEDIUM |
-| Data Quality | 5 min | 5 min | 1.0× check interval | HIGH |
+| Check              | Interval | Grace  | Ratio               | Risk   |
+| ------------------ | -------- | ------ | ------------------- | ------ |
+| motherduck-monitor | 3 hours  | 10 min | 5.5% of timeout     | HIGH   |
+| VM Collector       | 5 min    | 5 min  | 1.0× heartbeat      | HIGH   |
+| Hourly Updater     | 60 min   | 10 min | 16% of interval     | MEDIUM |
+| Data Quality       | 5 min    | 5 min  | 1.0× check interval | HIGH   |
 
 ### Problems Identified
 
@@ -27,6 +27,7 @@ Adversarial monitoring audit (2025-11-13) discovered all 4 Healthchecks.io check
 ### Industry Best Practice
 
 Dead Man's Switch monitoring grace periods should be **3× the expected interval** to account for:
+
 - Normal execution variance (P95-P99)
 - Infrastructure transients (VM restarts, network blips)
 - Upstream service slowdowns (MotherDuck, BigQuery, Secret Manager)
@@ -34,6 +35,7 @@ Dead Man's Switch monitoring grace periods should be **3× the expected interval
 ### Empirical Evidence
 
 From audit findings:
+
 - VM restart time: 2-3 minutes (observed)
 - Function timeout: 9 minutes (configured)
 - BigQuery P95 latency: 15-20 seconds (typical)
@@ -45,12 +47,12 @@ Increase all grace periods to **3× their intervals or function timeouts**, whic
 
 ### New Configuration
 
-| Check | Interval | New Grace | Ratio | Buffer |
-|-------|----------|-----------|-------|--------|
-| motherduck-monitor | 3 hours | 30 min | 16.7% of timeout | 3.3× function timeout |
-| VM Collector | 5 min | 15 min | 3.0× heartbeat | Allows 2 missed beats |
-| Hourly Updater | 60 min | 30 min | 46% of interval | Allows 2× worst-case |
-| Data Quality | 5 min | 15 min | 3.0× check interval | Allows 2 missed checks |
+| Check              | Interval | New Grace | Ratio               | Buffer                 |
+| ------------------ | -------- | --------- | ------------------- | ---------------------- |
+| motherduck-monitor | 3 hours  | 30 min    | 16.7% of timeout    | 3.3× function timeout  |
+| VM Collector       | 5 min    | 15 min    | 3.0× heartbeat      | Allows 2 missed beats  |
+| Hourly Updater     | 60 min   | 30 min    | 46% of interval     | Allows 2× worst-case   |
+| Data Quality       | 5 min    | 15 min    | 3.0× check interval | Allows 2 missed checks |
 
 ## Consequences
 
@@ -73,6 +75,7 @@ Increase all grace periods to **3× their intervals or function timeouts**, whic
 ### Mitigation
 
 Detection latency increase is acceptable because:
+
 1. These are Dead Man's Switch checks (last-resort monitoring)
 2. Direct alerts (Pushover) provide <1 second detection (separate issue P1-6)
 3. Real failures persist > 30 minutes (grace period still catches them)
