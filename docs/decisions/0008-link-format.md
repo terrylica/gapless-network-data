@@ -11,16 +11,19 @@ Research identified 47 absolute file paths in CLAUDE.md using user-specific home
 ### Current Link Problems
 
 **Absolute paths with $HOME** (47 occurrences):
+
 ```markdown
 [Link](/Users/terryli/eon/gapless-network-data/docs/architecture/OVERVIEW.md)
 ```
 
 Problems:
+
 - **Not portable**: Breaks for other users, CI/CD, containers
 - **Lychee incompatible**: Link checker fails on user-specific paths
 - **Fragile**: Breaks if repository moves to different directory
 
 **Current patterns observed**:
+
 - Root CLAUDE.md → docs/: 35 absolute links
 - Root CLAUDE.md → deployment/: 8 absolute links
 - Root CLAUDE.md → .claude/skills/: 4 absolute links
@@ -28,6 +31,7 @@ Problems:
 ### User Requirements
 
 From clarification (2025-11-13):
+
 - "Relative GFM paths from file location"
 - Example: `./docs/architecture/OVERVIEW.md` or `../skills/data-pipeline-monitoring/`
 - "Portable, lychee-compatible, works in GitHub and locally"
@@ -35,12 +39,14 @@ From clarification (2025-11-13):
 ### GitHub-Flavored Markdown (GFM) Standard
 
 GFM supports relative links:
+
 - **Same directory**: `./filename.md` or `filename.md`
 - **Subdirectory**: `./subdir/filename.md`
 - **Parent directory**: `../filename.md`
 - **Multiple levels**: `../../docs/filename.md`
 
 Benefits:
+
 - Portable across environments
 - Works in GitHub web UI preview
 - Works in local editors (VS Code, vim)
@@ -55,18 +61,21 @@ Standardize all internal documentation links to **relative GFM paths from file l
 #### 1. From Root CLAUDE.md
 
 **To docs/**:
+
 ```markdown
 [Architecture Overview](./docs/architecture/OVERVIEW.md)
 [Data Format](./docs/architecture/DATA_FORMAT.md)
 ```
 
 **To deployment/**:
+
 ```markdown
 [VM Deployment](./deployment/vm/README.md)
 [Cloud Run Setup](./deployment/cloud-run/README.md)
 ```
 
 **To skills/**:
+
 ```markdown
 [Pipeline Operations](./.claude/skills/motherduck-pipeline-operations/SKILL.md)
 [Data Monitoring](./.claude/skills/data-pipeline-monitoring/SKILL.md)
@@ -75,6 +84,7 @@ Standardize all internal documentation links to **relative GFM paths from file l
 #### 2. From Child CLAUDE.md Spokes
 
 **docs/architecture/CLAUDE.md to siblings**:
+
 ```markdown
 [Overview](./OVERVIEW.md)
 [Data Format](./DATA_FORMAT.md)
@@ -82,11 +92,13 @@ Standardize all internal documentation links to **relative GFM paths from file l
 ```
 
 **docs/architecture/CLAUDE.md to parent**:
+
 ```markdown
 [Root CLAUDE.md](../../CLAUDE.md)
 ```
 
 **docs/architecture/CLAUDE.md to sibling directories**:
+
 ```markdown
 [Deployment Guides](../deployment/CLAUDE.md)
 [ADRs](../decisions/CLAUDE.md)
@@ -95,18 +107,21 @@ Standardize all internal documentation links to **relative GFM paths from file l
 #### 3. From Skills SKILL.md
 
 **To scripts/ within skill**:
+
 ```markdown
 [Check VM Status](./scripts/check_vm_status.sh)
 [Restart Collector](./scripts/restart_collector.sh)
 ```
 
 **To references/ within skill**:
+
 ```markdown
 [VM Failure Modes](./references/vm-failure-modes.md)
 [Troubleshooting Guide](./references/troubleshooting.md)
 ```
 
 **To root or docs/**:
+
 ```markdown
 [Project Overview](../../../CLAUDE.md)
 [Architecture Docs](../../../docs/architecture/CLAUDE.md)
@@ -125,6 +140,7 @@ s|/Users/terryli/eon/gapless-network-data/||g
 ### External Links (No Change)
 
 Keep absolute URLs for external references:
+
 - GitHub repositories: `https://github.com/terrylica/gapless-crypto-data`
 - Documentation sites: `https://duckdb.org/docs/...`
 - Issue trackers: `https://github.com/.../issues/...`
@@ -158,6 +174,7 @@ Keep absolute URLs for external references:
 Example: `/docs/architecture/OVERVIEW.md`
 
 **Rejected**:
+
 - Requires lychee configuration (`--base /Users/terryli/eon/gapless-network-data`)
 - Not portable to CI/CD without custom config
 - Doesn't work in GitHub web UI preview
@@ -167,6 +184,7 @@ Example: `/docs/architecture/OVERVIEW.md`
 Example: `$HOME/eon/gapless-network-data/docs/...`
 
 **Rejected**:
+
 - Still user-specific ($HOME differs between users)
 - Doesn't expand in markdown renderers
 - Lychee doesn't understand environment variables
@@ -176,6 +194,7 @@ Example: `$HOME/eon/gapless-network-data/docs/...`
 Create `docs/DOCS_ROOT` symlink → `/Users/terryli/eon/gapless-network-data/docs`
 
 **Rejected**:
+
 - Adds complexity (symlinks must be maintained)
 - Doesn't work on Windows (symlink support limited)
 - Over-engineering for simple relative path solution
@@ -270,12 +289,14 @@ exclude = ["https://example.com"]
 ### Test Cases
 
 **Root CLAUDE.md → docs/**:
+
 ```bash
 # Link: ./docs/architecture/OVERVIEW.md
 test -f "docs/architecture/OVERVIEW.md" && echo "✅ Link resolves"
 ```
 
 **Child spoke → sibling**:
+
 ```bash
 cd docs/architecture
 # Link: ./OVERVIEW.md
@@ -283,6 +304,7 @@ test -f "OVERVIEW.md" && echo "✅ Link resolves"
 ```
 
 **Child spoke → parent**:
+
 ```bash
 cd docs/architecture
 # Link: ../../CLAUDE.md

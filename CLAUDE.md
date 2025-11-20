@@ -104,9 +104,9 @@ Coordinates all project phases, specifications, and implementation work.
 
 ### Development
 
-- [Development Setup](./docs/development/SETUP.md) - Environment setup (pending)
-- [Development Commands](./docs/development/COMMANDS.md) - Testing, linting, build (pending)
-- [Publishing Guide](./docs/development/PUBLISHING.md) - PyPI publishing workflow (pending)
+- Development Setup - Environment setup (pending)
+- Development Commands - Testing, linting, build (pending)
+- Publishing Guide - PyPI publishing workflow (pending)
 
 ### Data Sources
 
@@ -121,6 +121,7 @@ Coordinates all project phases, specifications, and implementation work.
 **Complete Documentation**: See [Dual Pipeline Architecture](./docs/architecture/motherduck-dual-pipeline.md) for architecture diagrams, failure modes, monitoring, SLOs, and operational status.
 
 **Operations**:
+
 - **VM Management**: Use `vm-infrastructure-ops` skill for service restarts, log viewing, troubleshooting
 - **Database Operations**: Use `motherduck-pipeline-operations` skill for verification, gap detection, and backfill workflows
 

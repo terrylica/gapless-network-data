@@ -11,11 +11,13 @@ Research revealed docs/ subdirectories lack local navigation hubs. Users must re
 ### Current State
 
 **Existing hub files** (working well):
+
 - docs/INDEX.md - Master hub for all documentation
 - docs/research/INDEX.md - Research materials hub
 - docs/archive/README.md - Archived documentation hub
 
 **Missing local navigation**:
+
 - docs/architecture/ (5 files) - No index, users browse directory
 - docs/deployment/ (4 files) - No index, scattered references
 - docs/decisions/ (8 files after MADR-0005 through MADR-0008) - No index for ADRs
@@ -24,13 +26,15 @@ Research revealed docs/ subdirectories lack local navigation hubs. Users must re
 ### User Requirements
 
 From clarification (2025-11-13):
-- "CLAUDE.md in each docs/* subdirectory"
+
+- "CLAUDE.md in each docs/\* subdirectory"
 - Child CLAUDE.md acts as "hub link farm"
 - "No need to have INDEX.md" (INDEX.md → CLAUDE.md naming)
 
 ### Industry Standards
 
 **ADR (Architectural Decision Records)** best practice:
+
 - MADR format used (Markdown Any Decision Records)
 - Standard practice: INDEX.md or README.md listing all ADRs
 - Chronological order with 0000-title.md naming
@@ -50,7 +54,7 @@ Local navigation hub for [category] documents.
 
 - [File Name](./filename.md) - Brief description
 - [File Name 2](./filename2.md) - Brief description
-...
+  ...
 
 ## Related
 
@@ -81,12 +85,14 @@ Local navigation hub for [category] documents.
 ### Naming Rationale
 
 **Why CLAUDE.md instead of INDEX.md**:
+
 - Consistency with root CLAUDE.md pattern
 - "Link farm" metaphor suggests CLAUDE-branded navigation
 - Matches user's existing mental model
 - Claude Code tool reads CLAUDE.md files preferentially
 
 **Why not README.md**:
+
 - README.md is GitHub's default display
 - CLAUDE.md signals "for Claude Code AI agent"
 - Separation of concerns: README for GitHub users, CLAUDE for AI
@@ -110,13 +116,13 @@ Local navigation hub for [category] documents.
 
 - Keep child CLAUDE.md files under 100 lines (pure link farms)
 - Use relative links (./filename.md) to prevent breakage
-- Validate link coverage in CI/CD (all *.md files linked)
+- Validate link coverage in CI/CD (all \*.md files linked)
 
 ## Alternatives Considered
 
 ### Alternative 1: No child CLAUDE.md (pure hub-and-spoke from root)
 
-**Rejected**: Root CLAUDE.md becomes too long linking all 30+ docs/* files. Violates goal of 500-600 lines. Forces users to scroll through unrelated categories.
+**Rejected**: Root CLAUDE.md becomes too long linking all 30+ docs/\* files. Violates goal of 500-600 lines. Forces users to scroll through unrelated categories.
 
 ### Alternative 2: INDEX.md instead of CLAUDE.md
 
@@ -182,7 +188,7 @@ find docs/ -name "CLAUDE.md" | xargs wc -l | awk '$1 > 100 {print "Too long: " $
 
 ### Criteria
 
-1. **Link coverage**: 100% of *.md files linked from local CLAUDE.md
+1. **Link coverage**: 100% of \*.md files linked from local CLAUDE.md
 2. **Brevity**: Each child CLAUDE.md <100 lines
 3. **Consistency**: All follow same template structure
 4. **Relative paths**: No absolute links
@@ -229,14 +235,14 @@ print("✅ All child CLAUDE.md spokes validated")
 
 ### After
 
-- **Observability**: 100% docs/* files discoverable via local navigation
+- **Observability**: 100% docs/\* files discoverable via local navigation
 - **Maintainability**: Adding file requires only local CLAUDE.md edit
 
 ## References
 
 - Research: `/tmp/doc-normalization-research/DETAILED_INVENTORY.md` (hub files analysis)
 - Specification: `specifications/doc-normalization-phase.yaml` (tasks N3-1 through N3-4)
-- User clarification: "CLAUDE.md in each docs/* subdirectory"
+- User clarification: "CLAUDE.md in each docs/\* subdirectory"
 
 ## Decision Date
 
