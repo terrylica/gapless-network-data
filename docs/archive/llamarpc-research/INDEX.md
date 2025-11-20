@@ -9,7 +9,7 @@ supersedes: []
 
 > **⚠️ Research Artifact**: This documentation describes LlamaRPC evaluation (2025-11-03).
 > **Production uses BigQuery + Alchemy** (empirical testing revealed 1.37 RPS sustained, not 50 RPS documented).
-> See [Ethereum Collector POC Report](../../scratch/ethereum-collector-poc/ETHEREUM_COLLECTOR_POC_REPORT.md) for rate limit validation and rejection rationale.
+> See [Ethereum Collector POC Report](../../../scratch/ethereum-collector-poc/ETHEREUM_COLLECTOR_POC_REPORT.md) for rate limit validation and rejection rationale.
 
 Comprehensive research on LlamaRPC as a free Ethereum RPC provider for collecting network metrics (gas prices, block data, transaction counts) with high granularity going back to 2015.
 

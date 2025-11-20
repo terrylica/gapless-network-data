@@ -18,6 +18,7 @@ Infrastructure deployment code is organized under `deployment/`:
 - `deployment/oracle/` - Oracle Cloud monitoring (gap detection, Healthchecks.io)
 
 Each directory contains:
+
 - Production Python scripts
 - Infrastructure files (Dockerfile, systemd service)
 - README.md with deployment instructions

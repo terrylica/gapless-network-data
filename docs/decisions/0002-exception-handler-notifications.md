@@ -11,6 +11,7 @@ Adversarial audit discovered 3 execution paths that can skip Healthchecks.io pin
 ### Problem: Silent Failures
 
 Current pattern (INCORRECT):
+
 ```python
 try:
     # Do work
@@ -32,6 +33,7 @@ Result: Dead Man's Switch never receives notification, marks check as "down" onl
 ## Decision
 
 Implement **"Always Ping, Vary Endpoint"** pattern:
+
 - **Success path**: Ping `https://hc-ping.com/{uuid}`
 - **Failure path**: Ping `https://hc-ping.com/{uuid}/fail`
 - **No execution path** may skip notification

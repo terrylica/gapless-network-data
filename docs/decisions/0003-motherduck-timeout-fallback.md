@@ -17,6 +17,7 @@ conn = duckdb.connect(f'md:{MD_DATABASE}?motherduck_token={token}')
 ```
 
 **Observed failures**:
+
 - VM systemd service enters "activating" state, never restarts
 - Cloud Run Jobs hang until 10-minute job timeout
 - No visibility into connection failures (silent hang)
@@ -100,6 +101,7 @@ Current decision focuses on **fail-fast** with orchestration-level retry. Future
 ### All 6 Components
 
 **Files to modify**:
+
 1. `deployment/cloud-run/data_quality_checker.py` (line ~70)
 2. `deployment/gcp-functions/motherduck-monitor/main.py` (line ~362)
 3. `deployment/cloud-run/main.py` (BigQuery sync, line ~150)
@@ -108,6 +110,7 @@ Current decision focuses on **fail-fast** with orchestration-level retry. Future
 6. `.claude/skills/motherduck-pipeline-operations/scripts/verify_motherduck.py`
 
 **Change pattern**:
+
 ```python
 # Before
 conn = duckdb.connect(f'md:{MD_DATABASE}?motherduck_token={token}')
@@ -203,6 +206,7 @@ except Exception as e:
 ```
 
 **Requires**:
+
 - Local schema sync mechanism
 - Data reconciliation on recovery
 - Disk space management

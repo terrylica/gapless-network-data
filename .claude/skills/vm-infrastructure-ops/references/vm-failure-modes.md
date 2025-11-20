@@ -218,8 +218,8 @@ WARNING: High CPU usage (>90%)
 
 - [SKILL.md](../SKILL.md) - VM operations workflows
 - [Systemd Commands Reference](./systemd-commands.md) - Complete systemd operations
-- [MotherDuck Dual Pipeline Architecture](../../../docs/architecture/motherduck-dual-pipeline.md) - Architecture overview
-- [Real-Time Collector Deployment](../../../docs/deployment/realtime-collector.md) - VM deployment guide
+- [MotherDuck Dual Pipeline Architecture](../../../../docs/architecture/motherduck-dual-pipeline.md) - Architecture overview
+- [Real-Time Collector Deployment](../../../../docs/deployment/realtime-collector.md) - VM deployment guide
 
 ## Operational History
 
