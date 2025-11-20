@@ -36,6 +36,7 @@ Safety margin: 3.1× P99 (960 / 312 = 3.08)
 ### Industry Best Practice
 
 Staleness thresholds should be **2× P99 age** to balance:
+
 - False positive prevention (adequate buffer for normal variance)
 - Fast detection (catch real issues quickly)
 

@@ -11,17 +11,20 @@ Root CLAUDE.md has grown to 1,256 lines with 850 lines of duplication (68%). Res
 ### Current Problems
 
 **Duplication**:
+
 - MotherDuck Integration: 340 lines in CLAUDE.md duplicate docs/architecture/motherduck-dual-pipeline.md
 - DuckDB Architecture: 225 lines duplicate concepts spread across multiple architecture docs
 - Project Skills: 82 lines duplicate skill descriptions that should be in skill directories
 - Data Sources: 70 lines repeated across 3 different sections
 
 **Maintenance burden**:
+
 - MotherDuck updates require editing 2-3 files
 - Architecture changes need synchronization across documents
 - Skills updates miss CLAUDE.md references
 
 **Navigation challenges**:
+
 - 1,256 lines too long for quick reference
 - Essential information buried in detailed content
 - Users scroll through duplicates to find commands
@@ -29,6 +32,7 @@ Root CLAUDE.md has grown to 1,256 lines with 850 lines of duplication (68%). Res
 ### User Requirements
 
 From clarification questions (2025-11-13):
+
 - **Target size**: 500-600 lines (essential context + navigation index)
 - **Essential content**: Project status, navigation index, critical commands
 - **Remove**: Detailed architecture, workflow guides, duplicate descriptions
@@ -64,22 +68,26 @@ Reduce root CLAUDE.md to **essential context + navigation hub** (500-600 lines) 
 ### What Moves to docs/
 
 **MotherDuck Integration** (340 → 20 lines):
+
 - Detailed architecture → docs/architecture/motherduck-dual-pipeline.md
 - Service management → .claude/skills/vm-infrastructure-ops/
 - Cost analysis → docs/architecture/motherduck-integration.md
 - Keep: 2-3 line summary + link
 
 **DuckDB Architecture** (225 → 15 lines):
+
 - Create: docs/architecture/duckdb-strategy.md
 - Move: 23 features table, benchmarks, alternatives analysis
 - Keep: "DuckDB PRIMARY for analytics (10-100x)" + link
 
 **Project Skills** (82 → 5 lines):
+
 - Create: .claude/skills/README.md
 - Move: All skill descriptions, when-to-use guidance
 - Keep: Count (7 skills) + link
 
 **Data Sources** (70 lines → consolidated):
+
 - Create: docs/research/data-sources.md
 - Move: All RPC provider research, rejection rationale
 - Keep: "Primary: BigQuery + Alchemy" + link
@@ -128,26 +136,31 @@ For each content section being moved:
 1. **Create destination file** under docs/ hierarchy
 2. **Move content** preserving all detail and context
 3. **Replace in root** with:
+
    ```markdown
    ## Topic Name
 
    Brief summary (2-3 lines explaining what it is).
 
    See [detailed documentation](./docs/path/to/file.md) for:
+
    - Detailed architecture
    - Configuration options
    - Troubleshooting guides
    ```
+
 4. **Verify links** using existing link checker
 
 ### Content Priority
 
 **Must keep in root**:
+
 - Version numbers and operational status
 - Navigation links to all major docs
 - Commands used >1x per week
 
 **Must move to docs/**:
+
 - Architecture rationale (>2 paragraphs)
 - Historical decisions and alternatives
 - Detailed troubleshooting guides
