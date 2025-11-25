@@ -4,3 +4,4 @@ duckdb==1.4.1
 pyarrow==19.0.0
 websockets==14.1
 requests==2.32.5
+clickhouse-connect>=0.7.0
