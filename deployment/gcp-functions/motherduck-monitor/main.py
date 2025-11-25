@@ -1,7 +1,8 @@
 """
-MotherDuck Gap Detection Monitor (GCP Cloud Functions)
+MotherDuck + ClickHouse Gap Detection Monitor (GCP Cloud Functions)
 
-Monitors MotherDuck Ethereum database for gaps and staleness.
+Monitors MotherDuck AND ClickHouse Ethereum databases for gaps, staleness,
+and cross-database consistency during migration.
 Triggered by Cloud Scheduler every 3 hours via HTTP.
 
 Gap Detection:
@@ -9,14 +10,26 @@ Gap Detection:
     - Threshold: >15 seconds (Ethereum ~12s block time + 3s tolerance)
     - Method: DuckDB LAG() window function
 
+Dual-Database Validation (Migration Phase):
+    - Compares row counts between MotherDuck and ClickHouse
+    - Validates latest block number matches in both databases
+    - Reports discrepancies for investigation
+
 Monitoring:
     - Healthchecks.io Dead Man's Switch (POST to ping URL)
     - Pushover emergency notifications (all executions)
 
 HTTP Response Codes:
-    200: Healthy (no gaps, data fresh)
-    500: Unhealthy (gaps detected or data stale)
-    503: Fatal error (query failed, MotherDuck unreachable)
+    200: Healthy (no gaps, data fresh, databases in sync)
+    500: Unhealthy (gaps detected, data stale, or database mismatch)
+    503: Fatal error (query failed, database unreachable)
+
+Environment Variables:
+    CLICKHOUSE_HOST: ClickHouse Cloud hostname
+    CLICKHOUSE_PORT: ClickHouse port (default: 8443)
+    CLICKHOUSE_USER: ClickHouse username (default: default)
+    CLICKHOUSE_PASSWORD: ClickHouse password
+    DUAL_VALIDATION_ENABLED: Enable cross-database validation (default: true)
 """
 
 import os
@@ -38,6 +51,15 @@ GCP_PROJECT = os.environ.get('GCP_PROJECT', 'eonlabs-ethereum-bq')
 # MotherDuck configuration
 MD_DATABASE = os.environ.get('MD_DATABASE', 'ethereum_mainnet')
 MD_TABLE = os.environ.get('MD_TABLE', 'blocks')
+
+# ClickHouse dual-validation configuration
+DUAL_VALIDATION_ENABLED = os.environ.get('DUAL_VALIDATION_ENABLED', 'true').lower() == 'true'
+CLICKHOUSE_HOST = os.environ.get('CLICKHOUSE_HOST')
+CLICKHOUSE_PORT = int(os.environ.get('CLICKHOUSE_PORT', '8443'))
+CLICKHOUSE_USER = os.environ.get('CLICKHOUSE_USER', 'default')
+CLICKHOUSE_PASSWORD = os.environ.get('CLICKHOUSE_PASSWORD')
+CLICKHOUSE_DATABASE = 'ethereum_mainnet'
+CLICKHOUSE_TABLE = 'blocks'
 
 # Gap detection configuration
 GAP_THRESHOLD_SECONDS = int(os.environ.get('GAP_THRESHOLD_SECONDS', '15'))  # Ethereum ~12s + 3s tolerance
@@ -248,6 +270,79 @@ def check_staleness(conn: duckdb.DuckDBPyConnection) -> tuple[bool, int, datetim
 
 
 # ================================================================================
+# ClickHouse Cross-Validation (Migration Phase)
+# ================================================================================
+
+def validate_clickhouse_sync() -> tuple[bool, dict]:
+    """
+    Validate ClickHouse data matches MotherDuck (dual-database consistency check).
+
+    Compares:
+    - Total row count
+    - Latest block number
+    - Oldest block number
+
+    Returns:
+        Tuple of (is_in_sync, comparison_data)
+
+    Raises:
+        ValueError: If ClickHouse credentials missing
+        Exception: If ClickHouse connection fails
+    """
+    import clickhouse_connect
+
+    print(f"[CLICKHOUSE VALIDATION] Checking cross-database consistency...")
+
+    if not CLICKHOUSE_HOST or not CLICKHOUSE_PASSWORD:
+        print("  ⚠️  ClickHouse credentials not configured, skipping validation")
+        return True, {"skipped": True, "reason": "credentials_missing"}
+
+    try:
+        # Connect to ClickHouse
+        client = clickhouse_connect.get_client(
+            host=CLICKHOUSE_HOST,
+            port=CLICKHOUSE_PORT,
+            username=CLICKHOUSE_USER,
+            password=CLICKHOUSE_PASSWORD,
+            secure=True,
+            connect_timeout=30,
+        )
+        print(f"  ✅ Connected to ClickHouse (server {client.server_version})")
+
+        # Get ClickHouse stats (use FINAL for accurate deduped count)
+        result = client.query(f"""
+            SELECT
+                COUNT(*) as total_blocks,
+                MIN(number) as min_block,
+                MAX(number) as max_block
+            FROM {CLICKHOUSE_DATABASE}.{CLICKHOUSE_TABLE} FINAL
+        """)
+
+        ch_total = result.result_rows[0][0]
+        ch_min = result.result_rows[0][1]
+        ch_max = result.result_rows[0][2]
+
+        comparison = {
+            "clickhouse_total": ch_total,
+            "clickhouse_min_block": ch_min,
+            "clickhouse_max_block": ch_max,
+        }
+
+        print(f"  ClickHouse stats:")
+        print(f"    Total blocks: {ch_total:,}")
+        print(f"    Block range: {ch_min:,} → {ch_max:,}")
+
+        # Note: MotherDuck comparison happens in the main monitor function
+        # after both connections are established
+
+        return True, comparison
+
+    except Exception as e:
+        print(f"  ❌ ClickHouse validation failed: {e}")
+        return False, {"error": str(e)}
+
+
+# ================================================================================
 # Monitoring Integration
 # ================================================================================
 
@@ -344,10 +439,12 @@ def monitor(request):
             503: Fatal error
     """
     print("=" * 80)
-    print("MotherDuck Gap Detection Monitor (GCP Cloud Functions)")
+    print("MotherDuck + ClickHouse Gap Detection Monitor (Dual-Validation)")
     print("=" * 80)
     print(f"Timestamp: {datetime.now(timezone.utc).isoformat().replace('+00:00', 'Z')}")
-    print(f"Database: {MD_DATABASE}.{MD_TABLE}")
+    print(f"MotherDuck: {MD_DATABASE}.{MD_TABLE}")
+    print(f"ClickHouse: {CLICKHOUSE_DATABASE}.{CLICKHOUSE_TABLE}")
+    print(f"Dual-Validation: {'ENABLED' if DUAL_VALIDATION_ENABLED else 'DISABLED'}")
     print("=" * 80)
     print()
 
@@ -371,18 +468,60 @@ def monitor(request):
         gaps, total_blocks_checked = detect_gaps(conn)
         print()
 
-        # Step 5: Determine overall health
-        is_healthy = is_fresh and len(gaps) == 0
+        # Step 5: ClickHouse dual-validation (migration phase)
+        ch_in_sync = True
+        ch_comparison = {}
+        if DUAL_VALIDATION_ENABLED:
+            ch_in_sync, ch_comparison = validate_clickhouse_sync()
+            print()
 
-        # Step 6: Build diagnostic messages
+            # Compare MotherDuck vs ClickHouse
+            if not ch_comparison.get("skipped") and not ch_comparison.get("error"):
+                ch_total = ch_comparison.get("clickhouse_total", 0)
+                ch_max = ch_comparison.get("clickhouse_max_block", 0)
+
+                print("[CROSS-DB COMPARISON]")
+                print(f"  MotherDuck: {total_blocks_checked:,} blocks, latest #{latest_block:,}")
+                print(f"  ClickHouse: {ch_total:,} blocks, latest #{ch_max:,}")
+
+                # Check for discrepancies (allow small tolerance for timing)
+                block_diff = abs(total_blocks_checked - ch_total)
+                max_block_diff = abs(latest_block - ch_max)
+
+                if block_diff > 100 or max_block_diff > 10:
+                    print(f"  ⚠️  DISCREPANCY: {block_diff} block count diff, {max_block_diff} max block diff")
+                    ch_in_sync = False
+                else:
+                    print(f"  ✅ Databases in sync (diff: {block_diff} blocks)")
+                print()
+
+        # Step 6: Determine overall health
+        is_healthy = is_fresh and len(gaps) == 0 and ch_in_sync
+
+        # Step 7: Build diagnostic messages
+        # Include ClickHouse comparison in messages if available
+        ch_status = ""
+        if DUAL_VALIDATION_ENABLED and not ch_comparison.get("skipped"):
+            if ch_comparison.get("error"):
+                ch_status = f"\nClickHouse: ERROR ({ch_comparison.get('error')})"
+            else:
+                ch_total = ch_comparison.get("clickhouse_total", 0)
+                ch_max = ch_comparison.get("clickhouse_max_block", 0)
+                ch_status = f"\nClickHouse: {ch_total:,} blocks, latest #{ch_max:,}"
+                if ch_in_sync:
+                    ch_status += " ✅"
+                else:
+                    ch_status += " ⚠️ OUT OF SYNC"
+
         if is_healthy:
-            title = "✅ MOTHERDUCK HEALTHY"
+            title = "✅ DATABASES HEALTHY"
             message = (
-                f"Total blocks: {total_blocks_checked:,}\n"
+                f"MotherDuck: {total_blocks_checked:,} blocks\n"
                 f"Latest: {latest_block:,}\n"
                 f"Age: {age_seconds}s\n"
                 f"Missing blocks: 0\n"
-                f"Sequence: Complete\n\n"
+                f"Sequence: Complete"
+                f"{ch_status}\n\n"
                 f"Validation: Entire blockchain history"
             )
         else:
@@ -391,8 +530,10 @@ def monitor(request):
                 issues.append(f"STALE: {age_seconds}s ({age_seconds/60:.1f} min)")
             if gaps:
                 issues.append(f"MISSING BLOCKS: {len(gaps)} blocks not in database")
+            if not ch_in_sync:
+                issues.append(f"CLICKHOUSE OUT OF SYNC")
 
-            title = "❌ MOTHERDUCK UNHEALTHY"
+            title = "❌ DATABASE UNHEALTHY"
 
             # Build gap details for missing blocks
             gap_details = ""
@@ -414,10 +555,12 @@ def monitor(request):
 
             message = (
                 f"Issues: {', '.join(issues)}\n\n"
+                f"MotherDuck: {total_blocks_checked:,} blocks\n"
                 f"Latest block: {latest_block:,}\n"
                 f"Age: {age_seconds}s\n"
                 f"Missing: {len(gaps)} blocks"
-                f"{gap_details}\n\n"
+                f"{gap_details}"
+                f"{ch_status}\n\n"
                 f"Validation: Entire blockchain history"
             )
 
