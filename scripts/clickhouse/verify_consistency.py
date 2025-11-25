@@ -4,6 +4,7 @@
 #     "clickhouse-connect>=0.7.0",
 #     "duckdb",
 #     "httpx",
+#     "google-cloud-secret-manager>=2.21.0",
 # ]
 # ///
 """
@@ -70,14 +71,23 @@ def get_clickhouse_stats():
     }
 
 
+def get_secret(secret_id: str, project_id: str = "eonlabs-ethereum-bq") -> str:
+    """Fetch secret from Google Secret Manager."""
+    from google.cloud import secretmanager
+    client = secretmanager.SecretManagerServiceClient()
+    name = f"projects/{project_id}/secrets/{secret_id}/versions/latest"
+    response = client.access_secret_version(request={"name": name})
+    return response.payload.data.decode('UTF-8').strip()
+
+
 def get_motherduck_stats():
     """Get MotherDuck database stats."""
     import duckdb
 
     token = os.environ.get("motherduck_token")
     if not token:
-        # Try to get from GCP Secret Manager or Doppler
-        raise ValueError("Missing motherduck_token environment variable")
+        # Get from GCP Secret Manager
+        token = get_secret("motherduck-token")
 
     conn = duckdb.connect(f"md:ethereum_mainnet?motherduck_token={token}")
 
