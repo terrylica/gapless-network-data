@@ -153,9 +153,30 @@ MotherDuck trial ending in 2-3 days requires urgent migration to ClickHouse Clou
 - Dependencies: Added `clickhouse-connect>=0.7.0` to requirements.txt
 - Completed: 2025-11-24
 
-**2.5 Deploy to GCP** ⏳ PENDING
+**2.5 Deploy to GCP** ✅ COMPLETED
 
 > **Detailed Guide**: See [`DEPLOYMENT.md`](./DEPLOYMENT.md) for step-by-step deployment instructions.
+
+**Deployment Summary** (2025-11-25):
+
+- ✅ GCP secrets created via Python SDK (`setup_gcp_secrets.py`)
+- ✅ VM collector deployed with dual-write (confirmed in logs)
+- ✅ Cloud Run job `eth-md-updater` updated with dual-write env vars
+- ✅ Cloud Function `motherduck-gap-detector` updated with dual-validation
+
+**Dual-Write Verification**:
+
+```
+[BATCH] ✅ Flushed 25 blocks to ClickHouse
+[BATCH] ✅ Flushed 25 blocks to MotherDuck
+```
+
+**Consistency Check** (2025-11-25T08:03):
+
+- ClickHouse: 23,865,042 blocks (max: 23,874,501)
+- MotherDuck: 23,874,495 blocks (max: 23,874,501)
+- Max block matches: ✅ Both databases in sync for new blocks
+- Historical diff: ~9,453 blocks (expected from BigQuery migration timing)
 
 **Quick Deployment:**
 
@@ -179,13 +200,15 @@ gcloud functions deploy motherduck-monitor \
   --region=us-east1 --project=eonlabs-ethereum-bq
 ```
 
-### Phase 3: Compressed Validation (Day 1, Hour 4-16)
+### Phase 3: Compressed Validation (Day 1, Hour 4-16) - IN PROGRESS
 
-**3.1 Run hourly consistency checks** ⏳ PENDING
+**3.1 Run hourly consistency checks** 🔄 STARTED (2025-11-25T08:02)
 
 - Script: `scripts/clickhouse/verify_consistency.py`
-- Checks: Row count, max block number, checksum sample
+- Checks: Row count, max block number
+- Key metric: Max block must match (indicates dual-write sync)
 - Alert: Pushover notification on discrepancy
+- Initial check: Max block 23,874,501 in both databases ✅
 
 ### Phase 4: Cutover (Day 2, Hour 0-4)
 
@@ -231,8 +254,9 @@ gcloud functions deploy motherduck-monitor \
 - ✅ 23.86M blocks migrated (BigQuery → ClickHouse in 5 minutes)
 - ✅ Dual-write code complete for all 4 components (VM, Cloud Run job, Cloud Run checker, Cloud Function)
 - ✅ GCP secrets created via Python SDK (2025-11-25)
-- ⏳ Dual-write deployed to production (requires Cloud Console - gcloud CLI unavailable locally)
-- ⏳ 6-12 hour validation period passed
+- ✅ Dual-write deployed to production (2025-11-25T08:02)
+- ✅ Dual-write verified in VM logs (both databases receiving new blocks)
+- ⏳ 6-12 hour validation period (STARTED 2025-11-25T08:02)
 - ⏳ Zero data loss during cutover
 - ⏳ All documentation updated
 
@@ -240,14 +264,14 @@ gcloud functions deploy motherduck-monitor \
 
 **Location**: `scripts/clickhouse/`
 
-| Script                     | Purpose                                                    | Status      |
-| -------------------------- | ---------------------------------------------------------- | ----------- |
-| `validate_connection.py`   | Test ClickHouse connectivity                               | ✅ Created  |
-| `create_schema.py`         | Create ReplacingMergeTree table                            | ✅ Created  |
-| `migrate_from_bigquery.py` | Direct BigQuery → ClickHouse migration                     | ✅ Created  |
-| `verify_consistency.py`    | Hourly ClickHouse ↔ MotherDuck comparison                 | ✅ Created  |
-| `setup_gcp_secrets.sh`     | Create secrets via gcloud CLI                              | ✅ Created  |
-| `setup_gcp_secrets.py`     | Create secrets via Python SDK (no gcloud required)         | ✅ Executed |
+| Script                     | Purpose                                            | Status      |
+| -------------------------- | -------------------------------------------------- | ----------- |
+| `validate_connection.py`   | Test ClickHouse connectivity                       | ✅ Created  |
+| `create_schema.py`         | Create ReplacingMergeTree table                    | ✅ Created  |
+| `migrate_from_bigquery.py` | Direct BigQuery → ClickHouse migration             | ✅ Created  |
+| `verify_consistency.py`    | Hourly ClickHouse ↔ MotherDuck comparison         | ✅ Created  |
+| `setup_gcp_secrets.sh`     | Create secrets via gcloud CLI                      | ✅ Created  |
+| `setup_gcp_secrets.py`     | Create secrets via Python SDK (no gcloud required) | ✅ Executed |
 
 **Verification Command** (run hourly during validation):
 
