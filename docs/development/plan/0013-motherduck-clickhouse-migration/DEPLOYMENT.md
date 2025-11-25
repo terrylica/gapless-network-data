@@ -4,9 +4,24 @@
 
 ## Prerequisites
 
+**Option A: gcloud CLI (local machine)**:
+
 - [ ] gcloud CLI installed and authenticated (`gcloud auth login`)
 - [ ] Doppler CLI configured with `aws-credentials/prd` project access
 - [ ] SSH access to GCP VM (eth-realtime-collector)
+
+**Option B: Cloud Console (web-based)**:
+
+- [ ] Access to GCP Console (console.cloud.google.com)
+- [ ] Access to Doppler dashboard (dashboard.doppler.com)
+- [ ] Project: `eonlabs-ethereum-bq`
+
+## GCP Secrets Status
+
+**✅ COMPLETED** (2025-11-25): Secrets created via Python SDK (`scripts/clickhouse/setup_gcp_secrets.py`)
+
+- `clickhouse-host`: ✅ Created
+- `clickhouse-password`: ✅ Created
 
 ## Quick Deployment
 
@@ -35,6 +50,7 @@ cd deployment/vm && ./deploy.sh
 ```
 
 Or manually:
+
 ```bash
 # Get credentials from Doppler
 CH_HOST=$(doppler secrets get CLICKHOUSE_HOST --project aws-credentials --config prd --plain)
@@ -56,18 +72,21 @@ cd deployment/vm
 ```
 
 The deploy script will:
+
 - Grant Secret Manager access to VM service account
 - Copy updated realtime_collector.py to VM
 - Install clickhouse-connect dependency
 - Restart eth-collector systemd service
 
 **Verify deployment:**
+
 ```bash
 gcloud compute ssh eth-realtime-collector --zone=us-east1-b --project=eonlabs-ethereum-bq \
   --command="sudo journalctl -u eth-collector -n 50"
 ```
 
 Look for:
+
 - `✅ ClickHouse connected`
 - `[BATCH] ✅ Flushed X blocks to ClickHouse`
 - `[BATCH] ✅ Flushed X blocks to MotherDuck`
@@ -75,12 +94,14 @@ Look for:
 ### Step 3: Deploy Cloud Run Job
 
 Get ClickHouse credentials:
+
 ```bash
 CH_HOST=$(doppler secrets get CLICKHOUSE_HOST --project aws-credentials --config prd --plain)
 CH_PASS=$(doppler secrets get CLICKHOUSE_PASSWORD --project aws-credentials --config prd --plain)
 ```
 
 Update Cloud Run Job:
+
 ```bash
 gcloud run jobs update bigquery-motherduck-updater \
   --set-env-vars="CLICKHOUSE_HOST=$CH_HOST,CLICKHOUSE_PASSWORD=$CH_PASS,DUAL_WRITE_ENABLED=true" \
@@ -89,6 +110,7 @@ gcloud run jobs update bigquery-motherduck-updater \
 ```
 
 **Or via Cloud Console:**
+
 1. Go to Cloud Run Jobs
 2. Select `bigquery-motherduck-updater`
 3. Edit > Variables & Secrets
@@ -117,6 +139,60 @@ gcloud functions deploy motherduck-monitor \
   --source=.
 ```
 
+## Cloud Console Deployment (Alternative)
+
+When gcloud CLI is unavailable, deploy via Cloud Console:
+
+### VM Collector via Cloud Console
+
+1. **Grant Secret Access**:
+   - Go to: Secret Manager > clickhouse-host > Permissions
+   - Add: `893624294905-compute@developer.gserviceaccount.com`
+   - Role: `Secret Manager Secret Accessor`
+   - Repeat for `clickhouse-password`
+
+2. **Update Collector Script**:
+   - Go to: Compute Engine > VM instances > eth-realtime-collector
+   - Click SSH (opens browser terminal)
+   - Upload `deployment/vm/realtime_collector.py` via SSH file upload
+   - Run:
+     ```bash
+     pip3 install clickhouse-connect
+     sudo mv ~/realtime_collector.py ~/eth-collector/
+     sudo systemctl restart eth-collector
+     sudo journalctl -u eth-collector -f
+     ```
+
+### Cloud Run Job via Cloud Console
+
+1. **Navigate**: Cloud Run > Jobs > bigquery-motherduck-updater
+2. **Edit & Deploy New Revision**:
+   - Click "Edit & Deploy New Revision"
+   - Go to "Variables & Secrets" tab
+   - Add environment variables:
+     - `CLICKHOUSE_HOST`: (from Doppler aws-credentials/prd)
+     - `CLICKHOUSE_PASSWORD`: (from Doppler aws-credentials/prd)
+     - `DUAL_WRITE_ENABLED`: `true`
+   - Click "Deploy"
+
+### Cloud Function via Cloud Console
+
+1. **Navigate**: Cloud Functions > motherduck-monitor
+2. **Edit Function**:
+   - Click "Edit"
+   - Go to "Runtime, build, connections and security settings"
+   - Add environment variables:
+     - `CLICKHOUSE_HOST`: (from Doppler)
+     - `CLICKHOUSE_PASSWORD`: (from Doppler)
+     - `DUAL_VALIDATION_ENABLED`: `true`
+   - Click "Deploy"
+
+### Get Credentials from Doppler
+
+1. Go to: dashboard.doppler.com
+2. Project: `aws-credentials` > Config: `prd`
+3. Copy values for: `CLICKHOUSE_HOST`, `CLICKHOUSE_PASSWORD`
+
 ## Post-Deployment Verification
 
 ### 1. Verify Dual-Write (VM Collector)
@@ -128,6 +204,7 @@ gcloud compute ssh eth-realtime-collector --zone=us-east1-b --project=eonlabs-et
 ```
 
 Expected output:
+
 ```
 [BATCH] ✅ Flushed 25 blocks to ClickHouse
 [BATCH] ✅ Flushed 25 blocks to MotherDuck
@@ -141,6 +218,7 @@ doppler run --project aws-credentials --config prd -- \
 ```
 
 Expected output:
+
 ```
 ✅ DATABASES IN SYNC
 ClickHouse: 23,865,017 blocks
@@ -171,6 +249,7 @@ If issues detected during validation:
 ### Disable Dual-Write (Keep MotherDuck Only)
 
 **VM Collector:**
+
 ```bash
 gcloud compute ssh eth-realtime-collector --zone=us-east1-b --project=eonlabs-ethereum-bq \
   --command="sudo systemctl stop eth-collector"
@@ -182,6 +261,7 @@ gcloud compute ssh eth-realtime-collector --zone=us-east1-b --project=eonlabs-et
 ```
 
 **Cloud Run:**
+
 ```bash
 gcloud run jobs update bigquery-motherduck-updater \
   --set-env-vars="DUAL_WRITE_ENABLED=false" \
