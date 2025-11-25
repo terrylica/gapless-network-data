@@ -1,11 +1,12 @@
 #!/usr/bin/env python3
 # /// script
-# dependencies = ["websockets", "duckdb", "pyarrow", "google-cloud-secret-manager", "requests"]
+# dependencies = ["websockets", "duckdb", "pyarrow", "google-cloud-secret-manager", "requests", "clickhouse-connect"]
 # ///
 """
-Alchemy WebSocket → MotherDuck Real-Time Ethereum Block Collector
+Alchemy WebSocket Real-Time Ethereum Block Collector (Dual-Write)
 
 Subscribes to Alchemy's newHeads WebSocket stream for real-time block updates.
+Writes to both MotherDuck AND ClickHouse for migration (dual-write strategy).
 Designed to run as a long-lived systemd service on VM.
 
 Environment Variables:
@@ -14,10 +15,17 @@ Environment Variables:
     MD_TABLE: MotherDuck table name (default: blocks)
     BATCH_INTERVAL_SECONDS: Batch write interval in seconds (default: 300 = 5 minutes)
                             Set to 0 for immediate writes (real-time mode)
+    CLICKHOUSE_HOST: ClickHouse Cloud hostname (required for dual-write)
+    CLICKHOUSE_PORT: ClickHouse port (default: 8443)
+    CLICKHOUSE_USER: ClickHouse username (default: default)
+    CLICKHOUSE_PASSWORD: ClickHouse password (required for dual-write)
+    DUAL_WRITE_ENABLED: Enable dual-write to ClickHouse (default: true)
 
 Secrets (Google Secret Manager):
     alchemy-api-key: Alchemy API key (fetched via get_secret())
     motherduck-token: MotherDuck authentication token (fetched via get_secret())
+
+Error Policy: Fail-fast. If ClickHouse write fails, raise exception immediately.
 """
 
 import os
@@ -39,6 +47,18 @@ MD_TABLE = os.environ.get('MD_TABLE', 'blocks')
 BATCH_INTERVAL_SECONDS = int(os.environ.get('BATCH_INTERVAL_SECONDS', '300'))  # Default: 5 minutes
 ALCHEMY_WS_URL = None  # Will be set by validate_config() from Secret Manager
 HEALTHCHECK_URL = 'https://hc-ping.com/d73a71f2-9457-4e58-9ed6-8a31db5bbed1'  # Healthchecks.io heartbeat
+
+# ClickHouse dual-write configuration
+DUAL_WRITE_ENABLED = os.environ.get('DUAL_WRITE_ENABLED', 'true').lower() == 'true'
+CLICKHOUSE_HOST = os.environ.get('CLICKHOUSE_HOST')
+CLICKHOUSE_PORT = int(os.environ.get('CLICKHOUSE_PORT', '8443'))
+CLICKHOUSE_USER = os.environ.get('CLICKHOUSE_USER', 'default')
+CLICKHOUSE_PASSWORD = os.environ.get('CLICKHOUSE_PASSWORD')
+CLICKHOUSE_DATABASE = 'ethereum_mainnet'
+CLICKHOUSE_TABLE = 'blocks'
+
+# Global ClickHouse client (initialized in main())
+clickhouse_client = None
 
 # Block buffer for batching (thread-safe)
 block_buffer = []
@@ -98,6 +118,8 @@ def heartbeat_worker():
 
 def validate_config():
     """Fetch secrets from Secret Manager and validate configuration."""
+    global CLICKHOUSE_HOST, CLICKHOUSE_PASSWORD
+
     print("[INIT] Fetching secrets from Secret Manager...")
 
     # Fetch secrets
@@ -110,6 +132,18 @@ def validate_config():
     # Build Alchemy WebSocket URL
     global ALCHEMY_WS_URL
     ALCHEMY_WS_URL = f"wss://eth-mainnet.g.alchemy.com/v2/{alchemy_key}"
+
+    # Fetch ClickHouse credentials if dual-write enabled
+    if DUAL_WRITE_ENABLED:
+        print("[INIT] Fetching ClickHouse credentials...")
+        try:
+            CLICKHOUSE_HOST = get_secret('clickhouse-host')
+            CLICKHOUSE_PASSWORD = get_secret('clickhouse-password')
+            print(f"[INIT] ✅ ClickHouse credentials loaded (host: {CLICKHOUSE_HOST})")
+        except Exception as e:
+            print(f"[INIT] ⚠️  ClickHouse secrets not found: {e}")
+            print(f"[INIT]    Dual-write will be disabled")
+            # Don't fail - just disable dual-write
 
     print("[INIT] ✅ Secrets loaded")
 
@@ -143,6 +177,42 @@ def init_motherduck():
 
     print(f"✅ MotherDuck connected: {MD_DATABASE}.{MD_TABLE}")
     return conn
+
+
+def init_clickhouse():
+    """Initialize ClickHouse Cloud connection for dual-write.
+
+    Returns:
+        ClickHouse client instance
+
+    Raises:
+        ValueError: If required credentials are missing
+        Exception: If connection fails (fail-fast policy)
+    """
+    import clickhouse_connect
+
+    if not CLICKHOUSE_HOST or not CLICKHOUSE_PASSWORD:
+        raise ValueError(
+            "Missing CLICKHOUSE_HOST or CLICKHOUSE_PASSWORD. "
+            "Set via environment variables or Doppler."
+        )
+
+    print(f"[INIT] Connecting to ClickHouse Cloud: {CLICKHOUSE_HOST}")
+
+    client = clickhouse_connect.get_client(
+        host=CLICKHOUSE_HOST,
+        port=CLICKHOUSE_PORT,
+        username=CLICKHOUSE_USER,
+        password=CLICKHOUSE_PASSWORD,
+        secure=True,
+        connect_timeout=30,
+    )
+
+    # Verify connection
+    version = client.server_version
+    print(f"✅ ClickHouse connected: {CLICKHOUSE_DATABASE}.{CLICKHOUSE_TABLE} (server {version})")
+
+    return client
 
 
 def parse_block(block_data):
@@ -185,14 +255,60 @@ def parse_block(block_data):
     )
 
 
+def flush_to_clickhouse(blocks):
+    """Flush blocks to ClickHouse (fail-fast on error).
+
+    Args:
+        blocks: List of block tuples
+
+    Raises:
+        Exception: If ClickHouse insert fails (fail-fast policy)
+    """
+    global clickhouse_client
+
+    if not clickhouse_client or not blocks:
+        return
+
+    # Prepare data for ClickHouse insert
+    # Column order: timestamp, number, gas_limit, gas_used, base_fee_per_gas,
+    #               transaction_count, difficulty, total_difficulty, size,
+    #               blob_gas_used, excess_blob_gas
+    column_names = [
+        'timestamp', 'number', 'gas_limit', 'gas_used', 'base_fee_per_gas',
+        'transaction_count', 'difficulty', 'total_difficulty', 'size',
+        'blob_gas_used', 'excess_blob_gas'
+    ]
+
+    # Convert tuples to list of lists, handling large integers for UInt256
+    rows = []
+    for block in blocks:
+        row = list(block)
+        # Convert difficulty (index 6) and total_difficulty (index 7) to strings
+        # ClickHouse UInt256 accepts string representation of large numbers
+        row[6] = str(row[6]) if row[6] is not None else '0'
+        row[7] = str(row[7]) if row[7] is not None else '0'
+        rows.append(row)
+
+    # Insert to ClickHouse (fail-fast: no try/except, let exception propagate)
+    clickhouse_client.insert(
+        f'{CLICKHOUSE_DATABASE}.{CLICKHOUSE_TABLE}',
+        rows,
+        column_names=column_names,
+    )
+
+
 def flush_buffer(conn):
-    """Flush buffered blocks to MotherDuck in a single batch INSERT.
+    """Flush buffered blocks to MotherDuck AND ClickHouse (dual-write).
 
     Args:
         conn: DuckDB connection
 
     Returns:
         Number of blocks flushed
+
+    Error Policy:
+        Fail-fast - if either database write fails, raise exception immediately.
+        ClickHouse is written FIRST to ensure it gets all data during migration.
     """
     global block_buffer
 
@@ -204,18 +320,30 @@ def flush_buffer(conn):
         blocks_to_insert = block_buffer[:]
         block_buffer.clear()
 
-    # Batch insert all blocks
+    now = datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M:%S')
+
+    # DUAL-WRITE: ClickHouse FIRST (fail-fast)
+    if DUAL_WRITE_ENABLED and clickhouse_client:
+        try:
+            flush_to_clickhouse(blocks_to_insert)
+            print(f"[{now}] [BATCH] ✅ Flushed {len(blocks_to_insert)} blocks to ClickHouse")
+        except Exception as e:
+            print(f"[{now}] [BATCH] ❌ ClickHouse flush FAILED: {e}")
+            # Re-add blocks to buffer before raising
+            with buffer_lock:
+                block_buffer.extend(blocks_to_insert)
+            raise  # Fail-fast: propagate exception
+
+    # Then write to MotherDuck
     try:
         conn.executemany(f"""
             INSERT OR REPLACE INTO {MD_TABLE} VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """, blocks_to_insert)
 
-        now = datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M:%S')
         print(f"[{now}] [BATCH] ✅ Flushed {len(blocks_to_insert)} blocks to MotherDuck")
         return len(blocks_to_insert)
     except Exception as e:
-        now = datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M:%S')
-        print(f"[{now}] [BATCH] ❌ Failed to flush: {e}")
+        print(f"[{now}] [BATCH] ❌ MotherDuck flush FAILED: {e}")
         # Re-add blocks to buffer for retry
         with buffer_lock:
             block_buffer.extend(blocks_to_insert)
@@ -238,18 +366,26 @@ def batch_flush_worker(conn):
 
 
 def insert_block(conn, block_tuple):
-    """Insert or replace block in MotherDuck.
+    """Insert or replace block in MotherDuck AND ClickHouse (dual-write).
 
     Behavior depends on BATCH_INTERVAL_SECONDS:
-    - If 0: Immediate write (real-time mode)
+    - If 0: Immediate write (real-time mode) to both databases
     - If >0: Buffer block for batch write
 
     Args:
         conn: DuckDB connection
         block_tuple: Tuple of block data
+
+    Error Policy:
+        Fail-fast - if ClickHouse write fails in immediate mode, raise exception.
     """
     if BATCH_INTERVAL_SECONDS == 0:
-        # Immediate write mode (real-time)
+        # Immediate write mode (real-time) - DUAL-WRITE
+        # ClickHouse FIRST (fail-fast)
+        if DUAL_WRITE_ENABLED and clickhouse_client:
+            flush_to_clickhouse([block_tuple])
+
+        # Then MotherDuck
         conn.execute(f"""
             INSERT OR REPLACE INTO {MD_TABLE} VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """, block_tuple)
@@ -359,11 +495,15 @@ async def main_loop(conn):
 
 def main():
     """Entry point."""
+    global clickhouse_client
+
     print("=" * 80)
-    print("Alchemy WebSocket → MotherDuck Real-Time Collector")
+    print("Alchemy WebSocket Real-Time Collector (Dual-Write)")
     print("=" * 80)
     print(f"Timestamp: {datetime.now(timezone.utc).isoformat().replace('+00:00', 'Z')}")
-    print(f"Database: {MD_DATABASE}.{MD_TABLE}")
+    print(f"MotherDuck: {MD_DATABASE}.{MD_TABLE}")
+    print(f"ClickHouse: {CLICKHOUSE_DATABASE}.{CLICKHOUSE_TABLE}")
+    print(f"Dual-Write: {'ENABLED' if DUAL_WRITE_ENABLED else 'DISABLED'}")
     if BATCH_INTERVAL_SECONDS == 0:
         print(f"Mode: Real-time (immediate writes)")
     else:
@@ -377,6 +517,11 @@ def main():
     # Initialize MotherDuck
     conn = init_motherduck()
     print()
+
+    # Initialize ClickHouse (fail-fast if enabled and connection fails)
+    if DUAL_WRITE_ENABLED:
+        clickhouse_client = init_clickhouse()
+        print()
 
     # Start background heartbeat thread for Healthchecks.io monitoring
     print("[INIT] Starting Healthchecks.io heartbeat thread...")

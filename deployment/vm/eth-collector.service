@@ -1,5 +1,5 @@
 [Unit]
-Description=Ethereum Real-Time Block Collector (Batch Mode: 5min flush)
+Description=Ethereum Real-Time Block Collector (Dual-Write: MotherDuck + ClickHouse)
 After=network.target
 
 [Service]

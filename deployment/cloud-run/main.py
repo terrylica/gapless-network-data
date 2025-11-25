@@ -1,11 +1,12 @@
 #!/usr/bin/env python3
 # /// script
-# dependencies = ["google-cloud-bigquery[bqstorage]", "duckdb", "pyarrow", "google-cloud-secret-manager", "requests"]
+# dependencies = ["google-cloud-bigquery[bqstorage]", "duckdb", "pyarrow", "google-cloud-secret-manager", "requests", "clickhouse-connect"]
 # ///
 """
-BigQuery → MotherDuck Ethereum Block Updater
+BigQuery → MotherDuck + ClickHouse Ethereum Block Updater (Dual-Write)
 
-Fetches latest Ethereum blocks from BigQuery public dataset and loads them into MotherDuck.
+Fetches latest Ethereum blocks from BigQuery public dataset and loads them into
+both MotherDuck AND ClickHouse (dual-write for migration).
 Designed to run as a Cloud Run Job on an hourly schedule.
 
 Environment Variables:
@@ -15,9 +16,16 @@ Environment Variables:
     MD_DATABASE: MotherDuck database name (default: ethereum_mainnet)
     MD_TABLE: MotherDuck table name (default: blocks)
     LOOKBACK_HOURS: Hours to look back for new blocks (default: 2)
+    CLICKHOUSE_HOST: ClickHouse Cloud hostname (required for dual-write)
+    CLICKHOUSE_PORT: ClickHouse port (default: 8443)
+    CLICKHOUSE_USER: ClickHouse username (default: default)
+    CLICKHOUSE_PASSWORD: ClickHouse password (required for dual-write)
+    DUAL_WRITE_ENABLED: Enable dual-write to ClickHouse (default: true)
 
 Secrets (Google Secret Manager):
     motherduck-token: MotherDuck authentication token (fetched via get_secret())
+
+Error Policy: Fail-fast. If ClickHouse write fails, raise exception immediately.
 """
 
 import os
@@ -35,6 +43,15 @@ TABLE_ID = os.environ.get('TABLE_ID', 'blocks')
 MD_DATABASE = os.environ.get('MD_DATABASE', 'ethereum_mainnet')
 MD_TABLE = os.environ.get('MD_TABLE', 'blocks')
 LOOKBACK_HOURS = int(os.environ.get('LOOKBACK_HOURS', '2'))
+
+# ClickHouse dual-write configuration
+DUAL_WRITE_ENABLED = os.environ.get('DUAL_WRITE_ENABLED', 'true').lower() == 'true'
+CLICKHOUSE_HOST = os.environ.get('CLICKHOUSE_HOST')
+CLICKHOUSE_PORT = int(os.environ.get('CLICKHOUSE_PORT', '8443'))
+CLICKHOUSE_USER = os.environ.get('CLICKHOUSE_USER', 'default')
+CLICKHOUSE_PASSWORD = os.environ.get('CLICKHOUSE_PASSWORD')
+CLICKHOUSE_DATABASE = 'ethereum_mainnet'
+CLICKHOUSE_TABLE = 'blocks'
 
 # Monitoring
 HEALTHCHECK_URL = 'https://hc-ping.com/616d5e4b-9e5b-470f-bd85-7870c2329ba3'
@@ -176,6 +193,78 @@ def load_to_motherduck(pa_table):
     conn.close()
 
 
+def load_to_clickhouse(pa_table):
+    """Load PyArrow table to ClickHouse Cloud (fail-fast on error).
+
+    Args:
+        pa_table: PyArrow table with block data
+
+    Raises:
+        ValueError: If ClickHouse credentials are missing
+        Exception: If connection or insert fails (fail-fast policy)
+    """
+    import clickhouse_connect
+
+    print(f"\n[DUAL-WRITE] Loading {len(pa_table)} blocks to ClickHouse...")
+
+    if not CLICKHOUSE_HOST or not CLICKHOUSE_PASSWORD:
+        raise ValueError(
+            "Missing CLICKHOUSE_HOST or CLICKHOUSE_PASSWORD. "
+            "Set via environment variables or Doppler."
+        )
+
+    # Connect to ClickHouse
+    print(f"   Connecting to {CLICKHOUSE_HOST}...")
+    client = clickhouse_connect.get_client(
+        host=CLICKHOUSE_HOST,
+        port=CLICKHOUSE_PORT,
+        username=CLICKHOUSE_USER,
+        password=CLICKHOUSE_PASSWORD,
+        secure=True,
+        connect_timeout=30,
+    )
+    print(f"✅ Connected to ClickHouse (server {client.server_version})")
+
+    # Convert PyArrow table to pandas, handling large integers
+    df = pa_table.to_pandas()
+
+    # Handle nullable columns and type conversions
+    df['timestamp'] = df['timestamp'].dt.tz_localize(None)
+
+    # Ensure numeric types for standard columns
+    small_int_cols = ['number', 'gas_limit', 'gas_used', 'base_fee_per_gas',
+                      'transaction_count', 'size']
+    for col in small_int_cols:
+        if col in df.columns:
+            df[col] = df[col].fillna(0).astype('int64')
+
+    # Handle very large integers (difficulty, total_difficulty) - convert to string
+    # ClickHouse UInt256 accepts string representation of large numbers
+    for col in ['difficulty', 'total_difficulty']:
+        if col in df.columns:
+            df[col] = df[col].fillna(0).apply(lambda x: str(int(x)) if x else '0')
+
+    # Insert to ClickHouse
+    column_names = [
+        'timestamp', 'number', 'gas_limit', 'gas_used', 'base_fee_per_gas',
+        'transaction_count', 'difficulty', 'total_difficulty', 'size',
+        'blob_gas_used', 'excess_blob_gas'
+    ]
+
+    client.insert_df(
+        f'{CLICKHOUSE_DATABASE}.{CLICKHOUSE_TABLE}',
+        df,
+        column_names=column_names,
+    )
+
+    # Verify
+    result = client.query(f"SELECT COUNT(*) FROM {CLICKHOUSE_DATABASE}.{CLICKHOUSE_TABLE}")
+    total_rows = result.result_rows[0][0]
+
+    print(f"✅ ClickHouse load complete")
+    print(f"   Total blocks in ClickHouse: {total_rows:,}")
+
+
 def ping_healthcheck(success: bool = True):
     """Ping Healthchecks.io to signal job completion.
 
@@ -196,12 +285,14 @@ def ping_healthcheck(success: bool = True):
 def main():
     """Main execution flow."""
     print("=" * 80)
-    print("BigQuery → MotherDuck Ethereum Block Updater")
+    print("BigQuery → MotherDuck + ClickHouse Ethereum Block Updater (Dual-Write)")
     print("=" * 80)
     print(f"Timestamp: {datetime.now(timezone.utc).isoformat().replace('+00:00', 'Z')}")
     print(f"GCP Project: {GCP_PROJECT}")
     print(f"BigQuery Dataset: {DATASET_ID}.{TABLE_ID}")
     print(f"MotherDuck: {MD_DATABASE}.{MD_TABLE}")
+    print(f"ClickHouse: {CLICKHOUSE_DATABASE}.{CLICKHOUSE_TABLE}")
+    print(f"Dual-Write: {'ENABLED' if DUAL_WRITE_ENABLED else 'DISABLED'}")
     print("=" * 80)
     print()
 
@@ -219,7 +310,11 @@ def main():
 
             return 0
 
-        # Load to MotherDuck
+        # DUAL-WRITE: ClickHouse FIRST (fail-fast)
+        if DUAL_WRITE_ENABLED:
+            load_to_clickhouse(pa_table)
+
+        # Then load to MotherDuck
         load_to_motherduck(pa_table)
 
         print("\n" + "=" * 80)
