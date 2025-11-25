@@ -208,7 +208,24 @@ gcloud functions deploy motherduck-monitor \
 - Checks: Row count, max block number
 - Key metric: Max block must match (indicates dual-write sync)
 - Alert: Pushover notification on discrepancy
-- Initial check: Max block 23,874,501 in both databases ✅
+
+**Verification Results** (2025-11-25T19:45):
+
+```
+✅ DUAL-WRITE HEALTHY
+ClickHouse: 23,877,771 blocks (max: 23,877,776)
+MotherDuck: 23,877,770 blocks (max: 23,877,776)
+Max block diff: 0 (both receiving new blocks ✅)
+Row count diff: 1 (genesis block 0 in ClickHouse only)
+```
+
+**Gap Backfill Complete** (2025-11-25T19:45):
+
+- **Gap identified**: 9,454 blocks (23,865,017 → 23,874,476)
+- **Root cause**: BigQuery lag + dual-write start timing
+- **Solution**: Backfilled from MotherDuck → ClickHouse in 0.6 seconds
+- **Script**: `scripts/clickhouse/backfill_from_motherduck.py`
+- **Status**: ✅ Gap closed, databases in sync
 
 ### Phase 4: Cutover (Day 2, Hour 0-4)
 
@@ -256,7 +273,10 @@ gcloud functions deploy motherduck-monitor \
 - ✅ GCP secrets created via Python SDK (2025-11-25)
 - ✅ Dual-write deployed to production (2025-11-25T08:02)
 - ✅ Dual-write verified in VM logs (both databases receiving new blocks)
-- ⏳ 6-12 hour validation period (STARTED 2025-11-25T08:02)
+- ✅ ClickHouse password reset via API (2025-11-25T19:43)
+- ✅ Gap backfilled: 9,454 blocks from MotherDuck → ClickHouse (2025-11-25T19:45)
+- ✅ Databases in sync: 23.87M blocks, max block identical
+- ⏳ 6-12 hour validation period (CONTINUE monitoring)
 - ⏳ Zero data loss during cutover
 - ⏳ All documentation updated
 
@@ -264,12 +284,14 @@ gcloud functions deploy motherduck-monitor \
 
 **Location**: `scripts/clickhouse/`
 
-| Script                     | Purpose                                            | Status      |
-| -------------------------- | -------------------------------------------------- | ----------- |
-| `validate_connection.py`   | Test ClickHouse connectivity                       | ✅ Created  |
-| `create_schema.py`         | Create ReplacingMergeTree table                    | ✅ Created  |
-| `migrate_from_bigquery.py` | Direct BigQuery → ClickHouse migration             | ✅ Created  |
-| `verify_consistency.py`    | Hourly ClickHouse ↔ MotherDuck comparison         | ✅ Created  |
+| Script                       | Purpose                                   | Status       |
+| ---------------------------- | ----------------------------------------- | ------------ |
+| `validate_connection.py`     | Test ClickHouse connectivity              | ✅ Created   |
+| `create_schema.py`           | Create ReplacingMergeTree table           | ✅ Created   |
+| `migrate_from_bigquery.py`   | Direct BigQuery → ClickHouse migration    | ✅ Created   |
+| `verify_consistency.py`      | Hourly ClickHouse ↔ MotherDuck comparison | ✅ Created   |
+| `backfill_from_motherduck.py`| Backfill gap from MotherDuck → ClickHouse | ✅ Executed  |
+| `fill_gap.py`                | Block-range backfill from BigQuery        | ✅ Created   |
 | `setup_gcp_secrets.sh`     | Create secrets via gcloud CLI                      | ✅ Created  |
 | `setup_gcp_secrets.py`     | Create secrets via Python SDK (no gcloud required) | ✅ Executed |
 
