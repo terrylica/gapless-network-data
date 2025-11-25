@@ -29,13 +29,14 @@ echo ""
 echo "[1/7] Verifying Secret Manager permissions..."
 echo "   Checking VM service account: $VM_SERVICE_ACCOUNT"
 
-for secret in alchemy-api-key motherduck-token; do
+# Add ClickHouse secrets for dual-write migration
+for secret in alchemy-api-key motherduck-token clickhouse-host clickhouse-password; do
   echo "   Checking $secret..."
   gcloud secrets add-iam-policy-binding "$secret" \
     --member="serviceAccount:$VM_SERVICE_ACCOUNT" \
     --role="roles/secretmanager.secretAccessor" \
     --project="$PROJECT" \
-    --quiet || true
+    --quiet 2>/dev/null || true
 done
 
 echo "✅ Secret Manager permissions verified"
@@ -63,7 +64,9 @@ gcloud compute ssh "${INSTANCE}" \
       websockets \
       duckdb \
       pyarrow \
-      google-cloud-secret-manager
+      google-cloud-secret-manager \
+      requests \
+      clickhouse-connect
     echo '✅ Dependencies installed'
   "
 
@@ -131,6 +134,7 @@ import os
 project = \"${PROJECT}\"
 client = secretmanager.SecretManagerServiceClient()
 
+# Core secrets (required)
 for secret in [\"alchemy-api-key\", \"motherduck-token\"]:
     name = f\"projects/{project}/secrets/{secret}/versions/latest\"
     try:
@@ -138,6 +142,17 @@ for secret in [\"alchemy-api-key\", \"motherduck-token\"]:
         print(f\"✅ {secret}: accessible\")
     except Exception as e:
         print(f\"❌ {secret}: FAILED - {e}\")
+
+# ClickHouse secrets (for dual-write migration)
+print()
+print(\"ClickHouse secrets (dual-write):\")
+for secret in [\"clickhouse-host\", \"clickhouse-password\"]:
+    name = f\"projects/{project}/secrets/{secret}/versions/latest\"
+    try:
+        response = client.access_secret_version(request={\"name\": name})
+        print(f\"✅ {secret}: accessible\")
+    except Exception as e:
+        print(f\"⚠️  {secret}: not found (dual-write disabled)\")
 '
   "
 
