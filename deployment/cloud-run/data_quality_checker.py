@@ -1,18 +1,25 @@
 #!/usr/bin/env python3
 # /// script
-# dependencies = ["duckdb", "google-cloud-secret-manager", "requests"]
+# dependencies = ["duckdb", "google-cloud-secret-manager", "requests", "clickhouse-connect"]
 # ///
 """
-MotherDuck Data Quality Checker
+Data Quality Checker (MotherDuck + ClickHouse)
 
-Queries MotherDuck for latest block timestamp and verifies data freshness.
+Queries database for latest block timestamp and verifies data freshness.
 Designed to run as a Cloud Run Job triggered by Cloud Scheduler every 5 minutes.
+
+Supports both MotherDuck (default) and ClickHouse (dual-write migration).
 
 Environment Variables:
     GCP_PROJECT: GCP project ID (default: eonlabs-ethereum-bq)
     MD_DATABASE: MotherDuck database name (default: ethereum_mainnet)
     MD_TABLE: MotherDuck table name (default: blocks)
     STALE_THRESHOLD_SECONDS: Maximum age before alert (default: 600)
+
+    ClickHouse (optional, for dual-write migration):
+    CLICKHOUSE_HOST: ClickHouse Cloud host (from Secret Manager if not set)
+    CLICKHOUSE_PASSWORD: ClickHouse password (from Secret Manager if not set)
+    CHECK_CLICKHOUSE: Set to 'true' to also verify ClickHouse (default: false)
 
 Exit Codes:
     0: Data is fresh (<600s old)
@@ -33,6 +40,9 @@ MD_DATABASE = os.environ.get('MD_DATABASE', 'ethereum_mainnet')
 MD_TABLE = os.environ.get('MD_TABLE', 'blocks')
 STALE_THRESHOLD_SECONDS = int(os.environ.get('STALE_THRESHOLD_SECONDS', '600'))
 
+# ClickHouse configuration (dual-write migration)
+CHECK_CLICKHOUSE = os.environ.get('CHECK_CLICKHOUSE', 'false').lower() == 'true'
+
 
 def get_secret(secret_id: str, project_id: str = GCP_PROJECT) -> str:
     """Fetch secret from Google Secret Manager.
@@ -51,6 +61,67 @@ def get_secret(secret_id: str, project_id: str = GCP_PROJECT) -> str:
     name = f"projects/{project_id}/secrets/{secret_id}/versions/latest"
     response = client.access_secret_version(request={"name": name})
     return response.payload.data.decode('UTF-8').strip()
+
+
+def check_clickhouse_freshness():
+    """Query ClickHouse and verify data freshness.
+
+    Returns:
+        Tuple of (is_fresh: bool, diagnostic_message: str)
+
+    Raises:
+        Exception: If query fails
+    """
+    import clickhouse_connect
+
+    # Get credentials from env or Secret Manager
+    host = os.environ.get('CLICKHOUSE_HOST')
+    password = os.environ.get('CLICKHOUSE_PASSWORD')
+
+    if not host:
+        host = get_secret('clickhouse-host')
+    if not password:
+        password = get_secret('clickhouse-password')
+
+    client = clickhouse_connect.get_client(
+        host=host,
+        port=8443,
+        username='default',
+        password=password,
+        secure=True,
+        connect_timeout=30,
+    )
+
+    result = client.query("""
+        SELECT MAX(number), MAX(timestamp), COUNT(*)
+        FROM ethereum_mainnet.blocks FINAL
+    """)
+
+    row = result.result_rows[0]
+    if row[0] is None:
+        raise ValueError("No blocks found in ClickHouse")
+
+    latest_block = row[0]
+    latest_timestamp = row[1]
+    total_blocks = row[2]
+
+    # Calculate staleness
+    now = datetime.now(timezone.utc).replace(tzinfo=None)
+    age_seconds = (now - latest_timestamp).total_seconds()
+
+    print(f"   Latest block: {latest_block:,}")
+    print(f"   Latest timestamp: {latest_timestamp}")
+    print(f"   Total blocks: {total_blocks:,}")
+    print(f"   Age: {age_seconds:.1f} seconds")
+
+    is_fresh = age_seconds <= STALE_THRESHOLD_SECONDS
+
+    if is_fresh:
+        diagnostic_msg = f"✅ ClickHouse FRESH: Block {latest_block:,}, {age_seconds:.0f}s old"
+    else:
+        diagnostic_msg = f"❌ ClickHouse STALE: Block {latest_block:,}, {age_seconds/60:.1f} min old"
+
+    return is_fresh, diagnostic_msg
 
 
 def check_data_freshness():
@@ -130,19 +201,34 @@ def ping_healthcheck(url: str, diagnostic_msg: str, is_fresh: bool):
 def main():
     """Entry point."""
     print("=" * 80)
-    print("MotherDuck Data Quality Checker")
+    print("Data Quality Checker (MotherDuck + ClickHouse)")
     print("=" * 80)
     print(f"Timestamp: {datetime.now(timezone.utc).isoformat().replace('+00:00', 'Z')}")
     print(f"Database: {MD_DATABASE}.{MD_TABLE}")
     print(f"Stale threshold: {STALE_THRESHOLD_SECONDS}s")
+    print(f"Check ClickHouse: {CHECK_CLICKHOUSE}")
     print("=" * 80)
     print()
 
     try:
+        # Check MotherDuck (primary)
         is_fresh, diagnostic_msg, healthcheck_url = check_data_freshness()
         ping_healthcheck(healthcheck_url, diagnostic_msg, is_fresh)
 
-        if is_fresh:
+        # Check ClickHouse if enabled (dual-write migration validation)
+        ch_fresh = True
+        if CHECK_CLICKHOUSE:
+            print()
+            print("-" * 80)
+            print("ClickHouse Validation (dual-write migration)")
+            print("-" * 80)
+            ch_fresh, ch_diagnostic = check_clickhouse_freshness()
+            print(f"   {ch_diagnostic}")
+
+        # Both must pass for overall success
+        all_fresh = is_fresh and ch_fresh
+
+        if all_fresh:
             print("\n✅ Data quality check PASSED")
             return 0
         else:
