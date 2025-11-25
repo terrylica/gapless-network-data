@@ -8,7 +8,7 @@ Gapless Network Data is a multi-chain blockchain network metrics collection tool
 
 **Core Capability**: Collect complete historical blockchain network data with high-frequency granularity:
 
-- **Ethereum** (PRIMARY): Block-level data via Alchemy real-time stream (~12 second intervals, 23.8M blocks operational)
+- **Ethereum** (PRIMARY): Block-level data via Alchemy real-time stream (~12 second intervals, 23.8M blocks operational) <!-- Verified 2025-11-20 via MotherDuck: 23,843,490 blocks -->
 - **Bitcoin**: Mempool snapshots via mempool.space (5-minute intervals, future work)
 - **Multi-chain**: Extensible to Solana, Avalanche, Polygon, etc.
 
@@ -66,9 +66,9 @@ Coordinates all project phases, specifications, and implementation work.
 
 **Current Status**:
 
-- **Phase**: Phase 1 (Historical Data Collection: Complete History) - **COMPLETED** (2025-11-12)
+- **Phase**: Phase 1 (Historical Data Collection: Complete History) - **COMPLETED** (2025-11-11) <!-- Verified 2025-11-20 via git: commit 84a0f23 "align documentation with operational production state (23.8M blocks)" -->
 - **Version**: v3.0.0 (production operational)
-- **Data Loaded**: 23.8M Ethereum blocks (2015-2025) in MotherDuck
+- **Data Loaded**: 23.8M Ethereum blocks (2015-2025) in MotherDuck <!-- Verified 2025-11-20 via MotherDuck: 23,843,490 blocks -->
 - **Architecture**: Dual-pipeline (Alchemy WebSocket VM + BigQuery hourly Cloud Run Job)
 - **Monitoring**: Healthchecks.io + Pushover (cloud-based, UptimeRobot removed)
 - **Authoritative Spec**: `./specifications/master-project-roadmap.yaml` Phase 1
@@ -82,6 +82,7 @@ Coordinates all project phases, specifications, and implementation work.
 4. ASOF JOIN as P0 feature (prevents data leakage, 16x faster)
 5. Ethereum PRIMARY, Bitcoin SECONDARY (12s vs 5min granularity)
 6. Monitoring: Cloud-based only (Healthchecks.io Dead Man's Switch, Pushover alerts)
+7. **ClickHouse Migration** (MADR-0013): Migrate to ClickHouse Cloud AWS due to MotherDuck trial expiration (2025-11-25, dual-write in progress)
 
 ## Quick Navigation
 
@@ -191,11 +192,16 @@ Coordinates all project phases, specifications, and implementation work.
 
 **Status**: Production operational - dual-pipeline collection with 23.8M blocks
 
+> **⚠️ Migration In Progress (MADR-0013)**: Migrating from MotherDuck to ClickHouse Cloud AWS.
+> Currently in dual-write validation phase. See `docs/development/plan/0013-motherduck-clickhouse-migration/plan.md`.
+
 **Operational Infrastructure**:
 
 - **Alchemy Real-Time Stream** (e2-micro VM): WebSocket subscription for real-time blocks (~12s intervals) - OPERATIONAL
 - **BigQuery Hourly Batch** (Cloud Run Job): Syncs latest blocks from BigQuery every hour (~578 blocks/run) - OPERATIONAL
-- **MotherDuck Database**: Cloud-hosted DuckDB with automatic deduplication (INSERT OR REPLACE)
+- **Database (Dual-Write Mode)**:
+  - MotherDuck: Cloud-hosted DuckDB (trial expiring)
+  - ClickHouse Cloud AWS: ReplacingMergeTree engine (migration target)
 - **Monitoring**: Healthchecks.io (Dead Man's Switch) + Pushover (alerts)
 
 **Data Pipeline**:
@@ -223,13 +229,19 @@ Coordinates all project phases, specifications, and implementation work.
 
 ## Data Storage Architecture
 
-**Production (Cloud)**:
+> **⚠️ Migration In Progress**: Currently dual-writing to both MotherDuck and ClickHouse.
+> After validation, ClickHouse will become the primary database.
 
-- **Location**: MotherDuck cloud (`md:ethereum_mainnet.blocks`)
-- **Purpose**: Always up-to-date production data (23.8M blocks, 2015-2025)
-- **Access**: SDK queries this by default (`import gapless_network_data`)
+**Production (Cloud) - Dual-Write Mode**:
+
+| Database | Location | Status | Purpose |
+|----------|----------|--------|---------|
+| MotherDuck | `md:ethereum_mainnet.blocks` | Trial expiring | Legacy (being deprecated) |
+| ClickHouse | `ethereum_mainnet.blocks` (AWS us-west-2) | Migration target | New primary database |
+
+- **Current Mode**: Dual-write (both databases receive all new blocks)
+- **Access**: SDK queries MotherDuck by default (will switch to ClickHouse post-cutover)
 - **Deployment**: Maintained by cloud pipelines (no user setup required)
-- **Current Status**: Operational (dual-pipeline architecture)
 
 **Local Development (Optional)**:
 
