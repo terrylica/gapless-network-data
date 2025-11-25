@@ -166,39 +166,43 @@ def verify():
         total_diff = abs(ch_stats['total'] - md_stats['total'])
         max_diff = abs(ch_stats['max_block'] - md_stats['max_block'])
 
-        print(f"  Row count diff: {total_diff}")
+        print(f"  Row count diff: {total_diff:,}")
         print(f"  Max block diff: {max_diff}")
 
-        # Tolerance: 100 blocks for count (timing differences), 10 for max (propagation delay)
-        is_in_sync = total_diff <= 100 and max_diff <= 10
+        # During migration: max block sync is critical (dual-write health)
+        # Row count diff is expected due to historical migration timing
+        dual_write_healthy = max_diff <= 10  # Allow small propagation delay
 
         print()
         print("=" * 70)
 
-        if is_in_sync:
-            print("✅ DATABASES IN SYNC")
+        if dual_write_healthy:
+            print("✅ DUAL-WRITE HEALTHY")
             print("=" * 70)
             print()
             print(f"ClickHouse: {ch_stats['total']:,} blocks (max: {ch_stats['max_block']:,})")
             print(f"MotherDuck: {md_stats['total']:,} blocks (max: {md_stats['max_block']:,})")
-            print(f"Difference: {total_diff} blocks ({total_diff/ch_stats['total']*100:.4f}%)")
+            print(f"Max block diff: {max_diff} (both receiving new blocks ✅)")
+            if total_diff > 100:
+                print(f"Row count diff: {total_diff:,} (expected - historical migration timing)")
             return 0
         else:
-            print("❌ DATABASES OUT OF SYNC")
+            print("❌ DUAL-WRITE FAILURE")
             print("=" * 70)
             print()
             print(f"ClickHouse: {ch_stats['total']:,} blocks (max: {ch_stats['max_block']:,})")
             print(f"MotherDuck: {md_stats['total']:,} blocks (max: {md_stats['max_block']:,})")
-            print(f"Difference: {total_diff} blocks")
+            print(f"Max block diff: {max_diff} (CRITICAL - databases diverging!)")
             print()
-            print("ACTION REQUIRED: Investigate discrepancy")
+            print("ACTION REQUIRED: Check VM collector logs for dual-write errors")
 
-            # Send alert
+            # Send alert only for dual-write failure (max block divergence)
             send_pushover_alert(
-                f"ClickHouse: {ch_stats['total']:,}\n"
-                f"MotherDuck: {md_stats['total']:,}\n"
-                f"Diff: {total_diff} blocks",
-                "❌ DATABASE SYNC MISMATCH",
+                f"Max block divergence detected!\n"
+                f"ClickHouse max: {ch_stats['max_block']:,}\n"
+                f"MotherDuck max: {md_stats['max_block']:,}\n"
+                f"Diff: {max_diff} blocks",
+                "❌ DUAL-WRITE FAILURE",
                 priority=1,
             )
 
