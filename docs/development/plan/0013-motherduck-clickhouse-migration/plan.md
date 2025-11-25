@@ -112,12 +112,14 @@ MotherDuck trial ending in 2-3 days requires urgent migration to ClickHouse Clou
 
 ### Phase 2: Dual-Write Implementation (Day 1, Hour 0-4) - CODE COMPLETE ✅
 
-**Phase 2 Summary** (completed 2025-11-24):
-- All 3 production components updated with dual-write support
-- Code validated (Python syntax checks pass)
+**Phase 2 Summary** (completed 2025-11-25):
+
+- All 4 production components updated with dual-write support
+- Code validated (Python syntax checks pass for all files)
+- GCP secrets created via Python SDK (`setup_gcp_secrets.py`)
 - Verification scripts created (`verify_consistency.py`, `setup_gcp_secrets.sh`)
 - Deployment guide created (`DEPLOYMENT.md`)
-- **Next**: Deploy to GCP (requires gcloud CLI)
+- **Next**: Deploy to GCP via Cloud Console (gcloud CLI not available locally)
 
 **2.1 Update VM realtime collector** ✅ COMPLETED
 
@@ -135,10 +137,13 @@ MotherDuck trial ending in 2-3 days requires urgent migration to ClickHouse Clou
 - Features: `DUAL_WRITE_ENABLED` env var toggle, pandas df conversion with UInt256 handling
 - Completed: 2025-11-24
 
-**2.3 Update Cloud Run data quality checker** ⏳ PENDING
+**2.3 Update Cloud Run data quality checker** ✅ COMPLETED
 
 - File: `deployment/cloud-run/data_quality_checker.py`
-- Changes: Add ClickHouse query option (env var toggle)
+- Changes: Added `check_clickhouse_freshness()` function, CHECK_CLICKHOUSE env var toggle
+- Features: Validates both MotherDuck and ClickHouse when enabled
+- Dependencies: Added `clickhouse-connect` to inline script dependencies
+- Completed: 2025-11-25
 
 **2.4 Update Cloud Function gap monitor** ✅ COMPLETED
 
@@ -224,8 +229,9 @@ gcloud functions deploy motherduck-monitor \
 - ✅ ClickHouse connection validated (2025-11-24T23:20:10)
 - ✅ Schema created with ReplacingMergeTree (2025-11-24T23:21:04)
 - ✅ 23.86M blocks migrated (BigQuery → ClickHouse in 5 minutes)
-- ✅ Dual-write code complete for all 3 components (VM, Cloud Run, Cloud Function)
-- ⏳ Dual-write deployed to production (pending GCP deployment)
+- ✅ Dual-write code complete for all 4 components (VM, Cloud Run job, Cloud Run checker, Cloud Function)
+- ✅ GCP secrets created via Python SDK (2025-11-25)
+- ⏳ Dual-write deployed to production (requires Cloud Console - gcloud CLI unavailable locally)
 - ⏳ 6-12 hour validation period passed
 - ⏳ Zero data loss during cutover
 - ⏳ All documentation updated
@@ -234,15 +240,17 @@ gcloud functions deploy motherduck-monitor \
 
 **Location**: `scripts/clickhouse/`
 
-| Script | Purpose | Status |
-|--------|---------|--------|
-| `validate_connection.py` | Test ClickHouse connectivity | ✅ Created |
-| `create_schema.py` | Create ReplacingMergeTree table | ✅ Created |
-| `migrate_from_bigquery.py` | Direct BigQuery → ClickHouse migration | ✅ Created |
-| `verify_consistency.py` | Hourly ClickHouse ↔ MotherDuck comparison | ✅ Created |
-| `setup_gcp_secrets.sh` | Create ClickHouse secrets in GCP Secret Manager | ✅ Created |
+| Script                     | Purpose                                                    | Status      |
+| -------------------------- | ---------------------------------------------------------- | ----------- |
+| `validate_connection.py`   | Test ClickHouse connectivity                               | ✅ Created  |
+| `create_schema.py`         | Create ReplacingMergeTree table                            | ✅ Created  |
+| `migrate_from_bigquery.py` | Direct BigQuery → ClickHouse migration                     | ✅ Created  |
+| `verify_consistency.py`    | Hourly ClickHouse ↔ MotherDuck comparison                 | ✅ Created  |
+| `setup_gcp_secrets.sh`     | Create secrets via gcloud CLI                              | ✅ Created  |
+| `setup_gcp_secrets.py`     | Create secrets via Python SDK (no gcloud required)         | ✅ Executed |
 
 **Verification Command** (run hourly during validation):
+
 ```bash
 doppler run --project aws-credentials --config prd -- uv run scripts/clickhouse/verify_consistency.py
 ```
