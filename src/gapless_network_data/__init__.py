@@ -1,14 +1,15 @@
 """
-Gapless Mempool Data - Bitcoin mempool pressure data collection.
+Gapless Network Data - Ethereum blockchain network metrics collection infrastructure.
 
-Provides authentic mempool.space data with zero-gap guarantee for feature engineering
-in cryptocurrency trading and ML pipelines.
+Dual-pipeline architecture (BigQuery batch + Alchemy real-time) for collecting
+Ethereum block data with automatic deduplication via ClickHouse Cloud.
 """
 
-__version__ = "0.1.0"
+__version__ = "2.4.0"
 
 from gapless_network_data.api import fetch_snapshots, get_latest_snapshot
 from gapless_network_data.exceptions import (
+    DatabaseException,
     MempoolException,
     MempoolHTTPException,
     MempoolRateLimitException,
@@ -23,4 +24,5 @@ __all__ = [
     "MempoolHTTPException",
     "MempoolValidationException",
     "MempoolRateLimitException",
+    "DatabaseException",
 ]
