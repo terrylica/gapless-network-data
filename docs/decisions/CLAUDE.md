@@ -6,8 +6,8 @@ Local navigation hub for Markdown Any Decision Records documenting key architect
 
 - [MADR-0001: Healthchecks Grace Period Calibration](./0001-healthchecks-grace-period-calibration.md) - Dead Man's Switch grace period optimization
 - [MADR-0002: Exception Handler Notifications](./0002-exception-handler-notifications.md) - Pushover alert integration for pipeline failures
-- [MADR-0003: MotherDuck Timeout Fallback](./0003-motherduck-timeout-fallback.md) - Connection timeout handling and retry strategy
-- [MADR-0004: Staleness Threshold Calibration](./0004-staleness-threshold-calibration.md) - Data freshness monitoring threshold (960s batch mode)
+- [MADR-0003: MotherDuck Timeout Fallback](./0003-motherduck-timeout-fallback.md) - ~~Connection timeout handling~~ **SUPERSEDED** by MADR-0013
+- [MADR-0004: Staleness Threshold Calibration](./0004-staleness-threshold-calibration.md) - ~~Data freshness monitoring~~ **SUPERSEDED** by MADR-0013
 
 ## Documentation Normalization (MADR-0005 to MADR-0008)
 
@@ -15,6 +15,18 @@ Local navigation hub for Markdown Any Decision Records documenting key architect
 - [MADR-0006: Child CLAUDE.md Spokes](./0006-child-claude-spokes.md) - Local navigation hub pattern for docs/ subdirectories
 - [MADR-0007: Skills Extraction](./0007-skills-extraction.md) - Workflow extraction criteria (vm-infrastructure-ops, historical-backfill-execution)
 - [MADR-0008: Link Format Standardization](./0008-link-format.md) - Relative GFM paths for portability and lychee compatibility
+
+## Project Standards (MADR-0009 to MADR-0012)
+
+- [MADR-0009: Version Alignment Strategy](./0009-version-alignment-strategy.md) - Package version alignment with data state
+- [MADR-0010: Documentation Accuracy Standards](./0010-documentation-accuracy-standards.md) - Verified claims, deprecation process
+- [MADR-0011: Link Format Enforcement](./0011-link-format-enforcement.md) - CI/CD link validation via lychee
+- [MADR-0012: Build Artifact Cleanup Policy](./0012-build-artifact-cleanup-policy.md) - Scratch directory lifecycle management
+
+## Infrastructure Migrations (MADR-0013 to MADR-0014)
+
+- [MADR-0013: MotherDuck to ClickHouse Migration](./0013-motherduck-clickhouse-migration.md) - Production database migration from MotherDuck to ClickHouse Cloud AWS
+- [MADR-0014: Documentation Rectification](./0014-documentation-rectification.md) - Post-migration documentation synchronization
 
 ## MADR Format
 

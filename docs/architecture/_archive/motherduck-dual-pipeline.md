@@ -1,8 +1,17 @@
+---
+status: deprecated
+deprecated_date: 2025-11-25
+reason: "Migrated to ClickHouse Cloud (MADR-0013)"
+replacement: "See docs/decisions/0013-motherduck-clickhouse-migration.md"
+---
+
 # MotherDuck Dual Pipeline Architecture
+
+> **DEPRECATED**: This document describes the former MotherDuck architecture. The system was migrated to ClickHouse Cloud on 2025-11-25. See [MADR-0013](../../decisions/0013-motherduck-clickhouse-migration.md) for the current architecture.
 
 **Version**: 1.0.0
 **Last Updated**: 2025-11-09
-**Status**: Operational
+**Status**: DEPRECATED (superseded by ClickHouse Cloud)
 
 ## Overview
 
@@ -314,6 +323,4 @@ gcloud compute ssh eth-realtime-collector \
 ## Related Documentation
 
 - [BigQuery Integration](bigquery-motherduck-integration.md)
-- [Real-Time Collector Deployment](../deployment/realtime-collector.md)
-- [Secret Manager Migration](../deployment/secret-manager-migration.md)
-- [Backfill Options](../deployment/backfill-options.md)
+- [ClickHouse Migration Decision](../../decisions/0013-motherduck-clickhouse-migration.md) - Current architecture

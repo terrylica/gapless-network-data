@@ -19,7 +19,9 @@ Environment Variables:
     CLICKHOUSE_PORT: ClickHouse port (default: 8443)
     CLICKHOUSE_USER: ClickHouse username (default: default)
     CLICKHOUSE_PASSWORD: ClickHouse password (required for dual-write)
-    DUAL_WRITE_ENABLED: Enable dual-write to ClickHouse (default: true)
+    DUAL_WRITE_ENABLED: Enable writes to ClickHouse (default: true)
+    MOTHERDUCK_WRITE_ENABLED: Enable writes to MotherDuck (default: true)
+                              Set to 'false' during Phase 4 cutover to stop MotherDuck writes
 
 Secrets (Google Secret Manager):
     alchemy-api-key: Alchemy API key (fetched via get_secret())
@@ -56,6 +58,9 @@ CLICKHOUSE_USER = os.environ.get('CLICKHOUSE_USER', 'default')
 CLICKHOUSE_PASSWORD = os.environ.get('CLICKHOUSE_PASSWORD')
 CLICKHOUSE_DATABASE = 'ethereum_mainnet'
 CLICKHOUSE_TABLE = 'blocks'
+
+# Cutover control: Set to 'false' to disable MotherDuck writes (Phase 4)
+MOTHERDUCK_WRITE_ENABLED = os.environ.get('MOTHERDUCK_WRITE_ENABLED', 'true').lower() == 'true'
 
 # Global ClickHouse client (initialized in main())
 clickhouse_client = None
@@ -334,20 +339,24 @@ def flush_buffer(conn):
                 block_buffer.extend(blocks_to_insert)
             raise  # Fail-fast: propagate exception
 
-    # Then write to MotherDuck
-    try:
-        conn.executemany(f"""
-            INSERT OR REPLACE INTO {MD_TABLE} VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        """, blocks_to_insert)
+    # Then write to MotherDuck (if enabled)
+    if MOTHERDUCK_WRITE_ENABLED:
+        try:
+            conn.executemany(f"""
+                INSERT OR REPLACE INTO {MD_TABLE} VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """, blocks_to_insert)
 
-        print(f"[{now}] [BATCH] ✅ Flushed {len(blocks_to_insert)} blocks to MotherDuck")
-        return len(blocks_to_insert)
-    except Exception as e:
-        print(f"[{now}] [BATCH] ❌ MotherDuck flush FAILED: {e}")
-        # Re-add blocks to buffer for retry
-        with buffer_lock:
-            block_buffer.extend(blocks_to_insert)
-        raise
+            print(f"[{now}] [BATCH] ✅ Flushed {len(blocks_to_insert)} blocks to MotherDuck")
+        except Exception as e:
+            print(f"[{now}] [BATCH] ❌ MotherDuck flush FAILED: {e}")
+            # Re-add blocks to buffer for retry
+            with buffer_lock:
+                block_buffer.extend(blocks_to_insert)
+            raise
+    else:
+        print(f"[{now}] [BATCH] ⏭️  MotherDuck write SKIPPED (cutover mode)")
+
+    return len(blocks_to_insert)
 
 
 def batch_flush_worker(conn):
@@ -385,10 +394,11 @@ def insert_block(conn, block_tuple):
         if DUAL_WRITE_ENABLED and clickhouse_client:
             flush_to_clickhouse([block_tuple])
 
-        # Then MotherDuck
-        conn.execute(f"""
-            INSERT OR REPLACE INTO {MD_TABLE} VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        """, block_tuple)
+        # Then MotherDuck (if enabled)
+        if MOTHERDUCK_WRITE_ENABLED:
+            conn.execute(f"""
+                INSERT OR REPLACE INTO {MD_TABLE} VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """, block_tuple)
     else:
         # Batch mode: add to buffer
         with buffer_lock:
@@ -501,13 +511,12 @@ def main():
     print("Alchemy WebSocket Real-Time Collector (Dual-Write)")
     print("=" * 80)
     print(f"Timestamp: {datetime.now(timezone.utc).isoformat().replace('+00:00', 'Z')}")
-    print(f"MotherDuck: {MD_DATABASE}.{MD_TABLE}")
-    print(f"ClickHouse: {CLICKHOUSE_DATABASE}.{CLICKHOUSE_TABLE}")
-    print(f"Dual-Write: {'ENABLED' if DUAL_WRITE_ENABLED else 'DISABLED'}")
-    if BATCH_INTERVAL_SECONDS == 0:
-        print(f"Mode: Real-time (immediate writes)")
-    else:
-        print(f"Mode: Batch (flush every {BATCH_INTERVAL_SECONDS}s)")
+    print(f"MotherDuck: {MD_DATABASE}.{MD_TABLE} ({'ENABLED' if MOTHERDUCK_WRITE_ENABLED else 'DISABLED'})")
+    print(f"ClickHouse: {CLICKHOUSE_DATABASE}.{CLICKHOUSE_TABLE} ({'ENABLED' if DUAL_WRITE_ENABLED else 'DISABLED'})")
+    write_mode = 'Dual-Write' if DUAL_WRITE_ENABLED and MOTHERDUCK_WRITE_ENABLED else 'ClickHouse-Only' if DUAL_WRITE_ENABLED else 'MotherDuck-Only'
+    batch_mode = 'Real-time (immediate writes)' if BATCH_INTERVAL_SECONDS == 0 else f'Batch (flush every {BATCH_INTERVAL_SECONDS}s)'
+    print(f"Write Mode: {write_mode}")
+    print(f"Batch Mode: {batch_mode}")
     print("=" * 80)
     print()
 

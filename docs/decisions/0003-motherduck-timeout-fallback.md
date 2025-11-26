@@ -2,7 +2,9 @@
 
 ## Status
 
-Proposed
+**Superseded** by [MADR-0013: MotherDuck to ClickHouse Migration](./0013-motherduck-clickhouse-migration.md) (2025-11-25)
+
+> **Note**: MotherDuck was replaced by ClickHouse Cloud as the production database. ClickHouse uses native TCP connections with built-in retry logic. The timeout and fallback patterns documented here are no longer applicable to the current architecture.
 
 ## Context
 

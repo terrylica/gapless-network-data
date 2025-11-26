@@ -177,9 +177,9 @@ sudo journalctl -u eth-collector -f
 
 ## Related Documentation
 
-- [MotherDuck Dual Pipeline Architecture](../../../docs/architecture/motherduck-dual-pipeline.md) - Complete architecture
+- [MotherDuck Dual Pipeline Architecture](../../../docs/architecture/_archive/motherduck-dual-pipeline.md) - Complete architecture (DEPRECATED - see MADR-0013)
 - [Real-Time Collector Deployment Guide](../../../docs/deployment/realtime-collector.md) - VM deployment
-- [MotherDuck Pipeline Operations Skill](../motherduck-pipeline-operations/SKILL.md) - Database verification
+- [MotherDuck Pipeline Operations Skill](../archive/motherduck-pipeline-operations/SKILL.md) - Database verification (DEPRECATED - see MADR-0013)
 - [Data Pipeline Monitoring Skill](../data-pipeline-monitoring/SKILL.md) - Cloud Run Jobs monitoring
 
 ## Scripts

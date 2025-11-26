@@ -1,7 +1,15 @@
 ---
 name: motherduck-pipeline-operations
-description: This skill should be used when verifying MotherDuck database state, detecting and filling gaps in Ethereum blockchain data, executing historical backfills, or troubleshooting missing data. Use when user mentions MotherDuck verification, gap detection, zero-tolerance completeness checks, chunked backfill execution, or questions about why historical data is missing despite pipeline health checks showing systems are operational.
+description: "[DEPRECATED] This skill was for MotherDuck operations before the ClickHouse migration."
+status: deprecated
+deprecated_date: 2025-11-25
+reason: "Migrated to ClickHouse Cloud (MADR-0013)"
+replacement: "See docs/decisions/0013-motherduck-clickhouse-migration.md for ClickHouse operations"
 ---
+
+> **DEPRECATED**: This skill was archived on 2025-11-25 as part of the MotherDuck to ClickHouse migration (MADR-0013).
+> The production database is now ClickHouse Cloud. For current operations, use `scripts/clickhouse/` scripts.
+> See [MADR-0013](../../../../docs/decisions/0013-motherduck-clickhouse-migration.md) for details.
 
 # MotherDuck Pipeline Operations
 

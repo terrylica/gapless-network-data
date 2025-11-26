@@ -22,15 +22,15 @@ Dual-pipeline blockchain network metrics collection system with zero-gap guarant
 
 **Storage**:
 
-- MotherDuck cloud database (`ethereum_mainnet.blocks` table)
-- Automatic deduplication via `INSERT OR REPLACE` on block number PRIMARY KEY
+- ClickHouse Cloud database (`ethereum_mainnet.blocks` table)
+- Automatic deduplication via `ReplacingMergeTree` on block number
 
 **Compute Infrastructure**:
 
 - Cloud Run Job `eth-md-updater` - Hourly BigQuery sync (~578 blocks/run)
 - Cloud Run Job `eth-md-data-quality-checker` - Data freshness monitoring (every 5 min)
 - Cloud Run Job `ethereum-historical-backfill` - Historical data loading (on-demand)
-- Cloud Function Gen2 `motherduck-gap-detector` - Gap detection (every 3 hours)
+- Cloud Function Gen2 `clickhouse-gap-detector` - Gap detection (every 3 hours)
 - Compute Engine VM `eth-realtime-collector` - WebSocket streaming (24/7)
 
 **Monitoring**:
@@ -43,15 +43,15 @@ Dual-pipeline blockchain network metrics collection system with zero-gap guarant
 
 ```
 Historical Path:
-BigQuery → Cloud Run Job → MotherDuck
+BigQuery → Cloud Run Job → ClickHouse Cloud
 (Hourly sync, last 2 hours)
 
 Real-Time Path:
-Alchemy WebSocket → VM Collector → MotherDuck
+Alchemy WebSocket → VM Collector → ClickHouse Cloud
 (Batch writes every 5 minutes)
 
 Monitoring Path:
-Cloud Scheduler → Cloud Function → MotherDuck Query → Pushover Alert
+Cloud Scheduler → Cloud Function → ClickHouse Query → Pushover Alert
 (Gap detection every 3 hours)
 ```
 
@@ -60,7 +60,7 @@ Cloud Scheduler → Cloud Function → MotherDuck Query → Pushover Alert
 **Data Loaded**: 23.8M Ethereum blocks
 **Block Range**: #1 (2015-07-30) to #23,780,073 (2025-11-12)
 **Time Span**: Genesis to present (9.4 years)
-**Storage**: MotherDuck cloud database (~1.5 GB)
+**Storage**: ClickHouse Cloud database (~1.5 GB)
 **Cost**: $0/month (all within free tiers)
 
 ### Service Level Objectives (SLOs)
@@ -89,24 +89,24 @@ Cloud Scheduler → Cloud Function → MotherDuck Query → Pushover Alert
 
 ## Key Architectural Decisions
 
-### 1. MotherDuck Cloud Database for Dual-Pipeline Ingestion
+### 1. ClickHouse Cloud Database for Dual-Pipeline Ingestion
 
-**Decision Date**: 2025-11-09
-**Rationale**: Cloud-hosted DuckDB enables automatic deduplication for dual-pipeline writes
-**Implementation**: `INSERT OR REPLACE` on `number` PRIMARY KEY
+**Decision Date**: 2025-11-25 (migrated from MotherDuck)
+**Rationale**: ClickHouse Cloud provides better analytics performance and simpler deduplication
+**Implementation**: `ReplacingMergeTree` on `number` with `FINAL` queries
 **Trade-offs**:
 
-- Advantage: Simple deduplication, no coordination needed
-- Limitation: Free tier limits (10 GB storage, 10 CU hours/month)
+- Advantage: Better analytics performance, simpler deduplication
+- Limitation: Requires `FINAL` keyword for accurate results
 
 ### 2. Batch Writes from VM Collector
 
 **Decision Date**: 2025-11-11
-**Rationale**: Real-time writes (every 12s) exceeded MotherDuck free tier by 12x
+**Rationale**: Batch writes improve throughput and reduce connection overhead
 **Implementation**: Buffer 25 blocks in memory, flush every 5 minutes
 **Trade-offs**:
 
-- Advantage: Reduces writes from 216K → 8.6K/month (stays within free tier)
+- Advantage: Reduces write frequency, improves efficiency
 - Limitation: Max 5-minute data lag
 
 ### 3. BigQuery for Historical Data
@@ -147,13 +147,12 @@ Cloud Scheduler → Cloud Function → MotherDuck Query → Pushover Alert
 1. **Single-chain support**: Ethereum only (Bitcoin planned for future)
 2. **No Python SDK**: Package structure exists, API not yet published
 3. **Data lag**: Max 5 minutes due to batch write mode
-4. **Free tier dependency**: MotherDuck 10 GB storage limit
+4. **Free tier dependency**: ClickHouse Cloud 10 GB storage limit
 5. **Single region**: All GCP resources in us-east1/us-central1
 
 ## Related Documentation
 
-- [MotherDuck Dual Pipeline](/Users/terryli/eon/gapless-network-data/docs/architecture/motherduck-dual-pipeline.md) - Complete architecture diagram
-- [BigQuery Integration](/Users/terryli/eon/gapless-network-data/docs/architecture/bigquery-motherduck-integration.md) - Historical data loading
-- [Data Format Specification](/Users/terryli/eon/gapless-network-data/docs/architecture/DATA_FORMAT.md) - Ethereum block schema
-- [Real-Time Collector](/Users/terryli/eon/gapless-network-data/docs/deployment/realtime-collector.md) - VM deployment
-- [CLAUDE.md](/Users/terryli/eon/gapless-network-data/CLAUDE.md) - Complete project context
+- [ClickHouse Migration](../decisions/0013-motherduck-clickhouse-migration.md) - Production database decision
+- [Data Format Specification](./DATA_FORMAT.md) - Ethereum block schema
+- [Real-Time Collector](../deployment/realtime-collector.md) - VM deployment
+- [CLAUDE.md](../../CLAUDE.md) - Complete project context

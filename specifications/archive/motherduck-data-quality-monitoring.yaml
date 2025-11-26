@@ -3,20 +3,32 @@ info:
   title: MotherDuck Data Quality Monitoring Specification
   version: 1.0.0
   description: |
-    Specification for automated data quality verification of MotherDuck database.
+    **DEPRECATED** - Superseded by ClickHouse Cloud migration (MADR-0013, 2025-11-25)
 
+    This specification documents the PLANNED MotherDuck monitoring architecture.
+    This was never fully implemented before the ClickHouse migration.
+    The production monitoring now uses `clickhouse-gap-detector` Cloud Function.
+
+    Historical Reference Only - Do not use for new implementations.
+
+    Original Description:
+    Specification for automated data quality verification of MotherDuck database.
     Verifies that Ethereum block data is continuously growing with no gaps or staleness.
     Uses Cloud Scheduler + Cloud Run Job + Healthchecks.io for monitoring.
 
-    Status: planned (2025-11-10)
+    Original Status: planned (2025-11-10, deprecated 2025-11-25)
     Cost: $0/month (within Cloud Scheduler 3-job free tier)
 
   x-metadata:
     project: "gapless-network-data"
     component: "MotherDuck Data Quality Monitoring"
     created: "2025-11-10"
-    last_updated: "2025-11-10"
-    status: "planned"
+    last_updated: "2025-11-25"
+    status: "deprecated"
+    deprecated: true
+    deprecated_date: "2025-11-25"
+    superseded_by: "MADR-0013 (ClickHouse Cloud migration), clickhouse-gap-detector Cloud Function"
+    archive_reason: "MotherDuck replaced by ClickHouse Cloud AWS before monitoring was fully implemented"
     environment: "production"
     depends_on: ["motherduck-integration.yaml"]
     parent_spec: "specifications/master-project-roadmap.yaml"

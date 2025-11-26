@@ -10,16 +10,20 @@ Local navigation hub for MotherDuck cloud database integration, credentials, and
 
 ## Architecture Documentation
 
-Comprehensive MotherDuck architecture is documented in:
+> **DEPRECATED**: MotherDuck was replaced by ClickHouse Cloud on 2025-11-25. See [MADR-0013](../decisions/0013-motherduck-clickhouse-migration.md) for the current architecture.
 
-- [MotherDuck Dual Pipeline](../architecture/motherduck-dual-pipeline.md) - Complete architecture, failure modes, monitoring
-- [BigQuery-MotherDuck Integration](../architecture/bigquery-motherduck-integration.md) - PyArrow zero-copy transfer details
+Comprehensive MotherDuck architecture (archived) is documented in:
+
+- [MotherDuck Dual Pipeline](../architecture/_archive/motherduck-dual-pipeline.md) - Complete architecture, failure modes, monitoring (DEPRECATED)
+- [BigQuery-MotherDuck Integration](../architecture/_archive/bigquery-motherduck-integration.md) - PyArrow zero-copy transfer details (DEPRECATED)
 
 ## Operational Skills
 
-MotherDuck operations are supported by dedicated skills:
+> **Note**: MotherDuck skills have been deprecated. See ClickHouse-based monitoring via `clickhouse-gap-detector` Cloud Function.
 
-- [MotherDuck Pipeline Operations](../../.claude/skills/motherduck-pipeline-operations/SKILL.md) - Database verification, gap detection, backfill workflows
+Archived MotherDuck skills:
+
+- [MotherDuck Pipeline Operations](../../.claude/skills/archive/motherduck-pipeline-operations/SKILL.md) - Database verification, gap detection (DEPRECATED)
 - [Historical Backfill Execution](../../.claude/skills/historical-backfill-execution/SKILL.md) - 1-year chunked backfill, memory-safe execution
 - [Data Pipeline Monitoring](../../.claude/skills/data-pipeline-monitoring/SKILL.md) - Cloud Run Jobs, VM services, alert systems
 

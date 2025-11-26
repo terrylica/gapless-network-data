@@ -6,7 +6,7 @@ Production blockchain data collection infrastructure with dual-pipeline architec
 
 Operational Ethereum data pipeline collecting **14.57M blocks (2020-2025)** with real-time updates every ~12 seconds.
 
-**Architecture**: BigQuery hourly batch + Alchemy real-time WebSocket → MotherDuck cloud database
+**Architecture**: BigQuery hourly batch + Alchemy real-time WebSocket → ClickHouse Cloud database
 
 **Status**: Production operational (v2.4.0)
 
@@ -28,12 +28,12 @@ Operational Ethereum data pipeline collecting **14.57M blocks (2020-2025)** with
 - **Service**: Systemd service (eth-collector)
 - **Cost**: $0/month (e2-micro within free tier)
 
-### 3. MotherDuck Database
+### 3. ClickHouse Cloud Database
 
-- **Type**: Cloud-hosted DuckDB
-- **Deduplication**: INSERT OR REPLACE on block number (PRIMARY KEY)
+- **Type**: ClickHouse Cloud (AWS us-east-1)
+- **Deduplication**: ReplacingMergeTree on block number
 - **Data**: 14.57M blocks, ~1.5 GB storage
-- **Cost**: $0/month (within 10 GB free tier)
+- **Cost**: $0/month (within free tier)
 
 ### 4. Monitoring (Cloud-Based)
 
@@ -45,16 +45,22 @@ Operational Ethereum data pipeline collecting **14.57M blocks (2020-2025)** with
 
 ## Data Access
 
-Query MotherDuck database directly via DuckDB:
+Query ClickHouse Cloud database directly:
 
 ```python
-import duckdb
+import clickhouse_connect
 
-# Connect to MotherDuck
-conn = duckdb.connect(f'md:ethereum_mainnet?motherduck_token={token}')
+# Connect to ClickHouse Cloud
+client = clickhouse_connect.get_client(
+    host='your-host.aws.clickhouse.cloud',
+    port=8443,
+    username='default',
+    password=password,
+    secure=True
+)
 
 # Query latest 10 blocks
-result = conn.execute("""
+result = client.query_df("""
     SELECT
         timestamp,
         number,
@@ -62,10 +68,10 @@ result = conn.execute("""
         gas_used,
         gas_limit,
         transaction_count
-    FROM blocks
+    FROM ethereum_mainnet.blocks FINAL
     ORDER BY number DESC
     LIMIT 10
-""").df()
+""")
 
 print(result)
 ```
@@ -104,7 +110,7 @@ print(result)
 Combine Ethereum network data with OHLCV price data:
 
 ```python
-import duckdb
+import clickhouse_connect
 import gapless_crypto_data as gcd
 import pandas as pd
 
@@ -116,13 +122,13 @@ df_ohlcv = gcd.get_data(
     end_date="2024-01-02"
 )
 
-# Query Ethereum blocks from MotherDuck
-conn = duckdb.connect(f'md:ethereum_mainnet?motherduck_token={token}')
-df_eth = conn.execute("""
+# Query Ethereum blocks from ClickHouse
+client = clickhouse_connect.get_client(host=host, port=8443, username='default', password=password, secure=True)
+df_eth = client.query_df("""
     SELECT timestamp, base_fee_per_gas, gas_used, gas_limit, transaction_count
-    FROM blocks
+    FROM ethereum_mainnet.blocks FINAL
     WHERE timestamp BETWEEN '2024-01-01' AND '2024-01-02'
-""").df()
+""")
 
 # Temporal alignment (forward-fill to prevent data leakage)
 df_eth['timestamp'] = pd.to_datetime(df_eth['timestamp'])
@@ -144,7 +150,7 @@ See [gapless-crypto-data](https://github.com/terrylica/gapless-crypto-data) for 
 
 ```
 deployment/
-├── cloud-run/       # BigQuery → MotherDuck hourly sync
+├── cloud-run/       # BigQuery → ClickHouse hourly sync
 │   ├── main.py
 │   ├── Dockerfile
 │   └── README.md
@@ -172,9 +178,8 @@ gcloud run jobs executions list --job eth-md-updater --region us-central1
 gcloud compute ssh eth-realtime-collector --zone=us-east1-b \
   --command='sudo journalctl -u eth-collector -f'
 
-# Verify MotherDuck database state (run locally, queries MotherDuck cloud, requires motherduck_token)
-cd .claude/skills/motherduck-pipeline-operations
-uv run scripts/verify_motherduck.py
+# Verify ClickHouse database state (run locally, queries ClickHouse Cloud)
+uv run scripts/clickhouse/verify_blocks.py
 ```
 
 ### Service Management
@@ -231,14 +236,14 @@ All monitoring runs on the cloud (no local processes):
 
 **Total**: $0/month (all within free tiers)
 
-| Service         | Usage          | Free Tier Limit | Cost |
-| --------------- | -------------- | --------------- | ---- |
-| BigQuery        | 10 MB queries  | 1 TB/month      | $0   |
-| Cloud Run       | 720 executions | 2M invocations  | $0   |
-| Compute Engine  | e2-micro VM    | 1 instance      | $0   |
-| MotherDuck      | 1.5 GB storage | 10 GB           | $0   |
-| Healthchecks.io | 1 check        | 20 checks       | $0   |
-| Pushover        | Alerts         | 10,000/month    | $0   |
+| Service          | Usage          | Free Tier Limit | Cost |
+| ---------------- | -------------- | --------------- | ---- |
+| BigQuery         | 10 MB queries  | 1 TB/month      | $0   |
+| Cloud Run        | 720 executions | 2M invocations  | $0   |
+| Compute Engine   | e2-micro VM    | 1 instance      | $0   |
+| ClickHouse Cloud | 1.5 GB storage | 10 GB           | $0   |
+| Healthchecks.io  | 1 check        | 20 checks       | $0   |
+| Pushover         | Alerts         | 10,000/month    | $0   |
 
 ## Security
 
@@ -254,7 +259,7 @@ All monitoring runs on the cloud (no local processes):
 - ✅ eth-collector systemd service: ACTIVE (streaming blocks every ~12s)
 - ✅ Cloud Run eth-md-updater: ACTIVE (hourly BigQuery sync)
 - ✅ Cloud Scheduler eth-md-hourly: ENABLED (triggers hourly at :00)
-- ✅ MotherDuck ethereum_mainnet.blocks: 14.57M blocks (2020-2025)
+- ✅ ClickHouse ethereum_mainnet.blocks: 14.57M blocks (2020-2025)
 
 ## Data Sources
 
@@ -273,7 +278,7 @@ All monitoring runs on the cloud (no local processes):
 - [gapless-crypto-data](https://github.com/terrylica/gapless-crypto-data) - OHLCV data collection
 - [BigQuery Ethereum Dataset](https://console.cloud.google.com/bigquery?p=bigquery-public-data&d=crypto_ethereum)
 - [Alchemy](https://www.alchemy.com/) - Real-time WebSocket API
-- [MotherDuck](https://motherduck.com/) - Cloud-hosted DuckDB
+- [ClickHouse Cloud](https://clickhouse.cloud/) - Cloud-hosted ClickHouse
 
 ## Future Work (Phase 2+)
 
@@ -299,5 +304,5 @@ MIT License - see [LICENSE](LICENSE) for details.
 
 - [CLAUDE.md](CLAUDE.md) - Complete project memory and architecture
 - [Master Roadmap](specifications/master-project-roadmap.yaml) - Project phases and planning
-- [MotherDuck Integration](specifications/motherduck-integration.yaml) - Dual-pipeline architecture
+- [ClickHouse Migration](docs/decisions/0013-motherduck-clickhouse-migration.md) - Production database decision
 - [Skills](.claude/skills/) - Operational workflows and troubleshooting guides

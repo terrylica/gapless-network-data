@@ -8,7 +8,7 @@ Gapless Network Data is a multi-chain blockchain network metrics collection tool
 
 **Core Capability**: Collect complete historical blockchain network data with high-frequency granularity:
 
-- **Ethereum** (PRIMARY): Block-level data via Alchemy real-time stream (~12 second intervals, 23.8M blocks operational) <!-- Verified 2025-11-20 via MotherDuck: 23,843,490 blocks -->
+- **Ethereum** (PRIMARY): Block-level data via Alchemy real-time stream (~12 second intervals, 23.87M blocks operational) <!-- Verified 2025-11-25 via ClickHouse: 23,877,845 blocks -->
 - **Bitcoin**: Mempool snapshots via mempool.space (5-minute intervals, future work)
 - **Multi-chain**: Extensible to Solana, Avalanche, Polygon, etc.
 
@@ -59,30 +59,31 @@ Coordinates all project phases, specifications, and implementation work.
 
 **Sub-Specifications**:
 
-- `motherduck-integration.yaml` - MotherDuck dual pipeline (operational 2025-11-09, SLOs met)
+- `clickhouse-migration.yaml` - ClickHouse AWS migration (operational 2025-11-25)
 - `documentation-audit-phase.yaml` - Documentation audit (completed 2025-11-03, 6 findings resolved)
 - `duckdb-integration-strategy.yaml` - DuckDB integration (23 features, 29-40 hours total)
+- `archive/motherduck-integration.yaml` - MotherDuck dual pipeline (deprecated 2025-11-25, migrated to ClickHouse)
 - `archive/core-collection-phase1.yaml` - Bitcoin-only Phase 1 (superseded 2025-11-04, archived)
 
 **Current Status**:
 
-- **Phase**: Phase 1 (Historical Data Collection: Complete History) - **COMPLETED** (2025-11-11) <!-- Verified 2025-11-20 via git: commit 84a0f23 "align documentation with operational production state (23.8M blocks)" -->
+- **Phase**: Phase 1 (Historical Data Collection: Complete History) - **COMPLETED** (2025-11-11)
 - **Version**: v3.0.0 (production operational)
-- **Data Loaded**: 23.8M Ethereum blocks (2015-2025) in MotherDuck <!-- Verified 2025-11-20 via MotherDuck: 23,843,490 blocks -->
-- **Architecture**: Dual-pipeline (Alchemy WebSocket VM + BigQuery hourly Cloud Run Job)
+- **Data Loaded**: 23.87M Ethereum blocks (2015-2025) in ClickHouse Cloud <!-- Verified 2025-11-25: 23,877,845 blocks -->
+- **Architecture**: Dual-pipeline (Alchemy WebSocket VM + BigQuery hourly Cloud Run Job) → ClickHouse
 - **Monitoring**: Healthchecks.io + Pushover (cloud-based, UptimeRobot removed)
 - **Authoritative Spec**: `./specifications/master-project-roadmap.yaml` Phase 1
 - **Validation**: Empirical validation complete - see `./scratch/README.md` and `./scratch/ethereum-collector-poc/ETHEREUM_COLLECTOR_POC_REPORT.md`
 
 **Key Decisions Logged**:
 
-1. Architecture: MotherDuck cloud database for dual-pipeline ingestion (2025-11-09, operational)
+1. Architecture: ClickHouse Cloud (AWS) for production storage (2025-11-25, operational)
 2. Data Sources: BigQuery public dataset (historical) + Alchemy WebSocket (real-time) - rejected LlamaRPC due to rate limits (2025-11-10)
 3. Separate databases for gapless-crypto-data and gapless-network-data (9-2 score)
 4. ASOF JOIN as P0 feature (prevents data leakage, 16x faster)
 5. Ethereum PRIMARY, Bitcoin SECONDARY (12s vs 5min granularity)
 6. Monitoring: Cloud-based only (Healthchecks.io Dead Man's Switch, Pushover alerts)
-7. **ClickHouse Migration** (MADR-0013): Migrate to ClickHouse Cloud AWS due to MotherDuck trial expiration (2025-11-25, dual-write in progress)
+7. Database Migration: MotherDuck → ClickHouse (2025-11-25, trial expiration driven)
 
 ## Quick Navigation
 
@@ -111,26 +112,41 @@ Coordinates all project phases, specifications, and implementation work.
 
 ### Data Sources
 
-**Production**: BigQuery (historical) + Alchemy (real-time) → MotherDuck cloud database
+**Production**: BigQuery (historical) + Alchemy (real-time) → ClickHouse Cloud (AWS)
 
 **Complete Documentation**: See [Data Sources](./docs/research/data-sources.md) for production sources, rejected alternatives (LlamaRPC: 1.37 RPS sustained vs 50 RPS documented), and future multi-chain plans.
 
-## MotherDuck Integration
+## ClickHouse Integration
 
-**Status**: Operational - Dual-pipeline (BigQuery hourly + Alchemy real-time) → MotherDuck cloud database with automatic deduplication
+**Status**: Operational - Dual-pipeline (BigQuery hourly + Alchemy real-time) → ClickHouse Cloud (AWS) with ReplacingMergeTree automatic deduplication
 
-**Complete Documentation**: See [Dual Pipeline Architecture](./docs/architecture/motherduck-dual-pipeline.md) for architecture diagrams, failure modes, monitoring, SLOs, and operational status.
+**Migration**: MotherDuck → ClickHouse completed 2025-11-25 (trial expiration driven). See `docs/development/plan/0013-motherduck-clickhouse-migration/plan.md` for migration details.
 
 **Operations**:
 
 - **VM Management**: Use `vm-infrastructure-ops` skill for service restarts, log viewing, troubleshooting
-- **Database Operations**: Use `motherduck-pipeline-operations` skill for verification, gap detection, and backfill workflows
+- **Database Operations**: Use `clickhouse-connect` Python SDK for queries and verification
+- **Credentials**: Doppler `aws-credentials/prd` → ClickHouse host/password
 
-**Monitoring**: Gap detection runs every 3 hours via GCP Cloud Functions (DuckDB LAG() query, Pushover + Healthchecks.io alerts)
+**Monitoring**: Gap detection runs every 3 hours via GCP Cloud Functions (consistency checks, Pushover + Healthchecks.io alerts)
+
+**Connection**:
+
+```python
+import clickhouse_connect
+client = clickhouse_connect.get_client(
+    host=os.environ['CLICKHOUSE_HOST'],
+    port=8443,
+    username='default',
+    password=os.environ['CLICKHOUSE_PASSWORD'],
+    secure=True
+)
+result = client.query('SELECT COUNT(*) FROM ethereum_mainnet.blocks FINAL')
+```
 
 ## Project Skills
 
-**Skills**: 5 project skills + 2 managed skills (blockchain RPC research, data collection validation, BigQuery acquisition, MotherDuck operations, pipeline monitoring)
+**Skills**: 5 project skills + 2 managed skills (blockchain RPC research, data collection validation, BigQuery acquisition, ClickHouse operations, pipeline monitoring)
 
 **Complete Catalog**: See [Skills Catalog](./.claude/skills/CATALOG.md) for descriptions, when-to-use guidance, and validated patterns from scratch investigations.
 
@@ -140,8 +156,8 @@ Coordinates all project phases, specifications, and implementation work.
 
 **Operational (v3.0.0)**:
 
-- **Ethereum Block Data Collection**: 23.8M blocks (2015-2025) via dual-pipeline architecture
-- **Infrastructure**: Alchemy WebSocket → MotherDuck cloud storage
+- **Ethereum Block Data Collection**: 23.87M blocks (2015-2025) via dual-pipeline architecture
+- **Infrastructure**: Alchemy WebSocket → ClickHouse Cloud (AWS)
 - **Monitoring**: Healthchecks.io, Pushover
 - **Purpose**: Network metrics for ML feature engineering pipelines
 
@@ -190,26 +206,21 @@ Coordinates all project phases, specifications, and implementation work.
 
 **Version**: v3.0.0 (production operational)
 
-**Status**: Production operational - dual-pipeline collection with 23.8M blocks
-
-> **⚠️ Migration In Progress (MADR-0013)**: Migrating from MotherDuck to ClickHouse Cloud AWS.
-> Currently in dual-write validation phase. See `docs/development/plan/0013-motherduck-clickhouse-migration/plan.md`.
+**Status**: Production operational - dual-pipeline collection with 23.87M blocks
 
 **Operational Infrastructure**:
 
 - **Alchemy Real-Time Stream** (e2-micro VM): WebSocket subscription for real-time blocks (~12s intervals) - OPERATIONAL
 - **BigQuery Hourly Batch** (Cloud Run Job): Syncs latest blocks from BigQuery every hour (~578 blocks/run) - OPERATIONAL
-- **Database (Dual-Write Mode)**:
-  - MotherDuck: Cloud-hosted DuckDB (trial expiring)
-  - ClickHouse Cloud AWS: ReplacingMergeTree engine (migration target)
+- **ClickHouse Cloud Database** (AWS us-west-2): ReplacingMergeTree with automatic deduplication on block number
 - **Monitoring**: Healthchecks.io (Dead Man's Switch) + Pushover (alerts)
 
 **Data Pipeline**:
 
-- Historical data: 23.8M Ethereum blocks (2015-2025) loaded from BigQuery
+- Historical data: 23.87M Ethereum blocks (2015-2025) migrated from BigQuery
 - Real-time streaming: Alchemy WebSocket feeds new blocks every ~12 seconds
-- Deduplication: Both pipelines write to same MotherDuck table with PRIMARY KEY on block number
-- Cost: $0/month (all within free tiers)
+- Deduplication: Both pipelines write to same ClickHouse table with ReplacingMergeTree (ORDER BY number)
+- Cost: ClickHouse Cloud free tier (10GB storage, 100GB egress/month)
 
 **SDK Package** (implemented):
 
@@ -229,43 +240,52 @@ Coordinates all project phases, specifications, and implementation work.
 
 ## Data Storage Architecture
 
-> **⚠️ Migration In Progress**: Currently dual-writing to both MotherDuck and ClickHouse.
-> After validation, ClickHouse will become the primary database.
+**Production (Cloud)**:
 
-**Production (Cloud) - Dual-Write Mode**:
-
-| Database | Location | Status | Purpose |
-|----------|----------|--------|---------|
-| MotherDuck | `md:ethereum_mainnet.blocks` | Trial expiring | Legacy (being deprecated) |
-| ClickHouse | `ethereum_mainnet.blocks` (AWS us-west-2) | Migration target | New primary database |
-
-- **Current Mode**: Dual-write (both databases receive all new blocks)
-- **Access**: SDK queries MotherDuck by default (will switch to ClickHouse post-cutover)
+- **Location**: ClickHouse Cloud AWS (`ethereum_mainnet.blocks`)
+- **Purpose**: Always up-to-date production data (23.87M blocks, 2015-2025)
+- **Access**: SDK queries this by default (`import gapless_network_data`)
 - **Deployment**: Maintained by cloud pipelines (no user setup required)
+- **Current Status**: Operational (dual-pipeline architecture → ClickHouse)
 
 **Local Development (Optional)**:
 
 - **Location**: `~/.cache/gapless-network-data/data.duckdb`
 - **Purpose**: Local cache for offline analysis (future feature)
-- **Access**: SDK fallback if MotherDuck unreachable (pending implementation)
+- **Access**: SDK fallback if ClickHouse unreachable (pending implementation)
 - **Deployment**: User can populate with `fetch_snapshots(cache=True)` (pending)
-- **Current Status**: Not implemented (SDK queries MotherDuck cloud only)
+- **Current Status**: Not implemented (SDK queries ClickHouse cloud only)
 
-**Default Mode**: SDK queries MotherDuck cloud directly (no local DuckDB setup needed)
+**Default Mode**: SDK queries ClickHouse Cloud directly (no local DuckDB setup needed)
 
 **Schema Version**: 1.0.0
 
-**Tables** (MotherDuck cloud):
+**Tables** (ClickHouse Cloud):
 
-- `ethereum_blocks` - 23.8M Ethereum blocks (2015-2025, ~2.5 GB)
+- `ethereum_mainnet.blocks` - 23.87M Ethereum blocks (2015-2025, ~500 MB compressed)
 - `bitcoin_mempool` - Deferred to Phase 2+ (Bitcoin is SECONDARY)
 
-**Complete Schema Specification**: See `./specifications/duckdb-schema-specification.yaml` for:
+**ClickHouse Schema**:
 
-- DDL statements with constraints and indexes
-- Common query patterns (time_bucket, ASOF JOIN, window functions)
-- Data integrity checks
-- Performance tuning guidelines
+```sql
+CREATE TABLE ethereum_mainnet.blocks (
+    timestamp DateTime,
+    number UInt64,
+    gas_limit UInt64,
+    gas_used UInt64,
+    base_fee_per_gas UInt64,
+    transaction_count UInt64,
+    difficulty UInt256,
+    total_difficulty UInt256,
+    size UInt64,
+    blob_gas_used Nullable(UInt64),
+    excess_blob_gas Nullable(UInt64)
+) ENGINE = ReplacingMergeTree()
+ORDER BY number
+PARTITION BY toYYYYMM(timestamp)
+```
+
+**Complete Schema Specification**: See `./specifications/duckdb-schema-specification.yaml` for local DuckDB patterns (ASOF JOIN, window functions, gap detection)
 
 ## Feature Engineering Integration
 
@@ -568,13 +588,14 @@ supersedes: []
 Ethereum Historical Backfill (PRIMARY) - **COMPLETED**:
 
 - [x] BigQuery public dataset integration (replaced LlamaRPC due to rate limits)
-- [x] Complete Ethereum block collection (2015-2025, 23.8M blocks loaded)
+- [x] Complete Ethereum block collection (2015-2025, 23.87M blocks loaded)
 - [x] Batch fetching with 1-year chunking pattern (prevents OOM)
-- [x] MotherDuck cloud database: INSERT OR REPLACE INTO ethereum_mainnet.blocks
+- [x] ClickHouse Cloud database: ReplacingMergeTree with ORDER BY number
 - [x] Dual-pipeline architecture (BigQuery hourly + Alchemy real-time)
 - [x] Production monitoring (Healthchecks.io + Pushover)
-- [x] Cost optimization ($0/month, all free tiers)
+- [x] Cost optimization (ClickHouse Cloud free tier)
 - [x] SLO compliance (Availability, Correctness, Observability, Maintainability)
+- [x] Database migration: MotherDuck → ClickHouse (2025-11-25)
 
 Bitcoin Historical Collection (SECONDARY) - **DEFERRED TO PHASE 2+**:
 
@@ -585,10 +606,10 @@ Bitcoin Historical Collection (SECONDARY) - **DEFERRED TO PHASE 2+**:
 
 Data Quality - **PARTIALLY IMPLEMENTED**:
 
-- [x] Schema validation (Ethereum blocks via MotherDuck table schema)
-- [x] Deduplication (INSERT OR REPLACE on block number PRIMARY KEY)
+- [x] Schema validation (Ethereum blocks via ClickHouse table schema)
+- [x] Deduplication (ReplacingMergeTree ORDER BY number)
 - [x] Monitoring and alerting (cloud-based Dead Man's Switch)
-- [ ] DuckDB CHECK constraints (fee ordering, non-negative values) - pending
+- [ ] ClickHouse CHECK constraints (fee ordering, non-negative values) - pending
 - [ ] Complete 5-layer validation pipeline - deferred to Phase 2+
 
 **Phase 2: Real-Time Collection & Data Quality** (future)

@@ -14,7 +14,8 @@ Deployment scripts for the real-time Ethereum block collector running on GCP e2-
 2. VM instance created: `eth-realtime-collector` (e2-micro, us-east1-b)
 3. Secrets stored in Secret Manager:
    - `alchemy-api-key`
-   - `motherduck-token`
+   - `clickhouse-host`
+   - `clickhouse-password`
 4. VM service account has `roles/secretmanager.secretAccessor`:
    - `893624294905-compute@developer.gserviceaccount.com`
 
@@ -63,7 +64,7 @@ gcloud compute ssh eth-realtime-collector --zone=us-east1-b --project=eonlabs-et
 ## Data Flow
 
 ```
-Alchemy WebSocket (newHeads) → realtime_collector.py → MotherDuck (ethereum_mainnet.blocks)
+Alchemy WebSocket (newHeads) → realtime_collector.py → ClickHouse (ethereum_mainnet.blocks)
 ```
 
 **Collection rate**: ~12 seconds per block (matches Ethereum block time)
@@ -75,16 +76,14 @@ Alchemy WebSocket (newHeads) → realtime_collector.py → MotherDuck (ethereum_
 
 - Buffers blocks in memory for 5 minutes (~25 blocks)
 - Writes all buffered blocks in a single batch INSERT
-- **Reduces MotherDuck compute units by 25x** (216K → 8.6K writes/month)
-- **Stays within free tier** (8.6K × 2 CU = 17,280 CU/month < 36,000 limit)
+- Reduces network round-trips and improves throughput
 - Data lag: Max 5 minutes
 - Set via: `Environment="BATCH_INTERVAL_SECONDS=300"` (default in service file)
 
 **Real-Time Mode (Optional)**:
 
 - Writes each block immediately upon receipt (~12 second lag)
-- **Exceeds free tier** (216K × 2 CU = 432,000 CU/month >> 36,000 limit)
-- Requires MotherDuck paid plan ($25/month minimum)
+- Higher network overhead but lower latency
 - Set via: `Environment="BATCH_INTERVAL_SECONDS=0"`
 
 **Switching Modes**:

@@ -20,7 +20,9 @@ Environment Variables:
     CLICKHOUSE_PORT: ClickHouse port (default: 8443)
     CLICKHOUSE_USER: ClickHouse username (default: default)
     CLICKHOUSE_PASSWORD: ClickHouse password (required for dual-write)
-    DUAL_WRITE_ENABLED: Enable dual-write to ClickHouse (default: true)
+    DUAL_WRITE_ENABLED: Enable writes to ClickHouse (default: true)
+    MOTHERDUCK_WRITE_ENABLED: Enable writes to MotherDuck (default: true)
+                              Set to 'false' during Phase 4 cutover to stop MotherDuck writes
 
 Secrets (Google Secret Manager):
     motherduck-token: MotherDuck authentication token (fetched via get_secret())
@@ -52,6 +54,9 @@ CLICKHOUSE_USER = os.environ.get('CLICKHOUSE_USER', 'default')
 CLICKHOUSE_PASSWORD = os.environ.get('CLICKHOUSE_PASSWORD')
 CLICKHOUSE_DATABASE = 'ethereum_mainnet'
 CLICKHOUSE_TABLE = 'blocks'
+
+# Cutover control: Set to 'false' to disable MotherDuck writes (Phase 4)
+MOTHERDUCK_WRITE_ENABLED = os.environ.get('MOTHERDUCK_WRITE_ENABLED', 'true').lower() == 'true'
 
 # Monitoring
 HEALTHCHECK_URL = 'https://hc-ping.com/616d5e4b-9e5b-470f-bd85-7870c2329ba3'
@@ -290,9 +295,10 @@ def main():
     print(f"Timestamp: {datetime.now(timezone.utc).isoformat().replace('+00:00', 'Z')}")
     print(f"GCP Project: {GCP_PROJECT}")
     print(f"BigQuery Dataset: {DATASET_ID}.{TABLE_ID}")
-    print(f"MotherDuck: {MD_DATABASE}.{MD_TABLE}")
-    print(f"ClickHouse: {CLICKHOUSE_DATABASE}.{CLICKHOUSE_TABLE}")
-    print(f"Dual-Write: {'ENABLED' if DUAL_WRITE_ENABLED else 'DISABLED'}")
+    print(f"MotherDuck: {MD_DATABASE}.{MD_TABLE} ({'ENABLED' if MOTHERDUCK_WRITE_ENABLED else 'DISABLED'})")
+    print(f"ClickHouse: {CLICKHOUSE_DATABASE}.{CLICKHOUSE_TABLE} ({'ENABLED' if DUAL_WRITE_ENABLED else 'DISABLED'})")
+    write_mode = 'Dual-Write' if DUAL_WRITE_ENABLED and MOTHERDUCK_WRITE_ENABLED else 'ClickHouse-Only' if DUAL_WRITE_ENABLED else 'MotherDuck-Only'
+    print(f"Write Mode: {write_mode}")
     print("=" * 80)
     print()
 
@@ -314,8 +320,11 @@ def main():
         if DUAL_WRITE_ENABLED:
             load_to_clickhouse(pa_table)
 
-        # Then load to MotherDuck
-        load_to_motherduck(pa_table)
+        # Then load to MotherDuck (if enabled)
+        if MOTHERDUCK_WRITE_ENABLED:
+            load_to_motherduck(pa_table)
+        else:
+            print("\n[CUTOVER] ⏭️  MotherDuck write SKIPPED (cutover mode)")
 
         print("\n" + "=" * 80)
         print("✅ UPDATE COMPLETE")
