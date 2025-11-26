@@ -181,7 +181,6 @@ CREATE TABLE ethereum_mainnet.blocks (
 
 ## Related Documentation
 
-- [MotherDuck Dual Pipeline](/Users/terryli/eon/gapless-network-data/docs/architecture/motherduck-dual-pipeline.md) - Complete schema DDL
-- [BigQuery Integration](/Users/terryli/eon/gapless-network-data/docs/architecture/bigquery-motherduck-integration.md) - Field mapping
-- [Architecture Overview](/Users/terryli/eon/gapless-network-data/docs/architecture/OVERVIEW.md) - System design
-- [LlamaRPC Schema Documentation](/Users/terryli/eon/gapless-network-data/docs/llamarpc/schema/ETHEREUM_BLOCK_SCHEMA.md) - Full 26-field reference
+- [MotherDuck Dual Pipeline](./_archive/motherduck-dual-pipeline.md) - Complete schema DDL (DEPRECATED - see MADR-0013)
+- [BigQuery Integration](./_archive/bigquery-motherduck-integration.md) - Field mapping (DEPRECATED - see MADR-0013)
+- [Architecture Overview](./OVERVIEW.md) - System design

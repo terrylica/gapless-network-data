@@ -1,12 +1,14 @@
-# Mother Duck Gap Detection Monitor - GCP Cloud Functions
+# ClickHouse Gap Detection Monitor - GCP Cloud Functions
 
-Serverless monitoring for MotherDuck Ethereum database gaps and staleness.
+Serverless monitoring for ClickHouse Ethereum database gaps and staleness.
+
+> **Historical Note**: This folder is named `motherduck-monitor` for GCP resource naming consistency with existing Cloud Function deployments. Renaming would require GCP resource recreation. The actual function name is `clickhouse-gap-detector` and monitors ClickHouse Cloud (migrated 2025-11-25, MADR-0013).
 
 ## Architecture
 
 - **Platform**: GCP Cloud Functions gen2 (Python 3.12)
 - **Trigger**: Cloud Scheduler HTTP (every 3 hours)
-- **Secrets**: GCP Secret Manager (motherduck-token, pushover-token, pushover-user)
+- **Secrets**: GCP Secret Manager (clickhouse-host, clickhouse-password, pushover-token, pushover-user)
 - **Logging**: Cloud Logging (stdout/stderr auto-captured)
 - **Notifications**: Pushover (priority=2, all executions) + Healthchecks.io Dead Man's Switch
 - **Cost**: $0/month (240 invocations << 2M free tier)
@@ -30,7 +32,7 @@ doppler secrets get PUSHOVER_USER --plain | gcloud secrets create pushover-user 
 ```bash
 cd deployment/gcp-functions/motherduck-monitor
 
-gcloud functions deploy motherduck-gap-detector \
+gcloud functions deploy clickhouse-gap-detector \
   --gen2 \
   --runtime=python312 \
   --region=us-east1 \
@@ -49,10 +51,10 @@ gcloud functions deploy motherduck-gap-detector \
 
 ```bash
 # Get function URL
-FUNCTION_URL=$(gcloud functions describe motherduck-gap-detector --region=us-east1 --gen2 --format='value(serviceConfig.uri)')
+FUNCTION_URL=$(gcloud functions describe clickhouse-gap-detector --region=us-east1 --gen2 --format='value(serviceConfig.uri)')
 
 # Create scheduler (every 3 hours)
-gcloud scheduler jobs create http motherduck-monitor-trigger \
+gcloud scheduler jobs create http clickhouse-monitor-trigger \
   --location=us-east1 \
   --schedule="0 */3 * * *" \
   --uri="$FUNCTION_URL" \
@@ -65,10 +67,10 @@ gcloud scheduler jobs create http motherduck-monitor-trigger \
 
 ```bash
 # Manual trigger
-gcloud scheduler jobs run motherduck-monitor-trigger --location=us-east1
+gcloud scheduler jobs run clickhouse-monitor-trigger --location=us-east1
 
 # View logs
-gcloud functions logs read motherduck-gap-detector --region=us-east1 --gen2 --limit=50
+gcloud functions logs read clickhouse-gap-detector --region=us-east1 --gen2 --limit=50
 ```
 
 ## Validation
@@ -87,6 +89,6 @@ gcloud functions logs read motherduck-gap-detector --region=us-east1 --gen2 --li
 
 ## Monitoring
 
-- **Cloud Logging**: https://console.cloud.google.com/logs (search: `resource.type="cloud_function" resource.labels.function_name="motherduck-gap-detector"`)
+- **Cloud Logging**: https://console.cloud.google.com/logs (search: `resource.type="cloud_function" resource.labels.function_name="clickhouse-gap-detector"`)
 - **Pushover**: Emergency notifications every 3 hours
 - **Healthchecks.io**: Dead Man's Switch (3-hour check-in)
