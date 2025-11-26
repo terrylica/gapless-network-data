@@ -1,10 +1,10 @@
-# Cloud Run Job: BigQuery → MotherDuck Hourly Sync
+# Cloud Run Job: BigQuery → ClickHouse Hourly Sync
 
-Cloud Run Job that syncs latest Ethereum blocks from BigQuery to MotherDuck on an hourly schedule.
+Cloud Run Job that syncs latest Ethereum blocks from BigQuery to ClickHouse on an hourly schedule.
 
 ## Files
 
-- `main.py` - Python script that fetches blocks from BigQuery and loads to MotherDuck
+- `main.py` - Python script that fetches blocks from BigQuery and loads to ClickHouse
 - `Dockerfile` - Container image definition
 - `requirements.txt` - Python dependencies
 
@@ -13,7 +13,8 @@ Cloud Run Job that syncs latest Ethereum blocks from BigQuery to MotherDuck on a
 1. GCP project configured: `eonlabs-ethereum-bq`
 2. Cloud Run Job created: `eth-md-updater`
 3. Secrets stored in Secret Manager:
-   - `motherduck-token`
+   - `clickhouse-host`
+   - `clickhouse-password`
 4. Cloud Run service account has permissions:
    - `roles/secretmanager.secretAccessor`
    - `roles/bigquery.user`
@@ -56,18 +57,18 @@ Environment variables (set on Cloud Run Job):
 
 - `GCP_PROJECT`: `eonlabs-ethereum-bq`
 - `LOOKBACK_HOURS`: `2` (default, fetch blocks from last 2 hours)
-- `MD_DATABASE`: `ethereum_mainnet`
-- `MD_TABLE`: `blocks`
+- `CLICKHOUSE_HOST`: ClickHouse Cloud hostname
+- `CLICKHOUSE_PASSWORD`: ClickHouse password (from Secret Manager)
 
 ## Data Flow
 
 ```
-BigQuery (crypto_ethereum.blocks) → PyArrow → MotherDuck (ethereum_mainnet.blocks)
+BigQuery (crypto_ethereum.blocks) → PyArrow → ClickHouse (ethereum_mainnet.blocks)
 ```
 
 **Collection rate**: ~578 blocks per run (every hour)
 
-**Deduplication**: Uses `INSERT OR REPLACE` based on block number (PRIMARY KEY)
+**Deduplication**: Uses ReplacingMergeTree engine with block number as sort key
 
 ## Schedule
 
@@ -122,8 +123,8 @@ Separate Cloud Run Job (`eth-md-data-quality-checker`) monitors data freshness.
 
 - `STALE_THRESHOLD_SECONDS`: `960` (default, 16 minutes)
 - `GCP_PROJECT`: `eonlabs-ethereum-bq`
-- `MD_DATABASE`: `ethereum_mainnet`
-- `MD_TABLE`: `blocks`
+- `CLICKHOUSE_HOST`: ClickHouse Cloud hostname
+- `CLICKHOUSE_PASSWORD`: ClickHouse password (from Secret Manager)
 
 ### Manual Execution
 
@@ -146,7 +147,7 @@ gcloud run jobs executions list \
 
 ### Monitoring
 
-Healthchecks.io check: **Data Quality | MotherDuck Growing & Gapless**
+Healthchecks.io check: **Data Quality | ClickHouse Growing & Gapless**
 
 - Receives ping on success (data fresh)
 - Receives `/fail` ping if data stale (>960s)

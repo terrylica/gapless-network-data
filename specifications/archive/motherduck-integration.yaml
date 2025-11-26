@@ -3,21 +3,32 @@ info:
   title: MotherDuck Integration Specification
   version: 1.0.0
   description: |
-    Production deployment specification for MotherDuck dual-pipeline Ethereum data collection.
+    **DEPRECATED** - Superseded by ClickHouse Cloud migration (MADR-0013, 2025-11-25)
 
+    This specification documents the FORMER MotherDuck deployment architecture.
+    The production database has migrated to ClickHouse Cloud AWS (us-east-1).
+
+    Historical Reference Only - Do not use for new implementations.
+
+    Original Description:
+    Production deployment specification for MotherDuck dual-pipeline Ethereum data collection.
     This specification documents the deployed GCP infrastructure for collecting Ethereum blockchain
     data via BigQuery (hourly batch) and Alchemy WebSocket (real-time streaming) into MotherDuck
     cloud database.
 
-    Status: Operational (deployed 2025-11-09)
+    Original Status: Operational (deployed 2025-11-09, deprecated 2025-11-25)
     Cost: $0/month (all services within free tier)
 
   x-metadata:
     project: "gapless-network-data"
     component: "MotherDuck Integration (Production Deployment)"
     created: "2025-11-09"
-    last_updated: "2025-11-09"
-    status: "operational"
+    last_updated: "2025-11-25"
+    status: "deprecated"
+    deprecated: true
+    deprecated_date: "2025-11-25"
+    superseded_by: "MADR-0013 (ClickHouse Cloud migration)"
+    archive_reason: "MotherDuck replaced by ClickHouse Cloud AWS"
     environment: "production"
     supersedes: ["Doppler-based credential management"]
 

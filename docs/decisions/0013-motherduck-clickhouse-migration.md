@@ -1,93 +1,90 @@
-# MADR-0013: MotherDuck to ClickHouse AWS Migration
+# ADR 0013: MotherDuck to ClickHouse Cloud Migration
 
-**Status**: Accepted
+## Status
 
-**Date**: 2025-11-24
-
-**Related**: Plan 0013 (`docs/development/plan/0013-motherduck-clickhouse-migration/plan.md`)
+Accepted (2025-11-25)
 
 ## Context
 
-MotherDuck trial ending requires migration to alternative cloud database. Current production infrastructure:
+MotherDuck trial ending in 2-3 days required migration of 23.87M Ethereum blocks and 4 production pipeline components to a sustainable database solution.
 
-**Data Volume**:
+**Production Data**:
 
-- 23.84M Ethereum blocks (~1.5 GB)
-- Dual-pipeline architecture (BigQuery hourly + Alchemy real-time WebSocket)
-- Zero-gap guarantee via INSERT OR REPLACE deduplication
+- 23.87M Ethereum blocks (2015-2025)
+- ~1.5 GB storage (76-100 bytes/block)
+- Dual-pipeline architecture: BigQuery hourly batch (578 blocks/run) + Alchemy real-time (12s intervals)
 
-**Production Components** (4 requiring migration):
-
-1. VM Real-Time Collector (`deployment/vm/realtime_collector.py`)
-2. Cloud Run Batch Updater (`deployment/cloud-run/main.py`)
-3. Cloud Run Data Quality Checker (`deployment/cloud-run/data_quality_checker.py`)
-4. GCP Cloud Function Gap Monitor (`deployment/gcp-functions/motherduck-monitor/main.py`)
+**Infrastructure Components**:
+| Component | Purpose |
+|-----------|---------|
+| VM Real-Time Collector | Alchemy WebSocket subscription for new blocks |
+| Cloud Run Batch Updater | BigQuery hourly sync for redundancy |
+| Data Quality Checker | Freshness validation (16-minute threshold) |
+| Gap Monitor Function | 3-hour gap detection with Pushover alerts |
 
 **Constraints**:
 
-- Trial expires in 2-3 days (URGENT)
-- Zero downtime required
-- Existing ClickHouse Cloud AWS provisioned (untested)
-- Credentials available in Doppler (`aws-credentials/prd`)
+- Zero downtime requirement
+- 2-3 days to trial expiration
+- Exception-only failure policy (no silent errors)
+- Cost optimization (free tier preferred)
 
 ## Decision
 
-Migrate from MotherDuck to ClickHouse Cloud (AWS) using dual-write strategy with compressed 2.5-day timeline.
+Migrate from MotherDuck to ClickHouse Cloud (managed AWS) using dual-write strategy with environment variable toggles for safe rollback.
 
-**Database**: ClickHouse Cloud (managed AWS us-east-1)
+**Target Architecture**:
 
-**Python Client**: `clickhouse-connect` (official HTTP client, automatic connection pooling)
+- **Database**: ClickHouse Cloud (managed AWS, us-east-1)
+- **Engine**: ReplacingMergeTree (automatic deduplication on block number)
+- **Credentials**: GCP Secret Manager (`clickhouse-host`, `clickhouse-password`)
+- **Cutover Toggle**: `MOTHERDUCK_WRITE_ENABLED` environment variable
 
-**Deduplication Strategy**: ReplacingMergeTree engine with `number` as ORDER BY key
+**Migration Strategy**:
 
-**Migration Strategy**: Dual-write (both databases active during migration)
-
-**Error Policy**: Fail-fast (exception-only, aligns with project SLO)
-
-**Validation Period**: 6-12 hours compressed (vs standard 72 hours)
+1. Historical migration: BigQuery → ClickHouse (direct, 5 minutes)
+2. Dual-write deployment: Both databases active during validation
+3. Compressed validation: 12+ hours of parallel writes
+4. Cutover: Toggle `MOTHERDUCK_WRITE_ENABLED=false`
+5. Archive: MotherDuck snapshot to GCS (30-day retention)
 
 ## Consequences
 
 **Positive**:
 
-- Maintains zero-downtime requirement
-- Safe rollback at every stage (MotherDuck continues receiving writes)
-- Fail-fast policy ensures immediate alerts if ClickHouse writes fail
-- ClickHouse provides superior analytical performance (10-100x for complex queries)
+- Sustainable production database (no trial expiration)
+- ReplacingMergeTree eliminates manual deduplication logic
+- ClickHouse Cloud handles infrastructure management
+- GCS archive provides emergency rollback path
 
 **Negative**:
 
-- Cost increase: $0/month → estimated $50-300/month (ClickHouse Cloud)
-- Compressed validation increases bug risk
-- No MotherDuck backup (user decision: trust migration)
-- Code complexity during dual-write phase
+- Additional cloud provider (AWS) alongside GCP
+- ClickHouse-specific query syntax differences
+- Migration required code changes to 4 components
 
-**Risks**:
+**Risks Mitigated**:
 
-- ClickHouse connection failure during migration (Mitigation: validate connection FIRST)
-- Trial expires mid-migration (Mitigation: complete historical load Day 0)
-- Dual-write consistency issues (Mitigation: hourly verification checks)
-
-## Alternatives Considered
-
-### Alternative 1: Direct Export-Import Cutover
-
-**Rejected**: Requires 15-30 minute downtime, violates zero-downtime requirement
-
-### Alternative 2: Local DuckDB on GCP VM
-
-**Kept as Fallback**: If ClickHouse validation fails, emergency pivot to local DuckDB file storage
-
-### Alternative 3: Extend MotherDuck Trial
-
-**Not Pursued**: Uncertain outcome, doesn't solve long-term database requirement
+- Safe rollback via dual-write and environment toggles
+- 12+ hour validation period before cutover
+- GCS archive for 30-day emergency recovery
 
 ## Implementation
 
-See Plan 0013 for detailed 2.5-day timeline and task breakdown.
+**Migration Plan**: [docs/development/plan/0013-motherduck-clickhouse-migration/plan.md](../development/plan/0013-motherduck-clickhouse-migration/plan.md)
 
-**Critical Path**:
+**Scripts**: `scripts/clickhouse/`
 
-1. Day 0: Validate ClickHouse → Historical migration (23.84M blocks)
-2. Day 1: Deploy dual-write → Compressed validation (6-12 hours)
-3. Day 2: Read cutover → MotherDuck deprecation
+- `validate_connection.py` - Connection validation
+- `create_schema.py` - ReplacingMergeTree table creation
+- `migrate_from_bigquery.py` - Historical migration (23.87M blocks in 5 min)
+- `verify_consistency.py` - Cross-database comparison
+- `backfill_from_motherduck.py` - Gap backfill
+- `archive_motherduck_to_gcs.py` - GCS archival
+
+**Archive Location**: `gs://eonlabs-ethereum-backups/motherduck-archive/2025-11-25/`
+
+## References
+
+- ClickHouse ReplacingMergeTree: https://clickhouse.com/docs/en/engines/table-engines/mergetree-family/replacingmergetree
+- MotherDuck Archive: `gs://eonlabs-ethereum-backups/motherduck-archive/2025-11-25/`

@@ -2,7 +2,9 @@
 
 ## Status
 
-Proposed
+**Superseded** by [MADR-0013: MotherDuck to ClickHouse Migration](./0013-motherduck-clickhouse-migration.md) (2025-11-25)
+
+> **Note**: MotherDuck was replaced by ClickHouse Cloud as the production database. The staleness monitoring now uses ClickHouse queries via the `clickhouse-gap-detector` Cloud Function. Threshold values may differ for the new architecture.
 
 ## Context
 

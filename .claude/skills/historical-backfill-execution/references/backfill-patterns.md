@@ -193,6 +193,6 @@ See `../bigquery-ethereum-data-acquisition/DECISION_RATIONALE.md` for complete c
 ## Related Documentation
 
 - [BigQuery Ethereum Data Acquisition](../../bigquery-ethereum-data-acquisition/SKILL.md) - Column selection rationale
-- [MotherDuck Dual Pipeline Architecture](../../../../docs/architecture/motherduck-dual-pipeline.md) - Complete architecture
-- [BigQuery Integration Guide](../../../../docs/architecture/bigquery-motherduck-integration.md) - PyArrow zero-copy
+- [MotherDuck Dual Pipeline Architecture](../../../../docs/architecture/_archive/motherduck-dual-pipeline.md) - Complete architecture (DEPRECATED - see MADR-0013)
+- [BigQuery Integration Guide](../../../../docs/architecture/_archive/bigquery-motherduck-integration.md) - PyArrow zero-copy (DEPRECATED - see MADR-0013)
 - [Troubleshooting](./troubleshooting.md) - OOM errors, retry strategies

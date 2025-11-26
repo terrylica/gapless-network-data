@@ -4,7 +4,7 @@
 
 Project-specific skills that capture validated workflows from scratch investigations. These skills are committed to git and shared with team members.
 
-## Project Skills (7)
+## Project Skills (6)
 
 ### blockchain-rpc-provider-research
 
@@ -58,30 +58,6 @@ Project-specific skills that capture validated workflows from scratch investigat
 
 **Complete Documentation**: See `.claude/skills/bigquery-ethereum-data-acquisition/CLAUDE.md` for column selection rationale, research methodology, and implementation guide
 
-### motherduck-pipeline-operations
-
-**Description**: Operations for managing the Ethereum blockchain data pipeline that populates MotherDuck cloud database. Use when verifying MotherDuck database state, executing historical backfills, or troubleshooting missing historical data despite pipeline health checks showing systems are operational.
-
-**Key Principle**: Pipeline health monitoring (whether services are running) is separate from data completeness verification (whether historical data exists in MotherDuck).
-
-**What This Skill Provides**:
-
-- 3 core operations: Verify database state, Execute chunked backfill, Troubleshoot missing data
-- Scripts: `verify_motherduck.py` (database verification)
-- References: `pipeline-architecture-and-troubleshooting.md` (dual-pipeline architecture, common failure modes)
-- Canonical pattern: 1-year chunked backfills to prevent OOM failures (empirically validated 2025-11-10)
-
-**When to Use**:
-
-- Verifying actual MotherDuck database state (block counts, historical data presence)
-- Executing historical backfills for Ethereum blockchain data
-- Troubleshooting "No historical data despite healthy pipelines" scenarios
-- Understanding dual-pipeline architecture responsibilities
-
-**Validated Pattern From**: Complete historical backfill execution (23.8M blocks, 2015-2025) using `deployment/backfill/chunked_backfill.sh`
-
-**Cross-References**: Works with `data-pipeline-monitoring` skill (pipeline health) and `bigquery-ethereum-data-acquisition` skill (BigQuery → MotherDuck workflow)
-
 ### vm-infrastructure-ops
 
 **Description**: Troubleshoot and manage GCP e2-micro VM running eth-realtime-collector. Use when VM service is down, systemd failures occur, real-time data stream stops, or VM network issues arise.
@@ -105,7 +81,7 @@ Project-specific skills that capture validated workflows from scratch investigat
 
 **Validated Pattern From**: 2025-11-10 production incident (VM network failure resolved in <30 minutes via VM reset + service restart)
 
-**Cross-References**: Works with `motherduck-pipeline-operations` skill (database verification) and `data-pipeline-monitoring` skill (Cloud Run Jobs)
+**Cross-References**: Works with `data-pipeline-monitoring` skill (Cloud Run Jobs)
 
 ### historical-backfill-execution
 
@@ -130,7 +106,7 @@ Project-specific skills that capture validated workflows from scratch investigat
 
 **Validated Pattern From**: Complete historical backfill (2025-11-10, 23.8M blocks in 20 minutes, zero OOM errors, $0 cost)
 
-**Cross-References**: Works with `bigquery-ethereum-data-acquisition` skill (column selection), `motherduck-pipeline-operations` skill (gap detection)
+**Cross-References**: Works with `bigquery-ethereum-data-acquisition` skill (column selection)
 
 ### data-pipeline-monitoring
 
@@ -143,7 +119,7 @@ Project-specific skills that capture validated workflows from scratch investigat
 - Sending test alerts (Pushover, Healthchecks.io)
 - Understanding dual-pipeline architecture health
 
-**Note**: This skill monitors whether services are running. For verifying actual data completeness in MotherDuck, use `motherduck-pipeline-operations` skill.
+**Note**: This skill monitors whether services are running. For data completeness verification, see ClickHouse operations in `scripts/clickhouse/`.
 
 ## Managed Skills (2)
 
