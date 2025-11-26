@@ -4,7 +4,10 @@
 #
 # Prerequisites:
 #   - gcloud CLI configured with project eonlabs-ethereum-bq
-#   - Secrets stored in Secret Manager: alchemy-api-key, motherduck-token
+#   - Secrets stored in Secret Manager:
+#     - alchemy-api-key (required)
+#     - clickhouse-host, clickhouse-password (required, production database)
+#     - motherduck-token (deprecated 2025-11-25, kept for backward compatibility)
 #   - VM service account has secretAccessor role
 
 set -e
@@ -134,7 +137,7 @@ import os
 project = \"${PROJECT}\"
 client = secretmanager.SecretManagerServiceClient()
 
-# Core secrets (required)
+# Core secrets (alchemy required, motherduck deprecated 2025-11-25)
 for secret in [\"alchemy-api-key\", \"motherduck-token\"]:
     name = f\"projects/{project}/secrets/{secret}/versions/latest\"
     try:
@@ -173,6 +176,7 @@ echo "  Restart:      gcloud compute ssh ${INSTANCE} --zone=${ZONE} --project=${
 echo "  Stop:         gcloud compute ssh ${INSTANCE} --zone=${ZONE} --project=${PROJECT} --command='sudo systemctl stop eth-collector'"
 echo ""
 echo "Secret Manager:"
-echo "  Secrets: alchemy-api-key, motherduck-token"
+echo "  Secrets: alchemy-api-key, clickhouse-host, clickhouse-password"
+echo "  Deprecated: motherduck-token (2025-11-25, MADR-0013)"
 echo "  Service account: ${VM_SERVICE_ACCOUNT}"
 echo ""

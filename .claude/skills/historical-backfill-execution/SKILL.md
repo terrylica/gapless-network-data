@@ -221,9 +221,9 @@ See [Backfill Patterns Reference](./references/backfill-patterns.md) for alterna
 ## Related Documentation
 
 - [BigQuery Ethereum Data Acquisition Skill](../bigquery-ethereum-data-acquisition/SKILL.md) - Column selection rationale
-- [MotherDuck Pipeline Operations Skill](../motherduck-pipeline-operations/SKILL.md) - Database verification and gap detection
-- [MotherDuck Dual Pipeline Architecture](../../../docs/architecture/motherduck-dual-pipeline.md) - Complete architecture
-- [BigQuery Integration Guide](../../../docs/architecture/bigquery-motherduck-integration.md) - PyArrow zero-copy transfer
+- [MotherDuck Pipeline Operations Skill](../archive/motherduck-pipeline-operations/SKILL.md) - Database verification and gap detection (DEPRECATED - see MADR-0013)
+- [MotherDuck Dual Pipeline Architecture](../../../docs/architecture/_archive/motherduck-dual-pipeline.md) - Complete architecture (DEPRECATED - see MADR-0013)
+- [BigQuery Integration Guide](../../../docs/architecture/_archive/bigquery-motherduck-integration.md) - PyArrow zero-copy transfer (DEPRECATED - see MADR-0013)
 
 ## Scripts
 

@@ -18,9 +18,9 @@ info:
   x-metadata:
     project_name: "gapless-network-data"
     project_version: "v2.4.0 (production operational)"
-    current_phase: "Phase 1: Historical Data Collection - COMPLETED (2025-11-10)"
+    current_phase: "Phase 1: Historical Data Collection - COMPLETED (2025-11-11)" # Verified 2025-11-20 via git: commit 84a0f23
     next_milestone: "Phase 2: Bitcoin mempool.space integration + SDK development"
-    last_updated: "2025-11-10T17:30:00Z"
+    last_updated: "2025-11-20T23:30:00Z" # Updated via Plan 0010: Documentation Accuracy verification
     supersedes: ["duckdb-integration-strategy.yaml (implementation-focused roadmap)"]
     focus_shift: |
       1. Feature-driven planning (WHAT to collect) vs architecture-driven (HOW to implement)
@@ -28,16 +28,17 @@ info:
       3. Chronological phase ordering: Collection → Quality → Features → Expansion → Production → Release
 
   x-phase1-completion:
-    completion_date: "2025-11-10"
-    data_loaded: "14.57M Ethereum blocks (2020-2025)"
+    completion_date: "2025-11-11" # Verified 2025-11-20 via git: commit 84a0f23
+    data_loaded: "23.87M Ethereum blocks (2015-2025)" # Verified 2025-11-25 via ClickHouse: 23,878,892 blocks
     architecture: "BigQuery hourly batch + Alchemy real-time WebSocket"
     infrastructure:
       - "Cloud Run Job: eth-md-updater (us-central1, hourly BigQuery sync)"
       - "e2-micro VM: eth-realtime-collector (us-east1-b, Alchemy WebSocket)"
-      - "MotherDuck: ethereum_mainnet.blocks (cloud-hosted DuckDB)"
-      - "Monitoring: Healthchecks.io + Pushover (cloud-based, UptimeRobot removed)"
+      - "ClickHouse Cloud: ethereum_mainnet.blocks (managed AWS, ReplacingMergeTree)"
+      - "Monitoring: Healthchecks.io + Pushover (cloud-based)"
     cost: "$0/month (all within free tiers)"
     decision: "Rejected LlamaRPC due to rate limits (1.37 RPS sustained, 110-day timeline)"
+    migration_note: "Migrated from MotherDuck to ClickHouse Cloud (2025-11-25) - see ADR 0013"
     slos_met:
       - "Availability: Pipelines run without manual intervention"
       - "Correctness: 100% data accuracy with schema validation"
@@ -68,9 +69,9 @@ info:
       components:
         - "Cloud Run Job (eth-md-updater): BigQuery hourly sync"
         - "Compute Engine VM (eth-realtime-collector): Alchemy WebSocket streaming"
-        - "MotherDuck cloud database: ethereum_mainnet.blocks (14.57M blocks)"
+        - "ClickHouse Cloud: ethereum_mainnet.blocks (23.87M blocks)" # Verified 2025-11-25 via ClickHouse
       operators: "DevOps engineers, platform team"
-      deployment_method: "GCP infrastructure (Cloud Run, Compute Engine, MotherDuck cloud)"
+      deployment_method: "GCP infrastructure (Cloud Run, Compute Engine) + ClickHouse Cloud (AWS)"
       user_setup_required: false
       rationale: |
         Data collection happens automatically in the cloud.
@@ -82,13 +83,13 @@ info:
       components:
         - "Python package: pip install gapless-network-data"
         - "SDK functions: fetch_snapshots(), get_latest_snapshot()"
-        - "Data source: MotherDuck cloud (default) or local DuckDB cache (optional)"
+        - "Data source: ClickHouse Cloud (default) or local DuckDB cache (optional)"
       users: "ML engineers, data scientists, analysts"
       deployment_method: "pip install (no cloud infrastructure required)"
       user_setup_required: true
       rationale: |
         SDK users query data locally without deploying cloud infrastructure.
-        The SDK connects to MotherDuck cloud database automatically.
+        The SDK connects to ClickHouse Cloud database automatically.
 
     package_development:
       execution: "local-only"
@@ -872,36 +873,36 @@ x-sub-specifications:
 
   motherduck_integration:
     file: "/Users/terryli/eon/gapless-network-data/specifications/motherduck-integration.yaml"
-    status: "operational (SLOs met)"
+    status: "DEPRECATED (migrated to ClickHouse Cloud 2025-11-25)"
     created_date: "2025-11-09"
-    updated_date: "2025-11-09"
+    updated_date: "2025-11-25"
     scope: "Production deployment of MotherDuck dual-pipeline Ethereum data collection"
-    priority: "P0"
+    priority: "N/A (superseded)"
     environment: "production"
-    deployment_status: "operational (VM collector fixed 2025-11-09T23:50:15Z)"
+    deployment_status: "DEPRECATED - migrated to ClickHouse Cloud AWS"
+    deprecation_note: |
+      MotherDuck trial ended 2025-11-25. Complete migration to ClickHouse Cloud:
+      - See ADR 0013: docs/decisions/0013-motherduck-clickhouse-migration.md
+      - Migration plan: docs/development/plan/0013-motherduck-clickhouse-migration/plan.md
+      - MotherDuck archive: gs://eonlabs-ethereum-backups/motherduck-archive/2025-11-25/
+    replacement:
+      database: "ClickHouse Cloud (managed AWS)"
+      table: "ethereum_mainnet.blocks"
+      engine: "ReplacingMergeTree (automatic deduplication)"
+      credentials: "Doppler aws-credentials/prd (CLICKHOUSE_HOST, CLICKHOUSE_PASSWORD)"
+      gcp_secrets: "clickhouse-host, clickhouse-password (Secret Manager)"
     components:
-      - "Cloud Run Job: eth-md-updater (BigQuery → MotherDuck hourly sync) ✅"
-      - "Compute Engine: eth-realtime-collector (Alchemy WebSocket streaming) ✅"
-      - "MotherDuck: ethereum_mainnet.blocks (actively collecting, ~12s intervals)"
-      - "Secret Manager: motherduck-token, alchemy-api-key ✅"
-    slos:
-      availability: "MET (both pipelines operational)"
-      correctness: "MET (schema validation, exception-only failures)"
-      observability: "MET (100% operation tracking via Cloud Logging)"
-      maintainability: "MET (critical fix deployed in <15 minutes)"
-    cost: "$0/month (all services within free tier)"
+      - "Cloud Run Job: eth-md-updater (BigQuery → ClickHouse hourly sync) ✅"
+      - "Compute Engine: eth-realtime-collector (Alchemy → ClickHouse streaming) ✅"
+      - "ClickHouse Cloud: ethereum_mainnet.blocks (23.87M blocks, ~12s intervals) ✅"
+      - "Secret Manager: clickhouse-host, clickhouse-password, alchemy-api-key ✅"
     migration_history:
       - "Phase 1: POC (Doppler validation, MotherDuck connection, BigQuery pipeline)"
       - "Phase 2: Production deployment (insecure Doppler credentials)"
       - "Phase 3: Secret Manager migration (best practice security)"
       - "Phase 4: Organization (hierarchical file structure, documentation)"
       - "Phase 5: VM collector fix (.strip() bug fix deployed, crash-loop resolved)"
-    issues_resolved:
-      - "gRPC metadata validation error (.strip() fix deployed)"
-      - "Documentation-implementation gap (SSoT rectified)"
-    next_steps:
-      - "Git migration (6-9 hours, move production files to deployment/)"
-      - "Historical backfill execution (2 hours, 13M blocks)"
+      - "Phase 6: ClickHouse migration (2025-11-25, 23.87M blocks migrated)"
 
   oracle_motherduck_monitoring:
     file: "DELETED (never deployed)"
@@ -1027,7 +1028,13 @@ x-cross-package-integration:
       use_case: "Cross-validation analytics"
 
 x-version-tracking:
-  current_version: "v2.4.0"
+  current_version: "v3.0.0"
+  last_updated: "2025-11-25"
+  latest_changes:
+    - "Migrated from MotherDuck to ClickHouse Cloud AWS (2025-11-25)"
+    - "23.87M Ethereum blocks operational on ClickHouse"
+    - "MotherDuck archived to GCS (517 MB backup)"
+    - "All deployment READMEs updated for ClickHouse"
   next_milestones:
     - version: "v0.2.0"
       scope: "Phase 1: Basic Data Collection"

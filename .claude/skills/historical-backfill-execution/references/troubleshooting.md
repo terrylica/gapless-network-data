@@ -285,5 +285,5 @@ gcloud logging read "resource.type=cloud_run_job AND resource.labels.job_name=et
 
 - [SKILL.md](../SKILL.md) - Historical backfill workflows
 - [Backfill Patterns](./backfill-patterns.md) - 1-year chunking rationale
-- [BigQuery Integration](../../../../docs/architecture/bigquery-motherduck-integration.md) - PyArrow zero-copy
-- [MotherDuck Pipeline Operations](../../motherduck-pipeline-operations/SKILL.md) - Gap detection
+- [BigQuery Integration](../../../../docs/architecture/_archive/bigquery-motherduck-integration.md) - PyArrow zero-copy (DEPRECATED - see MADR-0013)
+- [MotherDuck Pipeline Operations](../../archive/motherduck-pipeline-operations/SKILL.md) - Gap detection (DEPRECATED - see MADR-0013)

@@ -57,7 +57,7 @@ This document describes **production data sources** for gapless-network-data. Fo
 
 **Why Chosen**: Low latency for real-time monitoring, generous free tier, reliable WebSocket stream.
 
-**Documentation**: See `docs/architecture/motherduck-dual-pipeline.md` for dual-pipeline architecture.
+**Documentation**: See `docs/architecture/_archive/motherduck-dual-pipeline.md` for former dual-pipeline architecture (DEPRECATED - see MADR-0013 for ClickHouse migration).
 
 ### Storage
 
@@ -182,7 +182,7 @@ This document describes **production data sources** for gapless-network-data. Fo
 ## Related Documentation
 
 - [Architecture Overview](../architecture/OVERVIEW.md) - Core components, data flow, SLOs
-- [MotherDuck Dual Pipeline](../architecture/motherduck-dual-pipeline.md) - Complete architecture
-- [BigQuery Integration](../architecture/bigquery-motherduck-integration.md) - PyArrow zero-copy
+- [MotherDuck Dual Pipeline](../architecture/_archive/motherduck-dual-pipeline.md) - Former architecture (DEPRECATED - see MADR-0013)
+- [BigQuery Integration](../architecture/_archive/bigquery-motherduck-integration.md) - PyArrow zero-copy (DEPRECATED - see MADR-0013)
 - [Research Index](./INDEX.md) - Comprehensive data source research (35+ sources)
 - [LlamaRPC Research Archive](../archive/llamarpc-research/INDEX.md) - Ethereum RPC deep dive (archived)
