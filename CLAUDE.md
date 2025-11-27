@@ -89,7 +89,7 @@ Coordinates all project phases, specifications, and implementation work.
 
 ### Architecture
 
-- [Architecture Overview](./docs/architecture/OVERVIEW.md) - Core components, data flow, SLOs
+- [Architecture Overview](./docs/architecture/README.md) - Core components, data flow, SLOs
 - [Data Format Specification](./docs/architecture/DATA_FORMAT.md) - Mempool snapshot schema
 - [Cross-Package Integration](/Users/terryli/eon/gapless-crypto-data/docs/architecture/cross-package-feature-integration.yaml) - How to use with gapless-crypto-data
 
