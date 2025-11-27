@@ -39,21 +39,64 @@ Dual-pipeline blockchain network metrics collection system with zero-gap guarant
 - Pushover - Alert notifications (priority=2 for failures)
 - Cloud Logging - Operation tracking
 
-### Data Flow
+### System Architecture Diagram
 
 ```
-Historical Path:
-BigQuery → Cloud Run Job → ClickHouse Cloud
-(Hourly sync, last 2 hours)
+DATA SOURCES
+├── BigQuery Public Dataset (crypto_ethereum.blocks)
+│   └── Historical: 2015-2025, hourly batch (~578 blocks/run)
+│
+└── Alchemy WebSocket API (wss://eth-mainnet.ws...)
+    └── Real-time: ~12s blocks, continuous stream (24/7)
 
-Real-Time Path:
-Alchemy WebSocket → VM Collector → ClickHouse Cloud
-(Batch writes every 5 minutes)
+COMPUTE LAYER
+├── Cloud Run Job: eth-md-updater
+│   ├── PyArrow streaming from BigQuery
+│   ├── Last 2 hours lookback
+│   └── INSERT INTO ClickHouse
+│
+└── Compute Engine VM: eth-realtime-collector
+    ├── Batch writes (25 blocks buffer)
+    ├── Flush every 5 minutes
+    └── INSERT INTO ClickHouse
 
-Monitoring Path:
-Cloud Scheduler → Cloud Function → ClickHouse Query → Pushover Alert
-(Gap detection every 3 hours)
+STORAGE
+└── ClickHouse Cloud (AWS us-west-2)
+    ├── Table: ethereum_mainnet.blocks
+    ├── Engine: ReplacingMergeTree(number)
+    └── Automatic deduplication on block number
+
+MONITORING
+├── Cloud Function Gen2: clickhouse-gap-detector
+│   ├── Query every 3 hours
+│   └── Gap detection: expected = max - min + 1
+│
+├── Healthchecks.io
+│   └── Dead Man's Switch (expects ping)
+│
+└── Pushover
+    └── Alert notifications (priority=2 on failure)
 ```
+
+**Runtime Control Flow**:
+
+```
+BigQuery ──hourly──▶ Cloud Run Job ──INSERT──┐
+                                             │
+                                             ▼
+Alchemy WS ──stream──▶ VM Collector ──────▶ ClickHouse Cloud
+                                             │
+                                             ▼
+Cloud Scheduler ──3h──▶ Gap Detector ──────▶ Pushover Alert
+```
+
+### Data Flow Summary
+
+| Path       | Source            | Processing     | Destination      | Frequency     |
+| ---------- | ----------------- | -------------- | ---------------- | ------------- |
+| Historical | BigQuery          | Cloud Run Job  | ClickHouse Cloud | Hourly        |
+| Real-Time  | Alchemy WebSocket | VM Collector   | ClickHouse Cloud | Every ~12s    |
+| Monitoring | ClickHouse Query  | Cloud Function | Pushover Alert   | Every 3 hours |
 
 ### Operational Metrics
 

@@ -183,4 +183,4 @@ CREATE TABLE ethereum_mainnet.blocks (
 
 - [MotherDuck Dual Pipeline](./_archive/motherduck-dual-pipeline.md) - Complete schema DDL (DEPRECATED - see MADR-0013)
 - [BigQuery Integration](./_archive/bigquery-motherduck-integration.md) - Field mapping (DEPRECATED - see MADR-0013)
-- [Architecture Overview](./OVERVIEW.md) - System design
+- [Architecture Overview](./README.md) - System design
