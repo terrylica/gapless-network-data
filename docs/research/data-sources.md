@@ -181,7 +181,7 @@ This document describes **production data sources** for gapless-network-data. Fo
 
 ## Related Documentation
 
-- [Architecture Overview](../architecture/OVERVIEW.md) - Core components, data flow, SLOs
+- [Architecture Overview](../architecture/README.md) - Core components, data flow, SLOs
 - [MotherDuck Dual Pipeline](../architecture/_archive/motherduck-dual-pipeline.md) - Former architecture (DEPRECATED - see MADR-0013)
 - [BigQuery Integration](../architecture/_archive/bigquery-motherduck-integration.md) - PyArrow zero-copy (DEPRECATED - see MADR-0013)
 - [Research Index](./INDEX.md) - Comprehensive data source research (35+ sources)

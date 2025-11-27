@@ -106,12 +106,12 @@ df['block_utilization'] = (df['gas_used'] / df['gas_limit']) * 100
 
 ### Pipeline Components
 
-| Component           | Purpose                      | Technology           |
-| ------------------- | ---------------------------- | -------------------- |
+| Component           | Purpose                          | Technology       |
+| ------------------- | -------------------------------- | ---------------- |
 | BigQuery Sync       | Hourly batch from public dataset | Cloud Run Job    |
-| Real-Time Collector | Block-level streaming        | e2-micro VM          |
-| Database            | Storage with deduplication   | ClickHouse Cloud     |
-| Monitoring          | Dead Man's Switch            | Healthchecks.io      |
+| Real-Time Collector | Block-level streaming            | e2-micro VM      |
+| Database            | Storage with deduplication       | ClickHouse Cloud |
+| Monitoring          | Dead Man's Switch                | Healthchecks.io  |
 
 ### Deployment Structure
 
@@ -138,10 +138,10 @@ uv run scripts/clickhouse/verify_blocks.py
 
 ## Data Sources
 
-| Source   | Purpose           | Method    |
-| -------- | ----------------- | --------- |
+| Source   | Purpose           | Method      |
+| -------- | ----------------- | ----------- |
 | BigQuery | Historical blocks | Hourly sync |
-| Alchemy  | Real-time blocks  | WebSocket |
+| Alchemy  | Real-time blocks  | WebSocket   |
 
 ## Related Projects
 
@@ -152,7 +152,7 @@ uv run scripts/clickhouse/verify_blocks.py
 
 ## Documentation
 
-- [Architecture Overview](https://github.com/terrylica/gapless-network-data/blob/main/docs/architecture/OVERVIEW.md)
+- [Architecture Overview](https://github.com/terrylica/gapless-network-data/blob/main/docs/architecture/README.md)
 - [Data Format Specification](https://github.com/terrylica/gapless-network-data/blob/main/docs/architecture/DATA_FORMAT.md)
 - [ClickHouse Migration Decision](https://github.com/terrylica/gapless-network-data/blob/main/docs/decisions/0013-motherduck-clickhouse-migration.md)
 
