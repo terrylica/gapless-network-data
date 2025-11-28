@@ -23,11 +23,13 @@ Local navigation hub for Markdown Any Decision Records documenting key architect
 - [MADR-0011: Link Format Enforcement](./0011-link-format-enforcement.md) - CI/CD link validation via lychee
 - [MADR-0012: Build Artifact Cleanup Policy](./0012-build-artifact-cleanup-policy.md) - Scratch directory lifecycle management
 
-## Infrastructure Migrations (MADR-0013 to MADR-0015)
+## Infrastructure Migrations (MADR-0013 to MADR-0017)
 
 - [MADR-0013: MotherDuck to ClickHouse Migration](./0013-motherduck-clickhouse-migration.md) - Production database migration from MotherDuck to ClickHouse Cloud AWS
 - [MADR-0014: Documentation Rectification](./0014-documentation-rectification.md) - Post-migration documentation synchronization
 - [MADR-0015: Gap Detector ClickHouse Fix](./0015-gap-detector-clickhouse-fix.md) - Fix gap detector to use ClickHouse after migration
+- [MADR-0016: Enable Healthchecks.io for Gap Detector](./0016-healthchecks-gap-detector-enable.md) - Enable Dead Man's Switch monitoring for gap detector
+- [MADR-0017: Real-Time Collector Transaction Count Fix](./0017-realtime-collector-transaction-count-fix.md) - Fix transaction_count=0 bug via eth_getBlockByNumber
 
 ## MADR Format
 

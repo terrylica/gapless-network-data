@@ -5,7 +5,9 @@
 """
 Alchemy WebSocket Real-Time Ethereum Block Collector (Dual-Write)
 
-Subscribes to Alchemy's newHeads WebSocket stream for real-time block updates.
+Subscribes to Alchemy's newHeads WebSocket stream for real-time block notifications.
+On each new block, fetches full block data via eth_getBlockByNumber to get accurate
+transaction_count (newHeads only returns headers without transactions array).
 Writes to both MotherDuck AND ClickHouse for migration (dual-write strategy).
 Designed to run as a long-lived systemd service on VM.
 
@@ -48,6 +50,7 @@ MD_DATABASE = os.environ.get('MD_DATABASE', 'ethereum_mainnet')
 MD_TABLE = os.environ.get('MD_TABLE', 'blocks')
 BATCH_INTERVAL_SECONDS = int(os.environ.get('BATCH_INTERVAL_SECONDS', '300'))  # Default: 5 minutes
 ALCHEMY_WS_URL = None  # Will be set by validate_config() from Secret Manager
+ALCHEMY_HTTP_URL = None  # HTTP endpoint for JSON-RPC calls (eth_getBlockByNumber)
 HEALTHCHECK_URL = 'https://hc-ping.com/d73a71f2-9457-4e58-9ed6-8a31db5bbed1'  # Healthchecks.io heartbeat
 
 # ClickHouse dual-write configuration
@@ -101,6 +104,43 @@ def get_secret(secret_id: str, project_id: str = GCP_PROJECT) -> str:
     return response.payload.data.decode('UTF-8').strip()
 
 
+def fetch_full_block(block_number_hex: str) -> dict:
+    """Fetch full block data via eth_getBlockByNumber JSON-RPC.
+
+    The newHeads subscription only returns block headers (no transactions).
+    We need to call eth_getBlockByNumber to get the transaction count.
+
+    Args:
+        block_number_hex: Block number in hex format (e.g., '0x1234567')
+
+    Returns:
+        Full block data including transactions array
+
+    Raises:
+        Exception: If RPC call fails
+    """
+    payload = {
+        "jsonrpc": "2.0",
+        "id": 1,
+        "method": "eth_getBlockByNumber",
+        "params": [block_number_hex, False]  # False = don't include full tx objects
+    }
+
+    response = requests.post(
+        ALCHEMY_HTTP_URL,
+        json=payload,
+        headers={"Content-Type": "application/json"},
+        timeout=10
+    )
+    response.raise_for_status()
+
+    result = response.json()
+    if 'error' in result:
+        raise Exception(f"RPC error: {result['error']}")
+
+    return result['result']
+
+
 def heartbeat_worker():
     """Background thread that pings Healthchecks.io every 5 minutes.
 
@@ -134,9 +174,10 @@ def validate_config():
     # Set for DuckDB connection
     os.environ['motherduck_token'] = motherduck_token
 
-    # Build Alchemy WebSocket URL
-    global ALCHEMY_WS_URL
+    # Build Alchemy URLs (WebSocket for subscriptions, HTTP for JSON-RPC)
+    global ALCHEMY_WS_URL, ALCHEMY_HTTP_URL
     ALCHEMY_WS_URL = f"wss://eth-mainnet.g.alchemy.com/v2/{alchemy_key}"
+    ALCHEMY_HTTP_URL = f"https://eth-mainnet.g.alchemy.com/v2/{alchemy_key}"
 
     # Fetch ClickHouse credentials if dual-write enabled
     if DUAL_WRITE_ENABLED:
@@ -221,10 +262,11 @@ def init_clickhouse():
 
 
 def parse_block(block_data):
-    """Parse block data from WebSocket into database row format.
+    """Parse block data from JSON-RPC into database row format.
 
     Args:
-        block_data: Block object from eth_subscribe newHeads
+        block_data: Full block object from eth_getBlockByNumber
+                   (includes transactions array for accurate count)
 
     Returns:
         Tuple of values matching table schema
@@ -408,6 +450,12 @@ def insert_block(conn, block_tuple):
 async def subscribe_to_blocks(conn):
     """Subscribe to Alchemy newHeads WebSocket stream.
 
+    Flow: newHeads notification → eth_getBlockByNumber → parse → insert
+
+    The newHeads subscription only returns block headers (no transactions array).
+    For each new block, we call eth_getBlockByNumber to get full block data
+    including the accurate transaction count.
+
     Args:
         conn: DuckDB connection for inserting blocks
     """
@@ -451,7 +499,11 @@ async def subscribe_to_blocks(conn):
 
                 # Check if it's a block notification
                 if 'params' in data and 'result' in data['params']:
-                    block_data = data['params']['result']
+                    block_header = data['params']['result']
+                    block_number_hex = block_header['number']
+
+                    # Fetch full block data (newHeads only returns headers, no transactions)
+                    block_data = fetch_full_block(block_number_hex)
 
                     # Parse and insert block
                     block_tuple = parse_block(block_data)
