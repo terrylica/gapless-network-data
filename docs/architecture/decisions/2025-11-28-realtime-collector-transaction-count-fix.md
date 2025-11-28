@@ -1,4 +1,4 @@
-# MADR-0017: Real-Time Collector Transaction Count Fix
+# Real-Time Collector Transaction Count Fix
 
 ## Status
 
@@ -10,7 +10,7 @@ Accepted
 
 ## Context
 
-After migrating to ClickHouse (MADR-0013), we observed that recent blocks in ClickHouse had `transaction_count = 0` while historical blocks (from BigQuery) had correct values.
+After migrating to ClickHouse (see [2025-11-25-motherduck-clickhouse-migration](/docs/architecture/decisions/2025-11-25-motherduck-clickhouse-migration.md)), we observed that recent blocks in ClickHouse had `transaction_count = 0` while historical blocks (from BigQuery) had correct values.
 
 Investigation revealed that `eth_subscribe newHeads` WebSocket notifications only return block headers - they do NOT include the `transactions` array. The VM collector's `parse_block()` function was using:
 
@@ -22,6 +22,19 @@ This is a known limitation of the Ethereum JSON-RPC spec. All block indexers (Et
 
 1. Subscribe to `newHeads` for real-time notifications
 2. Call `eth_getBlockByNumber` to fetch full block data
+
+```mermaid
+sequenceDiagram
+    participant C as Collector
+    participant A as Alchemy WS
+    participant R as Alchemy RPC
+    participant CH as ClickHouse
+
+    A->>C: newHeads (header only)
+    C->>R: eth_getBlockByNumber
+    R->>C: Full block + transactions
+    C->>CH: INSERT with transaction_count
+```
 
 ## Decision
 
@@ -72,6 +85,6 @@ LIMIT 10
 
 ## Related
 
-- MADR-0013: MotherDuck to ClickHouse Migration
-- MADR-0015: Gap Detector ClickHouse Fix
-- File: `deployment/vm/realtime_collector.py`
+- [2025-11-25-motherduck-clickhouse-migration](/docs/architecture/decisions/2025-11-25-motherduck-clickhouse-migration.md) - MotherDuck to ClickHouse Migration
+- [2025-11-27-gap-detector-clickhouse-fix](/docs/architecture/decisions/2025-11-27-gap-detector-clickhouse-fix.md) - Gap Detector ClickHouse Fix
+- File: `/deployment/vm/realtime_collector.py`
