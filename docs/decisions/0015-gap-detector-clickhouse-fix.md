@@ -24,24 +24,24 @@ Remove all MotherDuck/DuckDB code from the gap detector and use ClickHouse-nativ
 
 ### Changes
 
-| Component | Action |
-|-----------|--------|
-| `requirements.txt` | Remove `duckdb==1.4.1` |
-| `load_secrets()` | Remove `motherduck_token` |
-| `detect_gaps()` | Replace with ClickHouse-native implementation |
-| `check_staleness()` | Replace with ClickHouse-native implementation |
-| `monitor()` | Use ClickHouse client instead of DuckDB connection |
+| Component           | Action                                             |
+| ------------------- | -------------------------------------------------- |
+| `requirements.txt`  | Remove `duckdb==1.4.1`                             |
+| `load_secrets()`    | Remove `motherduck_token`                          |
+| `detect_gaps()`     | Replace with ClickHouse-native implementation      |
+| `check_staleness()` | Replace with ClickHouse-native implementation      |
+| `monitor()`         | Use ClickHouse client instead of DuckDB connection |
 
 ### Semantic Constants
 
 Configuration values abstracted for maintainability:
 
-| Constant | Value | Rationale |
-|----------|-------|-----------|
-| `STALENESS_THRESHOLD_SECONDS` | 960 | 16 minutes (~80 blocks at 12s/block) |
-| `GAP_DETECTION_LIMIT` | 20 | Top N largest gaps to report |
-| `CLICKHOUSE_CONNECT_TIMEOUT` | 30 | Connection timeout in seconds |
-| `CLICKHOUSE_PORT_HTTPS` | 8443 | Standard ClickHouse HTTPS port |
+| Constant                      | Value | Rationale                            |
+| ----------------------------- | ----- | ------------------------------------ |
+| `STALENESS_THRESHOLD_SECONDS` | 960   | 16 minutes (~80 blocks at 12s/block) |
+| `GAP_DETECTION_LIMIT`         | 20    | Top N largest gaps to report         |
+| `CLICKHOUSE_CONNECT_TIMEOUT`  | 30    | Connection timeout in seconds        |
+| `CLICKHOUSE_PORT_HTTPS`       | 8443  | Standard ClickHouse HTTPS port       |
 
 ## Consequences
 
@@ -59,12 +59,12 @@ Configuration values abstracted for maintainability:
 
 ### SLO Impact
 
-| SLO | Before | After |
-|-----|--------|-------|
-| Availability | 0% (failing) | 99.9% (expected) |
-| Correctness | N/A (no execution) | Block sequence validation |
-| Observability | Healthchecks /fail only | Full Pushover + Healthchecks |
-| Maintainability | Dual-database complexity | Single-database simplicity |
+| SLO             | Before                   | After                        |
+| --------------- | ------------------------ | ---------------------------- |
+| Availability    | 0% (failing)             | 99.9% (expected)             |
+| Correctness     | N/A (no execution)       | Block sequence validation    |
+| Observability   | Healthchecks /fail only  | Full Pushover + Healthchecks |
+| Maintainability | Dual-database complexity | Single-database simplicity   |
 
 ## Alternatives Considered
 

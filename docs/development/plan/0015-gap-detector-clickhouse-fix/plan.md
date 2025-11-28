@@ -22,21 +22,21 @@ _duckdb.InvalidInputException: Invalid Input Error: The following options were n
 
 **Failing Code** (`deployment/gcp-functions/motherduck-monitor/main.py`):
 
-| Line | Issue |
-|------|-------|
-| 38 | `import duckdb` - Imports deprecated dependency |
-| 52-53 | `MD_DATABASE`, `MD_TABLE` - MotherDuck config |
-| 119 | `motherduck_token` secret - No longer valid |
-| 132-226 | `detect_gaps()` - Uses DuckDB LAG() |
-| 229-269 | `check_staleness()` - Uses DuckDB queries |
+| Line    | Issue                                            |
+| ------- | ------------------------------------------------ |
+| 38      | `import duckdb` - Imports deprecated dependency  |
+| 52-53   | `MD_DATABASE`, `MD_TABLE` - MotherDuck config    |
+| 119     | `motherduck_token` secret - No longer valid      |
+| 132-226 | `detect_gaps()` - Uses DuckDB LAG()              |
+| 229-269 | `check_staleness()` - Uses DuckDB queries        |
 | 458-459 | `connect_timeout: 30000` - Invalid DuckDB config |
 
 **Working Code** (reusable):
 
-| Lines | Function | Notes |
-|-------|----------|-------|
+| Lines   | Function                     | Notes                           |
+| ------- | ---------------------------- | ------------------------------- |
 | 276-342 | `validate_clickhouse_sync()` | Already uses clickhouse-connect |
-| 349-420 | Notification functions | Pushover + Healthchecks.io |
+| 349-420 | Notification functions       | Pushover + Healthchecks.io      |
 
 ### Infrastructure
 
@@ -211,7 +211,7 @@ gcloud scheduler jobs run clickhouse-monitor-trigger --location=us-east1
 - [x] **2.2** Deploy Cloud Function (revision 00018-wur)
 - [x] **2.3** Manual trigger via Cloud Scheduler
 - [x] **2.4** Verify Pushover notification (ULID: 01KB1EDPRY6SBJ9PVKB6NX0Y71)
-- [x] **2.5** Healthchecks.io ping - N/A (not configured)
+- [x] **2.5** Healthchecks.io ping - Configured via MADR-0016 (`1a74805b-5315-4808-91d2-1b8b248422b6`)
 - [x] **2.6** Update ADR status to Accepted
 
 ### Verification Results (2025-11-27T01:21)
