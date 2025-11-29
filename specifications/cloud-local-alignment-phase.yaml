@@ -272,7 +272,7 @@ info:
 
           **Examples**:
           - `data-pipeline-monitoring/scripts/check_pipeline_health.py`: Runs locally, queries `gcloud` APIs
-          - `motherduck-pipeline-operations/scripts/verify_motherduck.py`: Runs locally, queries MotherDuck cloud
+          - `scripts/clickhouse/verify_blocks.py`: Runs locally, queries ClickHouse Cloud
           - `bigquery-ethereum-data-acquisition/scripts/estimate_query_cost.py`: Runs locally, queries BigQuery
 
           ## Distinction from deployment/
