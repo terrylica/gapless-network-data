@@ -12,7 +12,7 @@ Local Execution → Cloud API Query → Local Analysis
 
 **Examples**:
 - `data-pipeline-monitoring/scripts/check_pipeline_health.py`: Runs locally, queries `gcloud` APIs
-- `motherduck-pipeline-operations/scripts/verify_motherduck.py`: Runs locally, queries MotherDuck cloud
+- `scripts/clickhouse/verify_blocks.py`: Runs locally, queries ClickHouse Cloud
 - `bigquery-ethereum-data-acquisition/scripts/estimate_query_cost.py`: Runs locally, queries BigQuery
 
 ## Distinction from deployment/
@@ -29,7 +29,7 @@ Local Execution → Cloud API Query → Local Analysis
 Skills scripts use local credentials:
 - `gcloud auth login` (for GCP APIs)
 - `doppler login` or Secret Manager (for third-party APIs)
-- MotherDuck token from environment
+- ClickHouse credentials via Doppler (`aws-credentials/prd`)
 
 No deployment or cloud execution required.
 
@@ -40,8 +40,8 @@ No deployment or cloud execution required.
 - Queries: Cloud Run Jobs, Compute Engine VMs, Cloud Logging
 
 ### 2. Database Operations
-- **motherduck-pipeline-operations**: Verify database state, execute backfills
-- Queries: MotherDuck cloud database
+- **historical-backfill-execution**: Execute chunked backfills, verify completeness
+- Queries: ClickHouse Cloud database (`ethereum_mainnet.blocks`)
 
 ### 3. Data Source Research
 - **blockchain-rpc-provider-research**: Evaluate RPC providers, validate rate limits

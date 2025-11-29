@@ -84,23 +84,23 @@ Validated scripts (v0.2.0):
 
 ## Verification After Acquisition
 
-**Important**: This skill covers data acquisition from BigQuery (downloading historical Ethereum blocks), but does NOT verify the data actually landed in MotherDuck.
+**Important**: This skill covers data acquisition from BigQuery (downloading historical Ethereum blocks), but does NOT verify the data actually landed in ClickHouse.
 
-After completing BigQuery download and DuckDB import:
-- Use the **motherduck-pipeline-operations** skill
-- Run `uv run scripts/verify_motherduck.py` to verify database state
-- Confirm expected block count (~13-15M blocks for 2020-2025 backfill)
+After completing BigQuery download:
+- Use the **historical-backfill-execution** skill
+- Run `scripts/clickhouse/verify_blocks.py` to verify database state
+- Confirm expected block count (~23.8M blocks for 2015-2025 backfill)
 
 **Common workflow**:
 1. Download from BigQuery using this skill (Step 4 above)
-2. Import to DuckDB (Step 5 above)
-3. **Verify MotherDuck state** using motherduck-pipeline-operations skill
+2. Insert to ClickHouse via `chunked_backfill.sh`
+3. **Verify ClickHouse state** using historical-backfill-execution skill
 4. Check yearly breakdown to ensure complete coverage
 
-See `motherduck-pipeline-operations` skill for database verification and troubleshooting missing data.
+See `historical-backfill-execution` skill for database verification and troubleshooting missing data.
 
 ## Related Skills
 
-- `motherduck-pipeline-operations` - MotherDuck database verification and historical backfill operations
+- `historical-backfill-execution` - ClickHouse database verification and backfill operations
 - `blockchain-rpc-provider-research` - RPC rate limit comparison and provider evaluation
 - `blockchain-data-collection-validation` - Empirical validation workflow for data pipelines

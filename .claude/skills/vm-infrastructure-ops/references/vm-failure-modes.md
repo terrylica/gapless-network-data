@@ -125,7 +125,7 @@ ERROR: Connection refused
 
 4. Verify data flow:
    ```bash
-   uv run .claude/skills/motherduck-pipeline-operations/scripts/verify_motherduck.py
+   uv run scripts/clickhouse/verify_blocks.py
    ```
 
 ### 5. WebSocket Disconnection
