@@ -1,12 +1,12 @@
 ---
 name: historical-backfill-execution
-description: Execute chunked historical blockchain data backfills using canonical 1-year pattern. Use when loading multi-year historical data, filling gaps in MotherDuck, or preventing OOM failures on Cloud Run. Keywords chunked_backfill.sh, BigQuery historical, gap filling, memory-safe backfill.
+description: Execute chunked historical blockchain data backfills using canonical 1-year pattern. Use when loading multi-year historical data, filling gaps in ClickHouse, or preventing OOM failures on Cloud Run. Keywords chunked_backfill.sh, BigQuery historical, gap filling, memory-safe backfill.
 ---
 
 # Historical Backfill Execution
 
-**Version**: 1.0.0
-**Last Updated**: 2025-11-13
+**Version**: 2.0.0
+**Last Updated**: 2025-11-29
 **Purpose**: Execute chunked historical blockchain data backfills using canonical 1-year pattern
 
 ## When to Use
@@ -14,7 +14,7 @@ description: Execute chunked historical blockchain data backfills using canonica
 Use this skill when:
 
 - Loading multi-year historical data (e.g., 2015-2025 Ethereum blocks, 23.8M blocks total)
-- Gaps detected in MotherDuck requiring backfill
+- Gaps detected in ClickHouse requiring backfill
 - Preventing OOM (Out of Memory) failures on Cloud Run (4GB memory limit)
 - Need to execute complete historical data collection
 - Keywords: chunked_backfill.sh, BigQuery historical, gap filling, memory-safe backfill
@@ -26,7 +26,7 @@ Use this skill when:
 - **Chunk size**: 1 year (~2.6M blocks for Ethereum)
 - **Memory usage**: <4GB per chunk (Cloud Run safe, no OOM errors)
 - **Execution time**: ~1m40s-2m per chunk (total ~20 minutes for 10 years)
-- **Idempotency**: `INSERT OR REPLACE` allows safe re-runs (no duplicates)
+- **Idempotency**: ReplacingMergeTree allows safe re-runs (automatic deduplication)
 - **Cost**: $0/month (within BigQuery 1TB/month free tier, ~10MB per query)
 
 **Why 1-Year Chunks?**
@@ -37,9 +37,9 @@ See [Backfill Patterns Reference](./references/backfill-patterns.md) for complet
 
 - GCP project access: `eonlabs-ethereum-bq`
 - BigQuery dataset: `bigquery-public-data.crypto_ethereum.blocks`
-- MotherDuck database: `md:ethereum_mainnet.blocks`
-- MotherDuck token configured (via Secret Manager or environment variable)
-- Python dependencies: `google-cloud-bigquery`, `pyarrow`, `duckdb`
+- ClickHouse Cloud database: `ethereum_mainnet.blocks`
+- ClickHouse credentials configured (via Doppler or environment variable)
+- Python dependencies: `google-cloud-bigquery`, `pyarrow`, `clickhouse-connect`
 
 ## Workflow
 
@@ -54,9 +54,9 @@ cd /Users/terryli/eon/gapless-network-data/deployment/backfill
 
 **What This Does**:
 - Loads blocks year-by-year from BigQuery
-- Uses PyArrow zero-copy transfer → MotherDuck
-- Inserts with `INSERT OR REPLACE` (idempotent, prevents duplicates)
-- Shows progress for each year: "Loading blocks 1 → 2,600,000"
+- Uses PyArrow for efficient data transfer
+- Inserts into ClickHouse with ReplacingMergeTree (automatic deduplication)
+- Shows progress for each year: "Loading blocks 1 - 2,600,000"
 
 **Alternative** (use provided validation wrapper):
 ```bash
@@ -69,11 +69,11 @@ Watch the output for year-by-year progress:
 
 ```
 Loading blocks for year 2015...
-Year 2015: Loading blocks 1 → 2,600,000
+Year 2015: Loading blocks 1 - 2,600,000
 Completed 2015 in 1m42s
 
 Loading blocks for year 2016...
-Year 2016: Loading blocks 2,600,001 → 5,200,000
+Year 2016: Loading blocks 2,600,001 - 5,200,000
 Completed 2016 in 1m38s
 
 ...
@@ -89,48 +89,38 @@ After backfill completes, verify all blocks loaded:
 
 ```bash
 cd /Users/terryli/eon/gapless-network-data
-uv run .claude/skills/motherduck-pipeline-operations/scripts/verify_motherduck.py
+doppler run --project aws-credentials --config prd -- python3 -c "
+import clickhouse_connect
+import os
+client = clickhouse_connect.get_client(
+    host=os.environ['CLICKHOUSE_HOST'],
+    port=8443,
+    username='default',
+    password=os.environ['CLICKHOUSE_PASSWORD'],
+    secure=True
+)
+result = client.query('SELECT COUNT(*) as total, MIN(number) as min_block, MAX(number) as max_block FROM ethereum_mainnet.blocks FINAL')
+print(f'Total blocks: {result.result_rows[0][0]:,}')
+print(f'Block range: {result.result_rows[0][1]:,} to {result.result_rows[0][2]:,}')
+"
 ```
 
 **Expected Output** (healthy):
 ```
-=== MotherDuck Database Verification ===
-Database: md:ethereum_mainnet.blocks
-
 Total blocks: 23,800,000+
-Block range: 1 → 23,800,000+
-Time range: 2015-07-30 (Genesis) → 2025-11-13
-
-Yearly breakdown:
-  2015: 2,600,000 blocks
-  2016: 2,600,000 blocks
-  2017: 2,600,000 blocks
-  ...
-  2025: 2,300,000 blocks (partial year)
-
-✅ Database verification complete
+Block range: 1 to 23,800,000+
 ```
 
 ### 4. Detect Gaps (If Needed)
 
-Run gap detection to ensure zero missing blocks:
+Run gap detection to ensure zero missing blocks. The gap monitor Cloud Function runs every 3 hours automatically. For manual checks:
 
 ```bash
-cd /Users/terryli/eon/gapless-network-data
-uv run .claude/skills/motherduck-pipeline-operations/scripts/detect_gaps.py
-```
+# Trigger manual gap check via Cloud Scheduler
+gcloud scheduler jobs run motherduck-monitor-trigger --location=us-east1
 
-**Expected Output** (healthy):
-```
-=== Gap Detection (Zero-Tolerance) ===
-Checking blocks from 1 year ago → 3 minutes ago
-
-✅ No gaps detected (23,800,000 blocks consecutive)
-```
-
-**If gaps found**, use auto-fill mode:
-```bash
-uv run .claude/skills/motherduck-pipeline-operations/scripts/detect_gaps.py --auto-fill
+# View logs
+gcloud functions logs read motherduck-gap-detector --region=us-east1 --gen2 --limit=50
 ```
 
 ### 5. Handle Specific Year Range (Partial Backfill)
@@ -176,7 +166,7 @@ Estimating memory for 2020 backfill...
 Block count: ~2,600,000
 Column count: 11 (optimized schema)
 Expected memory: ~3.2 GB
-Cloud Run safe: ✅ (under 4GB limit)
+Cloud Run safe: (under 4GB limit)
 ```
 
 ## Troubleshooting
@@ -201,9 +191,9 @@ See [Backfill Patterns Reference](./references/backfill-patterns.md) for alterna
 
 | Pattern | Chunk Size | Memory | Time (10yr) | Retry Granularity | Recommended |
 |---------|-----------|--------|-------------|-------------------|-------------|
-| **1-Year Chunks** | ~2.6M blocks | <4GB | 20 min | Year-level | ✅ Yes (canonical) |
-| Month Chunks | ~220K blocks | <1GB | 35 min | Month-level | ⚠️ Over-chunked (slower) |
-| Full Load | 26M blocks | >8GB | N/A | All-or-nothing | ❌ No (OOM errors) |
+| **1-Year Chunks** | ~2.6M blocks | <4GB | 20 min | Year-level | Yes (canonical) |
+| Month Chunks | ~220K blocks | <1GB | 35 min | Month-level | Over-chunked (slower) |
+| Full Load | 26M blocks | >8GB | N/A | All-or-nothing | No (OOM errors) |
 
 ## Operational History
 
@@ -213,7 +203,7 @@ See [Backfill Patterns Reference](./references/backfill-patterns.md) for alterna
 - **Execution Time**: ~20 minutes total
 - **Memory Usage**: <4GB per chunk (no OOM errors)
 - **Result**: 100% completeness, zero gaps, zero duplicates
-- **Verification**: 23.8M blocks in MotherDuck, latest block within 60 seconds
+- **Verification**: 23.8M blocks in ClickHouse Cloud, latest block within 60 seconds
 - **Cost**: $0 (within BigQuery free tier)
 
 **SLO Achievement**: Complete historical data collection (10 years, 23.8M blocks) in <30 minutes with zero manual intervention.
@@ -221,9 +211,8 @@ See [Backfill Patterns Reference](./references/backfill-patterns.md) for alterna
 ## Related Documentation
 
 - [BigQuery Ethereum Data Acquisition Skill](../bigquery-ethereum-data-acquisition/SKILL.md) - Column selection rationale
-- [MotherDuck Pipeline Operations Skill](../archive/motherduck-pipeline-operations/SKILL.md) - Database verification and gap detection (DEPRECATED - see MADR-0013)
-- [MotherDuck Dual Pipeline Architecture](../../../docs/architecture/_archive/motherduck-dual-pipeline.md) - Complete architecture (DEPRECATED - see MADR-0013)
-- [BigQuery Integration Guide](../../../docs/architecture/_archive/bigquery-motherduck-integration.md) - PyArrow zero-copy transfer (DEPRECATED - see MADR-0013)
+- [ClickHouse Migration ADR](/docs/architecture/decisions/2025-11-25-motherduck-clickhouse-migration.md) - Production database migration
+- [Gap Monitor README](/deployment/gcp-functions/gap-monitor/README.md) - Automated gap detection
 
 ## Scripts
 

@@ -12,16 +12,16 @@
 
 ### Phase 1: Safe Changes
 
-- [ ] `deployment/gcp-functions/motherduck-monitor/` directory deleted
-- [ ] `motherduck-token` GCP secret deleted
-- [ ] Historical note in `gap-monitor/README.md` updated
-- [ ] Service account display name updated
+- [x] `deployment/gcp-functions/motherduck-monitor/` directory deleted
+- [x] `motherduck-token` GCP secret deleted
+- [x] Historical note in `gap-monitor/README.md` updated
+- [x] Service account display name updated
 
 ### Phase 2: Documentation Updates
 
-- [ ] 9 files with substantial MotherDuck content fully rewritten
-- [ ] 15 files with simple terminology swaps updated
-- [ ] Broken ADR link in `docs/architecture/README.md` fixed
+- [x] 9 files with substantial MotherDuck content fully rewritten
+- [x] 15 files with simple terminology swaps updated
+- [x] Broken ADR link in `docs/architecture/README.md` fixed
 
 ### Phase 3: Deployment
 

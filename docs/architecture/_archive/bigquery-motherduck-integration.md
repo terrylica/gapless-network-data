@@ -2,12 +2,12 @@
 status: deprecated
 deprecated_date: 2025-11-25
 reason: "Migrated to ClickHouse Cloud (MADR-0013)"
-replacement: "See docs/decisions/0013-motherduck-clickhouse-migration.md"
+replacement: "See /docs/architecture/decisions/2025-11-25-motherduck-clickhouse-migration.md"
 ---
 
 # MotherDuck + BigQuery Integration Report
 
-> **DEPRECATED**: This document describes the former MotherDuck integration. The system was migrated to ClickHouse Cloud on 2025-11-25. See [MADR-0013](../../decisions/0013-motherduck-clickhouse-migration.md) for the current architecture.
+> **DEPRECATED**: This document describes the former MotherDuck integration. The system was migrated to ClickHouse Cloud on 2025-11-25. See [MADR-0013](/docs/architecture/decisions/2025-11-25-motherduck-clickhouse-migration.md) for the current architecture.
 
 **Date**: 2025-11-09
 **Status**: DEPRECATED (superseded by ClickHouse Cloud migration)
