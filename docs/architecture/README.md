@@ -195,7 +195,7 @@ Cloud Scheduler ──3h──▶ Gap Detector ──────▶ Pushover Al
 
 ## Related Documentation
 
-- [ClickHouse Migration](../decisions/0013-motherduck-clickhouse-migration.md) - Production database decision
+- [ClickHouse Migration](/docs/architecture/decisions/2025-11-25-motherduck-clickhouse-migration.md) - Production database decision
 - [Data Format Specification](./DATA_FORMAT.md) - Ethereum block schema
 - [Real-Time Collector](../deployment/realtime-collector.md) - VM deployment
 - [CLAUDE.md](../../CLAUDE.md) - Complete project context

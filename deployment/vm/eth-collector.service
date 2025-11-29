@@ -1,5 +1,5 @@
 [Unit]
-Description=Ethereum Real-Time Block Collector (Dual-Write: MotherDuck + ClickHouse)
+Description=Ethereum Real-Time Block Collector (ClickHouse Cloud)
 After=network.target
 
 [Service]

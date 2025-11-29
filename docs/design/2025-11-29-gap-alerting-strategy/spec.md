@@ -7,6 +7,7 @@
 ## Problem Statement
 
 Current gap detector alerts immediately on any gap, creating noise because:
+
 1. Deployment restarts cause expected gaps (self-healing will fill)
 2. Transient network issues cause gaps that resolve automatically
 3. Only persistent gaps (>30 min unfilled) indicate real problems
@@ -77,19 +78,21 @@ for tracked_gap in all_tracked_gaps:
 
 ## Configuration Constants
 
-| Constant | Value | Rationale |
-|----------|-------|-----------|
-| `GRACE_PERIOD_SECONDS` | 1800 | 30 min for self-healing |
-| `STALE_TRACKING_HOURS` | 24 | Auto-delete very old tracked gaps |
+| Constant               | Value | Rationale                         |
+| ---------------------- | ----- | --------------------------------- |
+| `GRACE_PERIOD_SECONDS` | 1800  | 30 min for self-healing           |
+| `STALE_TRACKING_HOURS` | 24    | Auto-delete very old tracked gaps |
 
 ## Alert Messages
 
 ### New Gap (No Alert)
+
 ```
 (silent - stored for tracking only)
 ```
 
 ### Persistent Gap (Emergency)
+
 ```
 Title: PERSISTENT GAP
 Message:
@@ -103,6 +106,7 @@ ULID: 01KB7...
 ```
 
 ### Gap Resolved (Info)
+
 ```
 Title: GAP RESOLVED
 Message:

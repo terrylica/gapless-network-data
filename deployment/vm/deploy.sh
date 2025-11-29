@@ -7,7 +7,6 @@
 #   - Secrets stored in Secret Manager:
 #     - alchemy-api-key (required)
 #     - clickhouse-host, clickhouse-password (required, production database)
-#     - motherduck-token (deprecated 2025-11-25, kept for backward compatibility)
 #   - VM service account has secretAccessor role
 
 set -e
@@ -32,8 +31,8 @@ echo ""
 echo "[1/7] Verifying Secret Manager permissions..."
 echo "   Checking VM service account: $VM_SERVICE_ACCOUNT"
 
-# Add ClickHouse secrets for dual-write migration
-for secret in alchemy-api-key motherduck-token clickhouse-host clickhouse-password; do
+# Add secrets for ClickHouse production database
+for secret in alchemy-api-key clickhouse-host clickhouse-password; do
   echo "   Checking $secret..."
   gcloud secrets add-iam-policy-binding "$secret" \
     --member="serviceAccount:$VM_SERVICE_ACCOUNT" \
@@ -137,25 +136,14 @@ import os
 project = \"${PROJECT}\"
 client = secretmanager.SecretManagerServiceClient()
 
-# Core secrets (alchemy required, motherduck deprecated 2025-11-25)
-for secret in [\"alchemy-api-key\", \"motherduck-token\"]:
+# Core secrets (alchemy required for WebSocket, ClickHouse for storage)
+for secret in [\"alchemy-api-key\", \"clickhouse-host\", \"clickhouse-password\"]:
     name = f\"projects/{project}/secrets/{secret}/versions/latest\"
     try:
         response = client.access_secret_version(request={\"name\": name})
         print(f\"✅ {secret}: accessible\")
     except Exception as e:
         print(f\"❌ {secret}: FAILED - {e}\")
-
-# ClickHouse secrets (for dual-write migration)
-print()
-print(\"ClickHouse secrets (dual-write):\")
-for secret in [\"clickhouse-host\", \"clickhouse-password\"]:
-    name = f\"projects/{project}/secrets/{secret}/versions/latest\"
-    try:
-        response = client.access_secret_version(request={\"name\": name})
-        print(f\"✅ {secret}: accessible\")
-    except Exception as e:
-        print(f\"⚠️  {secret}: not found (dual-write disabled)\")
 '
   "
 
@@ -177,6 +165,5 @@ echo "  Stop:         gcloud compute ssh ${INSTANCE} --zone=${ZONE} --project=${
 echo ""
 echo "Secret Manager:"
 echo "  Secrets: alchemy-api-key, clickhouse-host, clickhouse-password"
-echo "  Deprecated: motherduck-token (2025-11-25, MADR-0013)"
 echo "  Service account: ${VM_SERVICE_ACCOUNT}"
 echo ""

@@ -10,7 +10,7 @@ Create ClickHouse schema for Ethereum blocks migration.
 Usage:
     doppler run --project aws-credentials --config prd -- uv run scripts/clickhouse/create_schema.py
 
-Schema mirrors MotherDuck ethereum_mainnet.blocks table with ClickHouse-specific optimizations:
+ClickHouse schema for Ethereum mainnet blocks with production optimizations:
 - ReplacingMergeTree engine for automatic deduplication (dual-pipeline support)
 - ORDER BY number for deduplication key and efficient block-range queries
 - Monthly partitioning for efficient data management
@@ -90,7 +90,7 @@ def create_schema() -> bool:
         PARTITION BY toYYYYMM(timestamp)
         ORDER BY number
         SETTINGS index_granularity = 8192
-        COMMENT 'Ethereum mainnet blocks - migrated from MotherDuck 2025-11-24'
+        COMMENT 'Ethereum mainnet blocks - production data store'
         """
 
         client.command(ddl)

@@ -14,7 +14,7 @@ description: Troubleshoot and manage GCP e2-micro VM running eth-realtime-collec
 Use this skill when:
 
 - VM service down, "eth-collector" systemd failures
-- Real-time data stream stopped (MotherDuck not receiving blocks)
+- Real-time data stream stopped (ClickHouse not receiving blocks)
 - VM network issues, DNS resolution failures
 - Need to check service status, view logs, or restart services
 - Keywords: systemd, journalctl, eth-collector, gcloud compute
@@ -106,17 +106,28 @@ gcloud compute instances reset eth-realtime-collector --zone=us-east1-b
 
 ### 6. Verify Data Flow
 
-After restarting services, verify data is flowing to MotherDuck:
+After restarting services, verify data is flowing to ClickHouse:
 
 ```bash
 cd /Users/terryli/eon/gapless-network-data
-uv run .claude/skills/motherduck-pipeline-operations/scripts/verify_motherduck.py
+doppler run --project aws-credentials --config prd -- python3 -c "
+import clickhouse_connect
+import os
+client = clickhouse_connect.get_client(
+    host=os.environ['CLICKHOUSE_HOST'],
+    port=8443,
+    username='default',
+    password=os.environ['CLICKHOUSE_PASSWORD'],
+    secure=True
+)
+result = client.query('SELECT MAX(timestamp), MAX(number) FROM ethereum_mainnet.blocks FINAL')
+print(f'Latest block: {result.result_rows[0][1]:,} at {result.result_rows[0][0]}')
+"
 ```
 
 **Expected Output** (healthy):
 ```
-Total blocks: 23,800,000+
-Latest block timestamp: <within last 60 seconds>
+Latest block: 23,800,000+ at <within last 60 seconds>
 ```
 
 ## Common Failure Modes
@@ -177,9 +188,9 @@ sudo journalctl -u eth-collector -f
 
 ## Related Documentation
 
-- [MotherDuck Dual Pipeline Architecture](../../../docs/architecture/_archive/motherduck-dual-pipeline.md) - Complete architecture (DEPRECATED - see MADR-0013)
-- [Real-Time Collector Deployment Guide](../../../docs/deployment/realtime-collector.md) - VM deployment
-- [MotherDuck Pipeline Operations Skill](../archive/motherduck-pipeline-operations/SKILL.md) - Database verification (DEPRECATED - see MADR-0013)
+- [ClickHouse Migration ADR](/docs/architecture/decisions/2025-11-25-motherduck-clickhouse-migration.md) - Production database migration
+- [Real-Time Collector Deployment Guide](/docs/deployment/realtime-collector.md) - VM deployment
+- [Gap Monitor README](/deployment/gcp-functions/gap-monitor/README.md) - Automated gap detection
 - [Data Pipeline Monitoring Skill](../data-pipeline-monitoring/SKILL.md) - Cloud Run Jobs monitoring
 
 ## Scripts
