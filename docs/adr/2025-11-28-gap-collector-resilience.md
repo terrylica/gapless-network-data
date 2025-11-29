@@ -8,6 +8,69 @@
 
 The Ethereum real-time block collector (`deployment/vm/realtime_collector.py`) has been experiencing recurring data gaps despite multiple previous fixes. Gap alerts show missing blocks at irregular intervals, indicating systematic failure modes in the collection pipeline.
 
+### Defense-in-Depth Architecture
+
+```
+┌──────────┐     ┌───────────────┐     ┌──────────────┐     ┌─────────────┐
+│ L1 Retry │ ──> │ L2 Exceptions │ ──> │ L3 Gap Track │ ──> │ L4 Backfill │
+└──────────┘     └───────────────┘     └──────────────┘     └─────────────┘
+```
+
+### Data Flow with Self-Healing
+
+```
+                                ┌───────────────────┐
+                                │ Alchemy WebSocket │
+                                └───────────────────┘
+                                  │
+                                  ∨
+                                ┌───────────────────┐
+                                │    JSON Parse     │
+                                └───────────────────┘
+                                  │
+                                  ∨
+                                ┌───────────────────┐
+                                │   Block Process   │ ─┐
+                                └───────────────────┘  │
+                                  │                    │
+                                  ∨                    │
+┌────────────────┐  large gap   ┌───────────────────┐  │
+│ External Alert │ <─────────── │   Gap Detector    │  │
+└────────────────┘              └───────────────────┘  │
+                                  │                    │
+                                  │ small gap          │
+                                  ∨                    │
+                                ┌───────────────────┐  │
+                                │  Inline Backfill  │  │
+                                └───────────────────┘  │
+                                  │                    │
+                                  ∨                    │
+                                ┌───────────────────┐  │
+                                │    ClickHouse     │ <┘
+                                └───────────────────┘
+```
+
+<details>
+<summary>graph-easy source</summary>
+
+```
+# Defense layers
+graph { flow: east; }
+[L1 Retry] -> [L2 Exceptions] -> [L3 Gap Track] -> [L4 Backfill]
+
+# Data flow
+graph { flow: south; }
+[Alchemy WebSocket] -> [JSON Parse] -> [Block Process] -> [ClickHouse]
+[Block Process] -> [Gap Detector]
+[Gap Detector] -- small gap --> [Inline Backfill]
+[Inline Backfill] -> [ClickHouse]
+[Gap Detector] -- large gap --> [External Alert]
+```
+
+</details>
+
+### Failure Points Identified
+
 Sub-agent investigation identified **5 critical data loss points** where exceptions cause permanent block loss:
 
 | Location                                 | Issue                           | Impact                                |
