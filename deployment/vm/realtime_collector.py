@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # /// script
-# dependencies = ["websockets", "pyarrow", "google-cloud-secret-manager", "requests", "clickhouse-connect"]
+# dependencies = ["websockets", "pyarrow", "google-cloud-secret-manager", "requests", "clickhouse-connect", "tenacity"]
 # ///
 """
 Alchemy WebSocket Real-Time Ethereum Block Collector
@@ -37,6 +37,7 @@ from datetime import datetime, timezone
 import requests
 import websockets
 from google.cloud import secretmanager
+from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_exception_type
 
 # Configuration
 GCP_PROJECT = os.environ.get('GCP_PROJECT', 'eonlabs-ethereum-bq')
@@ -63,6 +64,18 @@ buffer_lock = threading.Lock()
 # Shutdown flag for graceful termination
 shutdown_requested = False
 
+# Resilience constants (ADR: 2025-11-28-gap-collector-resilience)
+MAX_RETRY_ATTEMPTS = 3           # Max retries for fetch_full_block
+RETRY_WAIT_MIN = 1               # Minimum backoff in seconds
+RETRY_WAIT_MAX = 10              # Maximum backoff in seconds
+INLINE_BACKFILL_THRESHOLD = 5    # Max blocks to backfill synchronously
+MAX_CONSECUTIVE_FAILURES = 10    # Alert threshold for batch flush
+
+# Self-healing gap detection state
+expected_next_block = None
+missed_blocks = []  # Track blocks that failed fetch for later backfill
+missed_blocks_lock = threading.Lock()
+
 
 def graceful_shutdown(signum, frame):
     """Handle SIGTERM/SIGINT for graceful shutdown with buffer flush.
@@ -88,6 +101,60 @@ def graceful_shutdown(signum, frame):
 
     print(f"[{now}] [SHUTDOWN] Exiting cleanly")
     sys.exit(0)
+
+
+def track_missed_block(block_number: int) -> None:
+    """Track a block that couldn't be fetched for later backfill."""
+    global missed_blocks
+    with missed_blocks_lock:
+        if block_number not in missed_blocks:
+            missed_blocks.append(block_number)
+            now = datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M:%S')
+            print(f"[{now}] [GAP] Tracked missed block {block_number:,} for backfill")
+
+
+def update_expected_block(received_block: int) -> None:
+    """Update expected block and detect gaps inline."""
+    global expected_next_block
+
+    if expected_next_block is None:
+        expected_next_block = received_block + 1
+        return
+
+    # Check for gap
+    if received_block > expected_next_block:
+        gap_size = received_block - expected_next_block
+        now = datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M:%S')
+        print(f"[{now}] [GAP] Detected gap: expected {expected_next_block:,}, got {received_block:,} ({gap_size} blocks)")
+
+        # Small gap: backfill inline (≤INLINE_BACKFILL_THRESHOLD blocks)
+        if gap_size <= INLINE_BACKFILL_THRESHOLD:
+            backfill_inline(expected_next_block, received_block - 1)
+        else:
+            # Large gap: track for async backfill
+            for block_num in range(expected_next_block, received_block):
+                track_missed_block(block_num)
+
+    expected_next_block = received_block + 1
+
+
+def backfill_inline(start_block: int, end_block: int) -> None:
+    """Backfill small gaps inline (synchronous, ≤INLINE_BACKFILL_THRESHOLD blocks)."""
+    now = datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M:%S')
+    print(f"[{now}] [BACKFILL] Inline backfill: blocks {start_block:,} to {end_block:,}")
+
+    for block_num in range(start_block, end_block + 1):
+        try:
+            block_hex = hex(block_num)
+            block_data = fetch_full_block(block_hex)
+            if block_data:
+                block_tuple = parse_block(block_data)
+                insert_block(block_tuple)
+                print(f"[{now}] [BACKFILL] Block {block_num:,} backfilled")
+        except Exception as e:
+            print(f"[{now}] [BACKFILL] Failed to backfill block {block_num:,}: {e}")
+            track_missed_block(block_num)
+
 
 # Block fields to collect (matches BigQuery schema)
 BLOCK_FIELDS = [
@@ -121,8 +188,14 @@ def get_secret(secret_id: str, project_id: str = GCP_PROJECT) -> str:
     return response.payload.data.decode('UTF-8').strip()
 
 
-def fetch_full_block(block_number_hex: str) -> dict:
-    """Fetch full block data via eth_getBlockByNumber JSON-RPC.
+@retry(
+    stop=stop_after_attempt(MAX_RETRY_ATTEMPTS),
+    wait=wait_exponential(multiplier=1, min=RETRY_WAIT_MIN, max=RETRY_WAIT_MAX),
+    retry=retry_if_exception_type((requests.exceptions.RequestException, requests.exceptions.Timeout)),
+    reraise=True
+)
+def fetch_full_block(block_number_hex: str) -> dict | None:
+    """Fetch full block data via eth_getBlockByNumber JSON-RPC with retry.
 
     The newHeads subscription only returns block headers (no transactions).
     We need to call eth_getBlockByNumber to get the transaction count.
@@ -131,10 +204,10 @@ def fetch_full_block(block_number_hex: str) -> dict:
         block_number_hex: Block number in hex format (e.g., '0x1234567')
 
     Returns:
-        Full block data including transactions array
+        Full block data including transactions array, or None if RPC returns null
 
     Raises:
-        Exception: If RPC call fails
+        Exception: If RPC call fails after MAX_RETRY_ATTEMPTS retries
     """
     payload = {
         "jsonrpc": "2.0",
@@ -358,14 +431,27 @@ def flush_buffer():
 
 
 def batch_flush_worker():
-    """Background thread that flushes buffer every BATCH_INTERVAL_SECONDS."""
-    while True:
+    """Background thread that flushes buffer every BATCH_INTERVAL_SECONDS.
+
+    Error Policy: Log errors but continue - service should not crash due to
+    temporary ClickHouse issues. Blocks remain in buffer for next flush attempt.
+    """
+    consecutive_failures = 0
+
+    while not shutdown_requested:
         time.sleep(BATCH_INTERVAL_SECONDS)
         try:
-            flush_buffer()
+            flushed = flush_buffer()
+            if flushed > 0:
+                consecutive_failures = 0  # Reset on success
         except Exception as e:
+            consecutive_failures += 1
             now = datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M:%S')
-            print(f"[{now}] [BATCH] Flush error: {e}")
+            print(f"[{now}] [BATCH] Flush error ({consecutive_failures}x): {e}")
+
+            if consecutive_failures >= MAX_CONSECUTIVE_FAILURES:
+                print(f"[{now}] [BATCH] CRITICAL: {consecutive_failures} consecutive flush failures!")
+                # Blocks are still in buffer, will retry next interval
 
 
 def insert_block(block_tuple):
@@ -431,52 +517,76 @@ async def subscribe_to_blocks():
 
         try:
             async for message in ws:
-                data = json.loads(message)
-
-                # Check if it's a block notification
-                if 'params' in data and 'result' in data['params']:
-                    block_header = data['params']['result']
-
-                    # Defensive check: Ensure block_header is valid
-                    if block_header is None:
-                        now = datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M:%S')
-                        print(f"[{now}] [WARN] Received null block header, skipping...")
-                        continue
-
-                    block_number_hex = block_header.get('number')
-                    if block_number_hex is None:
-                        now = datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M:%S')
-                        print(f"[{now}] [WARN] Block header missing 'number' field, skipping...")
-                        continue
-
-                    # Fetch full block data (newHeads only returns headers, no transactions)
-                    block_data = fetch_full_block(block_number_hex)
-
-                    # Defensive check: Ensure block_data is valid
-                    if block_data is None:
-                        now = datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M:%S')
-                        print(f"[{now}] [WARN] eth_getBlockByNumber returned null for {block_number_hex}, skipping...")
-                        continue
-
-                    # Parse and insert block
-                    block_tuple = parse_block(block_data)
-                    block_number = block_tuple[1]
-
-                    insert_block(block_tuple)
-                    block_count += 1
-
-                    # Print status
+                # Parse JSON with error handling
+                try:
+                    data = json.loads(message)
+                except json.JSONDecodeError as e:
                     now = datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M:%S')
-                    if BATCH_INTERVAL_SECONDS == 0:
-                        print(f"[{now}] Block {block_number:,} inserted (total: {block_count:,})")
-                    else:
-                        with buffer_lock:
-                            buffer_size = len(block_buffer)
-                        print(f"[{now}] Block {block_number:,} buffered (buffer: {buffer_size}, total: {block_count:,})")
+                    print(f"[{now}] [ERROR] Invalid JSON from WebSocket: {e}")
+                    continue  # Skip malformed message, don't crash
+
+                # Check if it's a block notification (safe access)
+                if 'params' not in data or 'result' not in data.get('params', {}):
+                    continue  # Not a block notification
+
+                block_header = data['params']['result']
+
+                # Defensive check: Ensure block_header is valid
+                if block_header is None:
+                    now = datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M:%S')
+                    print(f"[{now}] [WARN] Received null block header, skipping...")
+                    continue
+
+                block_number_hex = block_header.get('number')
+                if block_number_hex is None:
+                    now = datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M:%S')
+                    print(f"[{now}] [WARN] Block header missing 'number' field, skipping...")
+                    continue
+
+                # Fetch full block data with retry logic
+                try:
+                    block_data = fetch_full_block(block_number_hex)
+                except Exception as e:
+                    now = datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M:%S')
+                    block_num = int(block_number_hex, 16)
+                    print(f"[{now}] [ERROR] Failed to fetch block {block_num:,} after {MAX_RETRY_ATTEMPTS} retries: {e}")
+                    track_missed_block(block_num)
+                    continue  # Don't crash, continue with next block
+
+                # Defensive check: Ensure block_data is valid
+                if block_data is None:
+                    now = datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M:%S')
+                    print(f"[{now}] [WARN] eth_getBlockByNumber returned null for {block_number_hex}, skipping...")
+                    continue
+
+                # Parse and insert block
+                block_tuple = parse_block(block_data)
+                block_number = block_tuple[1]
+
+                insert_block(block_tuple)
+                block_count += 1
+
+                # Update expected block tracking for self-healing gap detection
+                update_expected_block(block_number)
+
+                # Print status
+                now = datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M:%S')
+                if BATCH_INTERVAL_SECONDS == 0:
+                    print(f"[{now}] Block {block_number:,} inserted (total: {block_count:,})")
+                else:
+                    with buffer_lock:
+                        buffer_size = len(block_buffer)
+                    print(f"[{now}] Block {block_number:,} buffered (buffer: {buffer_size}, total: {block_count:,})")
 
         except websockets.exceptions.ConnectionClosed:
             print("\n[WEBSOCKET] Connection closed. Reconnecting...")
             raise  # Will trigger reconnect in main()
+        except Exception as e:
+            now = datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M:%S')
+            print(f"[{now}] [ERROR] WebSocket loop exception: {e}")
+            import traceback
+            traceback.print_exc()
+            raise  # Trigger reconnect
 
 
 async def main_loop():
