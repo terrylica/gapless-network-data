@@ -13,13 +13,13 @@ Implement bulletproof exception handling and retry logic to eliminate block loss
 
 ### 5 Critical Data Loss Points
 
-| # | Location | Issue | Impact |
-|---|----------|-------|--------|
-| 1 | `fetch_full_block()` L146-150 | 10s timeout, no retry | **PERMANENT LOSS** |
-| 2 | `json.loads()` L434 | No JSONDecodeError handling | Loop crashes |
-| 3 | `data['params']['result']` L437-438 | KeyError unhandled | Loop crashes |
-| 4 | `batch_flush_worker()` L360-368 | Prints error only | Silent loss |
-| 5 | WebSocket loop L477-479 | Only catches ConnectionClosed | Other exceptions crash |
+| #   | Location                            | Issue                         | Impact                 |
+| --- | ----------------------------------- | ----------------------------- | ---------------------- |
+| 1   | `fetch_full_block()` L146-150       | 10s timeout, no retry         | **PERMANENT LOSS**     |
+| 2   | `json.loads()` L434                 | No JSONDecodeError handling   | Loop crashes           |
+| 3   | `data['params']['result']` L437-438 | KeyError unhandled            | Loop crashes           |
+| 4   | `batch_flush_worker()` L360-368     | Prints error only             | Silent loss            |
+| 5   | WebSocket loop L477-479             | Only catches ConnectionClosed | Other exceptions crash |
 
 ## Implementation Plan
 
@@ -28,11 +28,13 @@ Implement bulletproof exception handling and retry logic to eliminate block loss
 **File**: `/deployment/vm/realtime_collector.py`
 
 **Changes**:
+
 1. Add `tenacity` to script dependencies (line 3)
 2. Add import: `from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_exception_type`
 3. Wrap `fetch_full_block()` with retry decorator
 
 **Retry Configuration**:
+
 - Max attempts: 3
 - Wait: Exponential backoff (1s, 2s, 4s)
 - Retry on: `requests.exceptions.RequestException`, `requests.exceptions.Timeout`
@@ -41,6 +43,7 @@ Implement bulletproof exception handling and retry logic to eliminate block loss
 ### Phase 2: Comprehensive WebSocket Exception Handling
 
 **Changes to `subscribe_to_blocks()`**:
+
 1. Wrap `json.loads()` in try/except JSONDecodeError
 2. Use `.get()` for safe dict access instead of direct indexing
 3. Wrap `fetch_full_block()` call in try/except
@@ -49,6 +52,7 @@ Implement bulletproof exception handling and retry logic to eliminate block loss
 ### Phase 3: Self-Healing Gap Detection
 
 **New Global State**:
+
 ```python
 expected_next_block = None
 missed_blocks = []
@@ -56,11 +60,13 @@ missed_blocks_lock = threading.Lock()
 ```
 
 **New Functions**:
+
 - `track_missed_block(block_number)`: Add to missed_blocks list
 - `update_expected_block(received_block)`: Detect gaps, trigger inline backfill
 - `backfill_inline(start_block, end_block)`: Sync backfill for ≤5 blocks
 
 **Gap Detection Logic**:
+
 ```
 if received_block > expected_next_block:
     gap_size = received_block - expected_next_block
@@ -73,6 +79,7 @@ if received_block > expected_next_block:
 ### Phase 4: Fix batch_flush_worker()
 
 **Changes**:
+
 1. Add `consecutive_failures` counter
 2. Check `shutdown_requested` in loop condition
 3. Log critical alert after 10 consecutive failures
@@ -80,13 +87,13 @@ if received_block > expected_next_block:
 
 ## Constants
 
-| Constant | Value | Rationale |
-|----------|-------|-----------|
-| `MAX_RETRY_ATTEMPTS` | 3 | Balance between resilience and latency |
-| `RETRY_WAIT_MIN` | 1 | Minimum backoff in seconds |
-| `RETRY_WAIT_MAX` | 10 | Maximum backoff in seconds |
-| `INLINE_BACKFILL_THRESHOLD` | 5 | Max blocks to backfill synchronously |
-| `MAX_CONSECUTIVE_FAILURES` | 10 | Alert threshold for batch flush |
+| Constant                    | Value | Rationale                              |
+| --------------------------- | ----- | -------------------------------------- |
+| `MAX_RETRY_ATTEMPTS`        | 3     | Balance between resilience and latency |
+| `RETRY_WAIT_MIN`            | 1     | Minimum backoff in seconds             |
+| `RETRY_WAIT_MAX`            | 10    | Maximum backoff in seconds             |
+| `INLINE_BACKFILL_THRESHOLD` | 5     | Max blocks to backfill synchronously   |
+| `MAX_CONSECUTIVE_FAILURES`  | 10    | Alert threshold for batch flush        |
 
 ## Testing Plan
 
@@ -115,13 +122,13 @@ if received_block > expected_next_block:
 
 ## Progress Tracking
 
-| Task | Status |
-|------|--------|
-| Create feature branch | Done |
-| Create ADR and spec | Done |
-| Add tenacity retry | Done |
-| Add exception handling | Done |
-| Add self-healing gap detection | Done |
-| Fix batch_flush_worker | Done |
-| Deploy to VM | Done |
-| Create release | Done (v4.0.1) |
+| Task                           | Status        |
+| ------------------------------ | ------------- |
+| Create feature branch          | Done          |
+| Create ADR and spec            | Done          |
+| Add tenacity retry             | Done          |
+| Add exception handling         | Done          |
+| Add self-healing gap detection | Done          |
+| Fix batch_flush_worker         | Done          |
+| Deploy to VM                   | Done          |
+| Create release                 | Done (v4.0.1) |
