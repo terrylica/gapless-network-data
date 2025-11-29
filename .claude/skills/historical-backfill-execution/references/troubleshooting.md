@@ -190,11 +190,11 @@ WHERE (number, timestamp) NOT IN (
 
 **Solution**:
 ```bash
-# Detect gaps
-uv run .claude/skills/motherduck-pipeline-operations/scripts/detect_gaps.py
+# Trigger gap detection via Cloud Scheduler
+gcloud scheduler jobs run motherduck-monitor-trigger --location=us-east1
 
-# Auto-fill gaps
-uv run .claude/skills/motherduck-pipeline-operations/scripts/detect_gaps.py --auto-fill
+# View gap monitor logs
+gcloud functions logs read motherduck-gap-detector --region=us-east1 --gen2 --limit=50
 ```
 
 **Manual Fill** (specific year):
@@ -278,12 +278,11 @@ gcloud logging read "resource.type=cloud_run_job AND resource.labels.job_name=et
    - No further optimization available
 
 3. **PyArrow Zero-Copy**: Already implemented (no Parquet intermediate)
-   - Current: Direct BigQuery → MotherDuck transfer
+   - Current: Direct BigQuery → ClickHouse transfer
    - No further optimization available
 
 ## Related Documentation
 
 - [SKILL.md](../SKILL.md) - Historical backfill workflows
 - [Backfill Patterns](./backfill-patterns.md) - 1-year chunking rationale
-- [BigQuery Integration](../../../../docs/architecture/_archive/bigquery-motherduck-integration.md) - PyArrow zero-copy (DEPRECATED - see MADR-0013)
-- [MotherDuck Pipeline Operations](../../archive/motherduck-pipeline-operations/SKILL.md) - Gap detection (DEPRECATED - see MADR-0013)
+- [Gap Monitor README](/deployment/gcp-functions/gap-monitor/README.md) - Automated gap detection (Cloud Functions)

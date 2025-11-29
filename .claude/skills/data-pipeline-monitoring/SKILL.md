@@ -314,13 +314,13 @@ Load project documentation when needed for context, but use this skill's workflo
 
 **Important**: This skill monitors pipeline health (whether pipelines are running), NOT data completeness.
 
-For verifying actual data in MotherDuck (block counts, historical data presence):
-- Use the **motherduck-pipeline-operations** skill
-- Run `uv run scripts/verify_motherduck.py` for database state verification
+For verifying actual data in ClickHouse (block counts, historical data presence):
+- Use the **historical-backfill-execution** skill
+- Run `scripts/clickhouse/verify_blocks.py` for database state verification
 
 **Common scenario**: Pipeline health checks show OK, but historical data is missing. This happens because:
 - Cloud Run hourly sync only loads last 2 hours (NOT historical)
 - VM real-time collector only captures new blocks (NOT historical)
 - Historical backfill requires separate one-time execution
 
-See `motherduck-pipeline-operations` skill for historical backfill operations and troubleshooting missing data.
+See `historical-backfill-execution` skill for backfill operations and troubleshooting missing data.

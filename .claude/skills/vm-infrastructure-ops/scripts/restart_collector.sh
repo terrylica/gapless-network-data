@@ -124,6 +124,6 @@ echo "=== Restart Complete ==="
 echo "✅ Service restarted successfully"
 echo
 echo "Next steps:"
-echo "1. Verify data flow: uv run .claude/skills/motherduck-pipeline-operations/scripts/verify_motherduck.py"
-echo "2. Check MotherDuck for latest blocks within last 60 seconds"
+echo "1. Verify data flow: uv run scripts/clickhouse/verify_blocks.py"
+echo "2. Check ClickHouse for latest blocks within last 60 seconds"
 exit 0

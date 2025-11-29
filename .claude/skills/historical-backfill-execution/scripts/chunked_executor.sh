@@ -21,7 +21,7 @@ set -euo pipefail
 REPO_ROOT="/Users/terryli/eon/gapless-network-data"
 BACKFILL_SCRIPT="$REPO_ROOT/deployment/backfill/chunked_backfill.sh"
 VALIDATE_SCRIPT="$REPO_ROOT/.claude/skills/historical-backfill-execution/scripts/validate_chunk_size.py"
-VERIFY_SCRIPT="$REPO_ROOT/.claude/skills/motherduck-pipeline-operations/scripts/verify_motherduck.py"
+VERIFY_SCRIPT="$REPO_ROOT/scripts/clickhouse/verify_blocks.py"
 
 # Parse arguments
 if [[ $# -ne 2 ]]; then
@@ -68,7 +68,7 @@ if ! bash "$BACKFILL_SCRIPT" "$START_YEAR" "$END_YEAR"; then
     echo
     echo "Troubleshooting steps:"
     echo "1. Check Cloud Run Job logs: gcloud run jobs executions list --job ethereum-historical-backfill"
-    echo "2. Verify MotherDuck token configured in Secret Manager"
+    echo "2. Verify ClickHouse credentials configured in Secret Manager"
     echo "3. Check BigQuery permissions (roles/bigquery.user required)"
     exit 1
 fi
@@ -86,7 +86,7 @@ if [[ -f "$VERIFY_SCRIPT" ]]; then
         echo "This may be expected if backfill is partial or in progress"
         echo
         echo "Check gap detection:"
-        echo "  uv run .claude/skills/motherduck-pipeline-operations/scripts/detect_gaps.py"
+        echo "  gcloud scheduler jobs run motherduck-monitor-trigger --location=us-east1"
     else
         echo
         echo "✅ Database verification passed"
@@ -99,8 +99,8 @@ echo
 echo "=== Backfill Complete ==="
 echo
 echo "Next steps:"
-echo "1. Verify data in MotherDuck: uv run $VERIFY_SCRIPT"
-echo "2. Detect gaps: uv run .claude/skills/motherduck-pipeline-operations/scripts/detect_gaps.py"
+echo "1. Verify data in ClickHouse: uv run $VERIFY_SCRIPT"
+echo "2. Detect gaps: gcloud scheduler jobs run motherduck-monitor-trigger --location=us-east1"
 echo "3. Check real-time stream: .claude/skills/vm-infrastructure-ops/scripts/check_vm_status.sh"
 
 exit 0
