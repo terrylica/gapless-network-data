@@ -1,3 +1,10 @@
+# [4.3.0](https://github.com/terrylica/gapless-network-data/compare/v4.2.0...v4.3.0) (2025-11-29)
+
+
+### Features
+
+* **adr:** replace Mermaid with D2 for architecture diagrams ([9ad7ffd](https://github.com/terrylica/gapless-network-data/commit/9ad7ffdb0a0d0cd01a86ad11d70bcd343c315dbd))
+
 # [4.2.0](https://github.com/terrylica/gapless-network-data/compare/v4.1.0...v4.2.0) (2025-11-29)
 
 ### Bug Fixes
