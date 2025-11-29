@@ -1,7 +1,7 @@
 # Alternative L1 High-Frequency Data Research
 
 **Research Date**: 2025-11-03
-**Workspace**: `/tmp/altl1-research/`
+**Location**: `/docs/research/alt-l1/`
 **Status**: ✅ Complete
 
 ---
@@ -10,19 +10,19 @@
 
 ### Primary Documents (Read These First)
 
-1. **[EXECUTIVE_SUMMARY.md](/tmp/altl1-research/EXECUTIVE_SUMMARY.md)**
+1. **[EXECUTIVE_SUMMARY.md](./EXECUTIVE_SUMMARY.md)**
    - High-level overview of findings
    - Key recommendations
    - Quick metrics and statistics
    - **START HERE** for overview
 
-2. **[QUICK_REFERENCE.md](/tmp/altl1-research/QUICK_REFERENCE.md)**
+2. **[QUICK_REFERENCE.md](./QUICK_REFERENCE.md)**
    - Ready-to-use curl commands
    - API endpoint reference
    - Copy-paste examples
    - **USE THIS** for implementation
 
-3. **[COMPREHENSIVE_FINDINGS.md](/tmp/altl1-research/COMPREHENSIVE_FINDINGS.md)**
+3. **[COMPREHENSIVE_FINDINGS.md](./COMPREHENSIVE_FINDINGS.md)**
    - Complete research report
    - Detailed API analysis
    - Rate limits and restrictions
@@ -296,15 +296,15 @@ df = pd.read_parquet(f"{symbol}_{interval}_{date_range}.parquet")
 ## 📞 Next Steps
 
 1. **Review Documentation**
-   - Read [EXECUTIVE_SUMMARY.md](/tmp/altl1-research/EXECUTIVE_SUMMARY.md) for overview
-   - Check [QUICK_REFERENCE.md](/tmp/altl1-research/QUICK_REFERENCE.md) for examples
+   - Read [EXECUTIVE_SUMMARY.md](./EXECUTIVE_SUMMARY.md) for overview
+   - Check [QUICK_REFERENCE.md](./QUICK_REFERENCE.md) for examples
 
 2. **Test API Access**
    - Run test scripts to verify connectivity
    - Try curl examples from quick reference
 
 3. **Implement Data Pipeline**
-   - Use [fetch_binance_historical.py](/tmp/altl1-research/fetch_binance_historical.py) as template
+   - Use [fetch_binance_historical.py](./fetch_binance_historical.py) as template
    - Add error handling and retry logic
    - Implement local caching
 
