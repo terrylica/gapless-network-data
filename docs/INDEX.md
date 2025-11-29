@@ -20,12 +20,12 @@ Hub-and-spoke documentation architecture for multi-chain blockchain network metr
 
 ### Research & Data Sources ✅ COMPLETE
 
-- [Research Index](/Users/terryli/eon/gapless-network-data/docs/research/INDEX.md) - Free on-chain network metrics sources (2025-11-03)
-- [LlamaRPC Deep Dive](/Users/terryli/eon/gapless-network-data/docs/llamarpc/INDEX.md) - Comprehensive Ethereum RPC research (PRIMARY source, 27 files, 10,546 lines)
-- [Bitcoin Research](/Users/terryli/eon/gapless-network-data/docs/research/bitcoin/COMPREHENSIVE_FINDINGS.md) - mempool.space findings (SECONDARY source)
-- [Ethereum Research](/Users/terryli/eon/gapless-network-data/docs/research/ethereum/SUMMARY.md) - LlamaRPC validation
-- [Alt-L1 Research](/Users/terryli/eon/gapless-network-data/docs/research/alt-l1/EXECUTIVE_SUMMARY.md) - Solana, Avalanche, Polygon expansion targets
-- [DeFi Research](/Users/terryli/eon/gapless-network-data/docs/research/defi/FINDINGS_SUMMARY.md) - Protocol-level network metrics
+- [Research Index](/docs/research/INDEX.md) - Free on-chain network metrics sources (2025-11-03)
+- [LlamaRPC Deep Dive](/docs/llamarpc/INDEX.md) - Comprehensive Ethereum RPC research (PRIMARY source, 27 files, 10,546 lines)
+- [Bitcoin Research](/docs/research/bitcoin/COMPREHENSIVE_FINDINGS.md) - mempool.space findings (SECONDARY source)
+- [Ethereum Research](/docs/research/ethereum/SUMMARY.md) - LlamaRPC validation
+- [Alt-L1 Research](/docs/research/alt-l1/EXECUTIVE_SUMMARY.md) - Solana, Avalanche, Polygon expansion targets
+- [DeFi Research](/docs/research/defi/FINDINGS_SUMMARY.md) - Protocol-level network metrics
 
 **Status**: Research phase complete. All data source investigations finished.
 
@@ -34,26 +34,26 @@ Hub-and-spoke documentation architecture for multi-chain blockchain network metr
 ### Architecture 🚧 PHASE 1 (Pending)
 
 - [Architecture Overview](./architecture/README.md) - Core components, data flow, SLOs
-- [Data Format Specification](/Users/terryli/eon/gapless-network-data/docs/architecture/DATA_FORMAT.md) - Multi-chain schemas (Ethereum 6 fields, Bitcoin 9 fields)
+- [Data Format Specification](/docs/architecture/DATA_FORMAT.md) - Multi-chain schemas (Ethereum 6 fields, Bitcoin 9 fields)
 
-**Status**: Documentation pending Phase 1 implementation. See [CLAUDE.md](/Users/terryli/eon/gapless-network-data/CLAUDE.md) for current architectural context.
+**Status**: Documentation pending Phase 1 implementation. See [CLAUDE.md](/CLAUDE.md) for current architectural context.
 
 ---
 
 ### Usage Guides 🚧 PHASE 1 (Pending)
 
-- [Data Collection Guide](/Users/terryli/eon/gapless-network-data/docs/guides/DATA_COLLECTION.md) - CLI usage, collection modes
-- [Python API Reference](/Users/terryli/eon/gapless-network-data/docs/guides/python-api.md) - `fetch_snapshots()`, `get_latest_snapshot()`
-- [Feature Engineering Guide](/Users/terryli/eon/gapless-network-data/docs/guides/FEATURE_ENGINEERING.md) - Temporal alignment, cross-domain features
+- [Data Collection Guide](/docs/guides/DATA_COLLECTION.md) - CLI usage, collection modes
+- [Python API Reference](/docs/guides/python-api.md) - `fetch_snapshots()`, `get_latest_snapshot()`
+- [Feature Engineering Guide](/docs/guides/FEATURE_ENGINEERING.md) - Temporal alignment, cross-domain features
 
-**Status**: Documentation pending Phase 1 implementation. See [README.md](/Users/terryli/eon/gapless-network-data/README.md) for quick start examples.
+**Status**: Documentation pending Phase 1 implementation. See [README.md](/README.md) for quick start examples.
 
 ---
 
 ### Validation System 🚧 PHASE 2 (Pending)
 
-- [Validation Overview](/Users/terryli/eon/gapless-network-data/docs/validation/OVERVIEW.md) - 5-layer validation pipeline (HTTP/RPC, Schema, Sanity, Gaps, Anomalies)
-- [ValidationStorage Specification](/Users/terryli/eon/gapless-network-data/docs/validation/STORAGE.md) - Parquet-backed validation reports
+- [Validation Overview](/docs/validation/OVERVIEW.md) - 5-layer validation pipeline (HTTP/RPC, Schema, Sanity, Gaps, Anomalies)
+- [ValidationStorage Specification](/docs/validation/STORAGE.md) - Parquet-backed validation reports
 
 **Status**: Documentation pending Phase 2 (Data Quality) implementation.
 
@@ -61,9 +61,9 @@ Hub-and-spoke documentation architecture for multi-chain blockchain network metr
 
 ### Development 🚧 PHASE 6 (Pending)
 
-- [Development Setup](/Users/terryli/eon/gapless-network-data/docs/development/SETUP.md) - Environment setup with uv
-- [Development Commands](/Users/terryli/eon/gapless-network-data/docs/development/COMMANDS.md) - Testing, linting, type checking
-- [Publishing Guide](/Users/terryli/eon/gapless-network-data/docs/development/PUBLISHING.md) - PyPI trusted publishing workflow
+- [Development Setup](/docs/development/SETUP.md) - Environment setup with uv
+- [Development Commands](/docs/development/COMMANDS.md) - Testing, linting, type checking
+- [Publishing Guide](/docs/development/PUBLISHING.md) - PyPI trusted publishing workflow
 
 **Status**: Documentation pending Phase 6 (Release) implementation.
 
@@ -73,13 +73,13 @@ Hub-and-spoke documentation architecture for multi-chain blockchain network metr
 
 ### Planning & Coordination
 
-- [Master Project Roadmap](/Users/terryli/eon/gapless-network-data/specifications/master-project-roadmap.yaml) - **SSoT for project planning** (6 phases, feature-driven)
-- [Core Collection Phase 1](/Users/terryli/eon/gapless-network-data/specifications/core-collection-phase1.yaml) - Ethereum + Bitcoin implementation spec
+- [Master Project Roadmap](/specifications/master-project-roadmap.yaml) - **SSoT for project planning** (6 phases, feature-driven)
+- [Core Collection Phase 1](/specifications/core-collection-phase1.yaml) - Ethereum + Bitcoin implementation spec
 
 ### Architecture & Strategy
 
-- [DuckDB Integration Strategy](/Users/terryli/eon/gapless-network-data/specifications/duckdb-integration-strategy.yaml) - 23 features, performance benchmarks (110x storage savings, 10-100x speedups)
-- [Documentation Audit](/Users/terryli/eon/gapless-network-data/specifications/documentation-audit-phase.yaml) - Completed 2025-11-03, 6 findings resolved
+- [DuckDB Integration Strategy](/specifications/duckdb-integration-strategy.yaml) - 23 features, performance benchmarks (110x storage savings, 10-100x speedups)
+- [Documentation Audit](/specifications/documentation-audit-phase.yaml) - Completed 2025-11-03, 6 findings resolved
 
 ### Cross-Package Integration
 
@@ -110,7 +110,7 @@ Hub-and-spoke documentation architecture for multi-chain blockchain network metr
 
 **Roadmap**: Collection → Quality → Features → Expansion → Production → Release
 
-See [master-project-roadmap.yaml](/Users/terryli/eon/gapless-network-data/specifications/master-project-roadmap.yaml) for complete 6-phase plan.
+See [master-project-roadmap.yaml](/specifications/master-project-roadmap.yaml) for complete 6-phase plan.
 
 ---
 
@@ -118,38 +118,38 @@ See [master-project-roadmap.yaml](/Users/terryli/eon/gapless-network-data/specif
 
 ### Official Documentation ✅
 
-- [Executive Summary](/Users/terryli/eon/gapless-network-data/docs/llamarpc/official/00-EXECUTIVE-SUMMARY.md) - Key capabilities, pricing, rate limits
-- [Initial Discovery](/Users/terryli/eon/gapless-network-data/docs/llamarpc/official/01-initial-discovery.md) - Block-level data, 12s intervals
-- [GitHub web3-proxy Analysis](/Users/terryli/eon/gapless-network-data/docs/llamarpc/official/02-github-web3-proxy-analysis.md) - Production RPC load balancing
-- [Empirical Testing](/Users/terryli/eon/gapless-network-data/docs/llamarpc/official/03-empirical-testing.md) - API validation results
-- [Pricing and Features](/Users/terryli/eon/gapless-network-data/docs/llamarpc/official/04-pricing-and-features.md) - Free tier limits
-- [Supported Chains](/Users/terryli/eon/gapless-network-data/docs/llamarpc/official/05-supported-chains.md) - Multi-chain endpoints
-- [Method Reference](/Users/terryli/eon/gapless-network-data/docs/llamarpc/official/06-method-reference.md) - JSON-RPC method list
+- [Executive Summary](/docs/llamarpc/official/00-EXECUTIVE-SUMMARY.md) - Key capabilities, pricing, rate limits
+- [Initial Discovery](/docs/llamarpc/official/01-initial-discovery.md) - Block-level data, 12s intervals
+- [GitHub web3-proxy Analysis](/docs/llamarpc/official/02-github-web3-proxy-analysis.md) - Production RPC load balancing
+- [Empirical Testing](/docs/llamarpc/official/03-empirical-testing.md) - API validation results
+- [Pricing and Features](/docs/llamarpc/official/04-pricing-and-features.md) - Free tier limits
+- [Supported Chains](/docs/llamarpc/official/05-supported-chains.md) - Multi-chain endpoints
+- [Method Reference](/docs/llamarpc/official/06-method-reference.md) - JSON-RPC method list
 
 ### Python SDK ✅
 
-- [SDK Research Report](/Users/terryli/eon/gapless-network-data/docs/llamarpc/sdk/RESEARCH_REPORT.md) - **web3.py RECOMMENDED** (39 packages, industry standard)
-- [Quick Reference](/Users/terryli/eon/gapless-network-data/docs/llamarpc/sdk/QUICK_REFERENCE.md) - Installation, usage examples
+- [SDK Research Report](/docs/llamarpc/sdk/RESEARCH_REPORT.md) - **web3.py RECOMMENDED** (39 packages, industry standard)
+- [Quick Reference](/docs/llamarpc/sdk/QUICK_REFERENCE.md) - Installation, usage examples
 
 ### Data Schema ✅
 
-- [Ethereum Block Schema](/Users/terryli/eon/gapless-network-data/docs/llamarpc/schema/ETHEREUM_BLOCK_SCHEMA.md) - 26 block fields, 20+ metrics
-- [Metric Mapping](/Users/terryli/eon/gapless-network-data/docs/llamarpc/schema/METRIC_MAPPING.md) - Feature engineering guidance
-- [Quick Reference](/Users/terryli/eon/gapless-network-data/docs/llamarpc/schema/QUICK_REFERENCE.md) - Core 6 fields for Phase 1
+- [Ethereum Block Schema](/docs/llamarpc/schema/ETHEREUM_BLOCK_SCHEMA.md) - 26 block fields, 20+ metrics
+- [Metric Mapping](/docs/llamarpc/schema/METRIC_MAPPING.md) - Feature engineering guidance
+- [Quick Reference](/docs/llamarpc/schema/QUICK_REFERENCE.md) - Core 6 fields for Phase 1
 
 ### Historical Data Access ✅
 
-- [Historical README](/Users/terryli/eon/gapless-network-data/docs/llamarpc/historical/README.md) - Backfill strategies
-- [Research Summary](/Users/terryli/eon/gapless-network-data/docs/llamarpc/historical/RESEARCH_SUMMARY.md) - Performance considerations
+- [Historical README](/docs/llamarpc/historical/README.md) - Backfill strategies
+- [Research Summary](/docs/llamarpc/historical/RESEARCH_SUMMARY.md) - Performance considerations
 
 ### Community Resources ✅
 
-- [Collector Patterns](/Users/terryli/eon/gapless-network-data/docs/llamarpc/community/collector-patterns.md) - 24 production-ready patterns
-- [RPC Provider Comparison](/Users/terryli/eon/gapless-network-data/docs/llamarpc/community/rpc-provider-comparison.md) - LlamaRPC vs Alchemy vs Infura
-- [Warnings and Pitfalls](/Users/terryli/eon/gapless-network-data/docs/llamarpc/community/warnings-and-pitfalls.md) - Common mistakes
-- [Tutorials and Blogs](/Users/terryli/eon/gapless-network-data/docs/llamarpc/community/tutorials-and-blogs.md) - Learning resources
-- [GitHub Projects](/Users/terryli/eon/gapless-network-data/docs/llamarpc/community/github-projects-found.md) - Open-source tools
-- [web3-proxy Analysis](/Users/terryli/eon/gapless-network-data/docs/llamarpc/community/web3-proxy-analysis.md) - Production load balancing
+- [Collector Patterns](/docs/llamarpc/community/collector-patterns.md) - 24 production-ready patterns
+- [RPC Provider Comparison](/docs/llamarpc/community/rpc-provider-comparison.md) - LlamaRPC vs Alchemy vs Infura
+- [Warnings and Pitfalls](/docs/llamarpc/community/warnings-and-pitfalls.md) - Common mistakes
+- [Tutorials and Blogs](/docs/llamarpc/community/tutorials-and-blogs.md) - Learning resources
+- [GitHub Projects](/docs/llamarpc/community/github-projects-found.md) - Open-source tools
+- [web3-proxy Analysis](/docs/llamarpc/community/web3-proxy-analysis.md) - Production load balancing
 
 ---
 
@@ -157,10 +157,10 @@ See [master-project-roadmap.yaml](/Users/terryli/eon/gapless-network-data/specif
 
 ### Essential Files
 
-- [CLAUDE.md](/Users/terryli/eon/gapless-network-data/CLAUDE.md) - **Complete project memory** (800+ lines, architectural context)
-- [README.md](/Users/terryli/eon/gapless-network-data/README.md) - Public-facing documentation
-- [CHANGELOG.md](/Users/terryli/eon/gapless-network-data/CHANGELOG.md) - Version history (Keep a Changelog format)
-- [pyproject.toml](/Users/terryli/eon/gapless-network-data/pyproject.toml) - Package configuration
+- [CLAUDE.md](/CLAUDE.md) - **Complete project memory** (800+ lines, architectural context)
+- [README.md](/README.md) - Public-facing documentation
+- [CHANGELOG.md](/CHANGELOG.md) - Version history (Keep a Changelog format)
+- [pyproject.toml](/pyproject.toml) - Package configuration
 
 ### Key Concepts
 
@@ -201,7 +201,7 @@ See [master-project-roadmap.yaml](/Users/terryli/eon/gapless-network-data/specif
 - v0.2.0 (planned): Basic collection operational (Ethereum + Bitcoin)
 - v1.0.0 (target): Production release (full validation, multi-chain, PyPI published)
 
-See [CHANGELOG.md](/Users/terryli/eon/gapless-network-data/CHANGELOG.md) for complete version history.
+See [CHANGELOG.md](/CHANGELOG.md) for complete version history.
 
 ---
 

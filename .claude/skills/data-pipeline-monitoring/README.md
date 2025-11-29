@@ -206,7 +206,7 @@ scripts/ (executed without context load)
 **Option 1**: Use in current project
 ```bash
 # Already installed at:
-# /Users/terryli/eon/gapless-network-data/.claude/skills/data-pipeline-monitoring/
+# /.claude/skills/data-pipeline-monitoring/
 ```
 
 **Option 2**: Distribute to other projects

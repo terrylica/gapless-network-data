@@ -199,9 +199,9 @@ df = gnd.fetch_snapshots(
 
 Until this document is completed, refer to:
 
-- [README.md](/Users/terryli/eon/gapless-network-data/README.md) - Python API quick start (lines 30-64)
-- [CLAUDE.md](/Users/terryli/eon/gapless-network-data/CLAUDE.md) - API design patterns
-- [src/gapless_network_data/api.py](/Users/terryli/eon/gapless-network-data/src/gapless_network_data/api.py) - Source code
+- [README.md](/README.md) - Python API quick start (lines 30-64)
+- [CLAUDE.md](/CLAUDE.md) - API design patterns
+- [src/gapless_network_data/api.py](/src/gapless_network_data/api.py) - Source code
 
 **Example from README.md**:
 
@@ -225,7 +225,7 @@ print(f"Base fee: {block['baseFeePerGas']} wei")
 
 **Related Documentation**:
 
-- [Data Collection Guide](/Users/terryli/eon/gapless-network-data/docs/guides/DATA_COLLECTION.md) - CLI usage
-- [Feature Engineering Guide](/Users/terryli/eon/gapless-network-data/docs/guides/FEATURE_ENGINEERING.md) - Cross-domain features
+- [Data Collection Guide](/docs/guides/DATA_COLLECTION.md) - CLI usage
+- [Feature Engineering Guide](/docs/guides/FEATURE_ENGINEERING.md) - Cross-domain features
 
 **This document will be completed during Phase 1 implementation.**

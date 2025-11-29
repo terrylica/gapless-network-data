@@ -40,18 +40,18 @@ Comprehensive research on free data sources with M1/M5/M15+ frequency and 3+ yea
 
 ### Bitcoin On-Chain Data
 
-**Location**: [`/Users/terryli/eon/gapless-network-data/docs/research/bitcoin/COMPREHENSIVE_FINDINGS.md`](/Users/terryli/eon/gapless-network-data/docs/research/bitcoin/COMPREHENSIVE_FINDINGS.md)
+**Location**: [`/docs/research/bitcoin/COMPREHENSIVE_FINDINGS.md`](/docs/research/bitcoin/COMPREHENSIVE_FINDINGS.md)
 
 **Top Sources**:
 
 - mempool.space: M5 statistics (2016+, no auth)
 - blockchain.info: M15 mempool/TPS (2009+, no auth)
 
-**Quick Start**: [`/Users/terryli/eon/gapless-network-data/docs/research/bitcoin/QUICK_REFERENCE.md`](/Users/terryli/eon/gapless-network-data/docs/research/bitcoin/QUICK_REFERENCE.md)
+**Quick Start**: [`/docs/research/bitcoin/QUICK_REFERENCE.md`](/docs/research/bitcoin/QUICK_REFERENCE.md)
 
 ### Ethereum On-Chain Data
 
-**Location**: [`/Users/terryli/eon/gapless-network-data/docs/research/ethereum/FINDINGS.md`](/Users/terryli/eon/gapless-network-data/docs/research/ethereum/FINDINGS.md)
+**Location**: [`/docs/research/ethereum/FINDINGS.md`](/docs/research/ethereum/FINDINGS.md)
 
 **Top Sources**:
 
@@ -59,11 +59,11 @@ Comprehensive research on free data sources with M1/M5/M15+ frequency and 3+ yea
 - Alchemy: Block-level (300M CU/month free tier)
 - Dune Analytics: Custom SQL aggregation (free signup)
 
-**Quick Start**: [`/Users/terryli/eon/gapless-network-data/docs/research/ethereum/QUICKSTART.md`](/Users/terryli/eon/gapless-network-data/docs/research/ethereum/QUICKSTART.md)
+**Quick Start**: [`/docs/research/ethereum/QUICKSTART.md`](/docs/research/ethereum/QUICKSTART.md)
 
 ### Alternative L1 Blockchains
 
-**Location**: [`/Users/terryli/eon/gapless-network-data/docs/research/alt-l1/COMPREHENSIVE_FINDINGS.md`](/Users/terryli/eon/gapless-network-data/docs/research/alt-l1/COMPREHENSIVE_FINDINGS.md)
+**Location**: [`/docs/research/alt-l1/COMPREHENSIVE_FINDINGS.md`](/docs/research/alt-l1/COMPREHENSIVE_FINDINGS.md)
 
 **Chains**: Solana, Avalanche, Cardano, Polkadot, Cosmos, Near, Algorand, Tezos
 
@@ -71,11 +71,11 @@ Comprehensive research on free data sources with M1/M5/M15+ frequency and 3+ yea
 
 - Binance API: M1/M5/M15 OHLCV for all 8 chains (2021+, no auth)
 
-**Quick Start**: [`/Users/terryli/eon/gapless-network-data/docs/research/alt-l1/QUICK_REFERENCE.md`](/Users/terryli/eon/gapless-network-data/docs/research/alt-l1/QUICK_REFERENCE.md)
+**Quick Start**: [`/docs/research/alt-l1/QUICK_REFERENCE.md`](/docs/research/alt-l1/QUICK_REFERENCE.md)
 
 ### Multi-Chain Aggregators
 
-**Location**: [`/Users/terryli/eon/gapless-network-data/docs/research/aggregators/RESEARCH_FINDINGS.md`](/Users/terryli/eon/gapless-network-data/docs/research/aggregators/RESEARCH_FINDINGS.md)
+**Location**: [`/docs/research/aggregators/RESEARCH_FINDINGS.md`](/docs/research/aggregators/RESEARCH_FINDINGS.md)
 
 **Top Sources**:
 
@@ -85,7 +85,7 @@ Comprehensive research on free data sources with M1/M5/M15+ frequency and 3+ yea
 
 ### DEX/DeFi Data
 
-**Location**: [`/Users/terryli/eon/gapless-network-data/docs/research/defi/FINDINGS_SUMMARY.md`](/Users/terryli/eon/gapless-network-data/docs/research/defi/FINDINGS_SUMMARY.md)
+**Location**: [`/docs/research/defi/FINDINGS_SUMMARY.md`](/docs/research/defi/FINDINGS_SUMMARY.md)
 
 **Top Sources**:
 
@@ -93,7 +93,7 @@ Comprehensive research on free data sources with M1/M5/M15+ frequency and 3+ yea
 - GeckoTerminal: M1 OHLCV (6 months, no auth)
 - CryptoCompare: H1 historical (3+ years, free key)
 
-**API Reference**: [`/Users/terryli/eon/gapless-network-data/docs/research/defi/API_ENDPOINTS_REFERENCE.md`](/Users/terryli/eon/gapless-network-data/docs/research/defi/API_ENDPOINTS_REFERENCE.md)
+**API Reference**: [`/docs/research/defi/API_ENDPOINTS_REFERENCE.md`](/docs/research/defi/API_ENDPOINTS_REFERENCE.md)
 
 ## Recommended Data Sources (Network Metrics)
 
@@ -209,11 +209,11 @@ Continuous polling at 1-5 minute intervals to maintain gapless dataset
 
 All test scripts, detailed findings, and API examples available in subdirectories:
 
-- **Bitcoin**: `/Users/terryli/eon/gapless-network-data/docs/research/bitcoin/` (70KB, 15 files)
-- **Ethereum**: `/Users/terryli/eon/gapless-network-data/docs/research/ethereum/` (88KB, 9 files)
-- **Alt-L1**: `/Users/terryli/eon/gapless-network-data/docs/research/alt-l1/` (70KB, 32 files)
-- **Aggregators**: `/Users/terryli/eon/gapless-network-data/docs/research/aggregators/` (40KB, 8 files)
-- **DEX/DeFi**: `/Users/terryli/eon/gapless-network-data/docs/research/defi/` (104KB, 18 files)
+- **Bitcoin**: `/docs/research/bitcoin/` (70KB, 15 files)
+- **Ethereum**: `/docs/research/ethereum/` (88KB, 9 files)
+- **Alt-L1**: `/docs/research/alt-l1/` (70KB, 32 files)
+- **Aggregators**: `/docs/research/aggregators/` (40KB, 8 files)
+- **DEX/DeFi**: `/docs/research/defi/` (104KB, 18 files)
 
 **Total**: 372KB of research documentation and test scripts
 

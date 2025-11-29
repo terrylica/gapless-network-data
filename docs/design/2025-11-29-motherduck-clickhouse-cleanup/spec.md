@@ -183,17 +183,17 @@ A 9-agent audit was performed to validate all changes:
 
 ### Audit Findings
 
-| Agent | Scope | Result |
-|-------|-------|--------|
-| Naming Consistency | 66 files with MotherDuck refs | 9 CRITICAL (fixed), 46 HISTORICAL (preserved) |
-| Code Logic | 14 potential issues | Verified: gap_tracking table correct, SQL safe |
-| Doc-Code Mismatch | 5 inconsistencies | Fixed: deploy.sh, README.md, CLAUDE.md |
-| Skills & Scripts | 35 broken refs | Fixed: 8 files updated to use ClickHouse |
-| Config & Secrets | 6 active secrets | Clean: all secrets correctly configured |
-| Deployment Scripts | 3 dependency issues | Fixed: duckdb → clickhouse-connect |
-| Gap Tracking Table | Schema validation | Verified: ethereum_mainnet.gap_tracking exists |
-| Dependencies | 3 files with wrong deps | Fixed: Dockerfile, requirements.txt, deploy.sh |
-| Documentation | 3 README inconsistencies | Fixed: gap-monitor, vm, CLAUDE.md |
+| Agent              | Scope                         | Result                                         |
+| ------------------ | ----------------------------- | ---------------------------------------------- |
+| Naming Consistency | 66 files with MotherDuck refs | 9 CRITICAL (fixed), 46 HISTORICAL (preserved)  |
+| Code Logic         | 14 potential issues           | Verified: gap_tracking table correct, SQL safe |
+| Doc-Code Mismatch  | 5 inconsistencies             | Fixed: deploy.sh, README.md, CLAUDE.md         |
+| Skills & Scripts   | 35 broken refs                | Fixed: 8 files updated to use ClickHouse       |
+| Config & Secrets   | 6 active secrets              | Clean: all secrets correctly configured        |
+| Deployment Scripts | 3 dependency issues           | Fixed: duckdb → clickhouse-connect             |
+| Gap Tracking Table | Schema validation             | Verified: ethereum_mainnet.gap_tracking exists |
+| Dependencies       | 3 files with wrong deps       | Fixed: Dockerfile, requirements.txt, deploy.sh |
+| Documentation      | 3 README inconsistencies      | Fixed: gap-monitor, vm, CLAUDE.md              |
 
 ### New Scripts Created
 
@@ -202,6 +202,7 @@ A 9-agent audit was performed to validate all changes:
 ### Files Modified
 
 Phase 1 (audit fixes):
+
 - `CLAUDE.md` - Fixed ADR path
 - `deployment/cloud-run/Dockerfile.data-quality` - duckdb → clickhouse-connect
 - `deployment/cloud-run/requirements.txt` - Removed duckdb/pyarrow
@@ -210,6 +211,7 @@ Phase 1 (audit fixes):
 - `deployment/vm/deploy.sh` - Updated dependencies
 
 Phase 2 (skill refs):
+
 - `.claude/skills/README.md` - Updated examples and database ops
 - `.claude/skills/bigquery-ethereum-data-acquisition/SKILL.md` - ClickHouse workflow
 - `.claude/skills/data-pipeline-monitoring/SKILL.md` - Cross-reference section

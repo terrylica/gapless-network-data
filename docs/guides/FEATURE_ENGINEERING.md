@@ -246,8 +246,8 @@ df_eth_aligned = df_eth.reindex(df_ohlcv.index).interpolate()  # DON'T DO THIS
 
 Until this document is completed, refer to:
 
-- [README.md](/Users/terryli/eon/gapless-network-data/README.md) - Feature engineering section (lines 117-152)
-- [CLAUDE.md](/Users/terryli/eon/gapless-network-data/CLAUDE.md) - Feature engineering integration (lines 442-476)
+- [README.md](/README.md) - Feature engineering section (lines 117-152)
+- [CLAUDE.md](/CLAUDE.md) - Feature engineering integration (lines 442-476)
 - [Cross-Package Integration](/Users/terryli/eon/gapless-crypto-data/docs/architecture/cross-package-feature-integration.yaml) - Complete design specification
 
 **Example from README.md**:
@@ -278,7 +278,7 @@ df['gas_adjusted_return'] = (df['close'] - df['open']) / (df['baseFeePerGas'] + 
 
 **Related Documentation**:
 
-- [Python API Reference](/Users/terryli/eon/gapless-network-data/docs/guides/python-api.md) - Data collection API
-- [DuckDB Integration Strategy](/Users/terryli/eon/gapless-network-data/specifications/duckdb-integration-strategy.yaml) - Performance benchmarks
+- [Python API Reference](/docs/guides/python-api.md) - Data collection API
+- [DuckDB Integration Strategy](/specifications/duckdb-integration-strategy.yaml) - Performance benchmarks
 
 **This document will be completed during Phase 3 implementation.**

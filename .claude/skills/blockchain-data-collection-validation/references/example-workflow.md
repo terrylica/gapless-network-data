@@ -383,8 +383,8 @@ Sustainable RPS: 5.79
 
 ## Reference Materials
 
-**Complete POC scripts**: `/Users/terryli/eon/gapless-network-data/scratch/ethereum-collector-poc/`
+**Complete POC scripts**: `/scratch/ethereum-collector-poc/`
 
 **Validation reports**:
-- `/Users/terryli/eon/gapless-network-data/scratch/ethereum-collector-poc/ETHEREUM_COLLECTOR_POC_REPORT.md `
-- `/Users/terryli/eon/gapless-network-data/scratch/duckdb-batch-validation/DUCKDB_BATCH_VALIDATION_REPORT.md `
+- `/scratch/ethereum-collector-poc/ETHEREUM_COLLECTOR_POC_REPORT.md `
+- `/scratch/duckdb-batch-validation/DUCKDB_BATCH_VALIDATION_REPORT.md `

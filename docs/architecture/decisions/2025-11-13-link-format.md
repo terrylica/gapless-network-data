@@ -13,7 +13,7 @@ Research identified 47 absolute file paths in CLAUDE.md using user-specific home
 **Absolute paths with $HOME** (47 occurrences):
 
 ```markdown
-[Link](/Users/terryli/eon/gapless-network-data/docs/architecture/OVERVIEW.md)
+[Link](/docs/architecture/OVERVIEW.md)
 ```
 
 Problems:
@@ -130,11 +130,11 @@ Standardize all internal documentation links to **relative GFM paths from file l
 ### Conversion Pattern
 
 ```bash
-# From: /Users/terryli/eon/gapless-network-data/docs/architecture/OVERVIEW.md
+# From: /docs/architecture/OVERVIEW.md
 # To:   ./docs/architecture/OVERVIEW.md
 
 # Regex pattern:
-s|/Users/terryli/eon/gapless-network-data/||g
+s|/||g
 ```
 
 ### External Links (No Change)
@@ -175,7 +175,7 @@ Example: `/docs/architecture/OVERVIEW.md`
 
 **Rejected**:
 
-- Requires lychee configuration (`--base /Users/terryli/eon/gapless-network-data`)
+- Requires lychee configuration (`--base `)
 - Not portable to CI/CD without custom config
 - Doesn't work in GitHub web UI preview
 
@@ -191,7 +191,7 @@ Example: `$HOME/eon/gapless-network-data/docs/...`
 
 ### Alternative 3: Symbolic links to documentation
 
-Create `docs/DOCS_ROOT` symlink → `/Users/terryli/eon/gapless-network-data/docs`
+Create `docs/DOCS_ROOT` symlink → `/docs`
 
 **Rejected**:
 
@@ -206,7 +206,7 @@ Create `docs/DOCS_ROOT` symlink → `/Users/terryli/eon/gapless-network-data/doc
 ```bash
 # File: /tmp/doc-normalization-validation/convert_absolute_to_relative.sh
 
-REPO_ROOT="/Users/terryli/eon/gapless-network-data"
+REPO_ROOT=""
 
 # Find all CLAUDE*.md files
 find . -name "CLAUDE*.md" | while read -r file; do
@@ -238,8 +238,8 @@ For each CLAUDE.md file:
 import re
 from pathlib import Path
 
-REPO_ROOT = Path("/Users/terryli/eon/gapless-network-data")
-FORBIDDEN_PATTERN = r"/Users/terryli/eon/gapless-network-data"
+REPO_ROOT = Path("")
+FORBIDDEN_PATTERN = r""
 
 def check_file(file_path: Path) -> list[str]:
     """Check for absolute paths in file."""

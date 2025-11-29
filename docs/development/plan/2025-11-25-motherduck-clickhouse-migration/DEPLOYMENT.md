@@ -27,7 +27,7 @@
 
 ```bash
 # From repository root
-cd /Users/terryli/eon/gapless-network-data
+cd 
 
 # Step 1: Setup GCP secrets
 ./scripts/clickhouse/setup_gcp_secrets.sh

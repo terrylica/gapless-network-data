@@ -377,7 +377,7 @@ DELAY_BETWEEN_REQUESTS = 1.0 / REQUESTS_PER_SECOND  # 200ms
 - **Infura Pricing**: https://www.infura.io/pricing
 - **Infura Archive Data**: https://docs.infura.io/features/archive-data
 - **QuickNode Pricing**: https://www.quicknode.com/pricing
-- **LlamaRPC Validation**: `/Users/terryli/eon/gapless-network-data/scratch/ethereum-collector-poc/ETHEREUM_COLLECTOR_POC_REPORT.md`
+- **LlamaRPC Validation**: `/scratch/ethereum-collector-poc/ETHEREUM_COLLECTOR_POC_REPORT.md`
 - **Provider Comparison**: https://www.chainnodes.org/blog/alchemy-vs-infura-vs-quicknode-vs-chainnodes-ethereum-rpc-provider-pricing-comparison/
 
 ---

@@ -198,15 +198,15 @@ df = gnd.fetch_snapshots(
 
 Until this document is completed, refer to:
 
-- [CLAUDE.md](/Users/terryli/eon/gapless-network-data/CLAUDE.md) - Validation pipeline overview (lines 225-245)
-- [ValidationStorage Specification](/Users/terryli/eon/gapless-network-data/docs/validation/STORAGE.md) - Parquet-backed storage
-- [src/gapless_network_data/validation/models.py](/Users/terryli/eon/gapless-network-data/src/gapless_network_data/validation/models.py) - Pydantic validation models
+- [CLAUDE.md](/CLAUDE.md) - Validation pipeline overview (lines 225-245)
+- [ValidationStorage Specification](/docs/validation/STORAGE.md) - Parquet-backed storage
+- [src/gapless_network_data/validation/models.py](/src/gapless_network_data/validation/models.py) - Pydantic validation models
 
 ---
 
 **Related Documentation**:
 
-- [ValidationStorage Specification](/Users/terryli/eon/gapless-network-data/docs/validation/STORAGE.md) - Storage format details
-- [Architecture Overview](/Users/terryli/eon/gapless-network-data/docs/architecture/OVERVIEW.md) - System design
+- [ValidationStorage Specification](/docs/validation/STORAGE.md) - Storage format details
+- [Architecture Overview](/docs/architecture/OVERVIEW.md) - System design
 
 **This document will be completed during Phase 2 implementation.**

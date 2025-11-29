@@ -5,8 +5,8 @@
 # repository-relative links (paths starting with /).
 #
 # Usage:
-#   ./scripts/lint-links.sh              # Check all links
-#   ./scripts/lint-links.sh --offline    # Check only local files
+#   ./scripts/lint-links.sh              # Check all links (online + offline)
+#   ./scripts/lint-links.sh --offline    # Check only local file links
 #   ./scripts/lint-links.sh docs/        # Check specific directory
 #   ./scripts/lint-links.sh --offline .  # Check local files only
 
@@ -18,8 +18,9 @@ REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 cd "$REPO_ROOT"
 
 # Collect lychee options and inputs separately
+# --root-dir resolves /docs/... paths relative to repo root
 LYCHEE_OPTS=(
-  --base-url "file://$PWD"
+  --root-dir "$PWD"
   --config ".lychee.toml"
   --no-progress
 )
