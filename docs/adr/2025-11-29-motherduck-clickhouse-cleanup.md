@@ -58,31 +58,77 @@ Rationale:
 
 ## Architecture
 
-```mermaid
-flowchart TB
-    subgraph BEFORE[" "]
-        MD["🗑 motherduck-monitor/"]
-        GM1["✓ gap-monitor/"]
-    end
+![Architecture Diagram](/docs/adr/assets/2025-11-29-motherduck-clickhouse-cleanup.svg)
 
-    BEFORE -->|"Phase 1: Delete duplicate"| AFTER
+<details>
+<summary>D2 Source</summary>
 
-    subgraph AFTER[" "]
-        GM2["gap-monitor/"]
-        CH[("ClickHouse Cloud")]
-        GM2 --> CH
-    end
+```d2
+direction: down
 
-    GCP["GCP Resources<br/>───────────────<br/>• motherduck-gap-detector<br/>• motherduck-monitor-sa<br/>• motherduck-monitor-trigger<br/>Names unchanged"]
+before: Before {
+  style.fill: "#fff5f5"
+  style.stroke: "#dc3545"
 
-    style MD fill:#dc3545,color:#fff
-    style GM1 fill:#198754,color:#fff
-    style GM2 fill:#198754,color:#fff
-    style CH fill:#0d6efd,color:#fff
-    style GCP fill:#f8f9fa,color:#495057,stroke:#dee2e6
-    style BEFORE fill:#fff5f5,stroke:#dc3545
-    style AFTER fill:#f0fff4,stroke:#198754
+  md: "🗑 motherduck-monitor/" {
+    style.fill: "#dc3545"
+    style.font-color: "#fff"
+  }
+  gm1: "✓ gap-monitor/" {
+    style.fill: "#198754"
+    style.font-color: "#fff"
+  }
+  secret: "🗑 motherduck-token" {
+    style.fill: "#dc3545"
+    style.font-color: "#fff"
+  }
+  docs1: "📄 66 stale docs" {
+    style.fill: "#ffc107"
+    style.font-color: "#000"
+  }
+}
+
+after: After {
+  style.fill: "#f0fff4"
+  style.stroke: "#198754"
+
+  gm2: "gap-monitor/" {
+    style.fill: "#198754"
+    style.font-color: "#fff"
+  }
+  docs2: "📄 Docs updated" {
+    style.fill: "#198754"
+    style.font-color: "#fff"
+  }
+}
+
+gcp: "GCP (Unchanged)" {
+  style.fill: "#f8f9fa"
+  style.stroke: "#dee2e6"
+
+  scheduler: Scheduler {
+    style.fill: "#6c757d"
+    style.font-color: "#fff"
+  }
+  cf: "Cloud Function" {
+    style.fill: "#6c757d"
+    style.font-color: "#fff"
+  }
+  scheduler -> cf: triggers
+}
+
+clickhouse: "ClickHouse Cloud" {
+  shape: cylinder
+  style.fill: "#0d6efd"
+  style.font-color: "#fff"
+}
+
+before -> after: "Phase 1 & 2"
+gcp.cf -> after.gm2: runs
+after.gm2 -> clickhouse: queries
 ```
+
+</details>
 
 ## User Decisions (Plan Mode)
 
