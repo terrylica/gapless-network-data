@@ -176,3 +176,45 @@ git revert <sha>  # Code/doc changes (2 min)
 ```
 
 GCP secret can be recreated from 1Password backup if needed.
+
+## Comprehensive Audit (2025-11-29)
+
+A 9-agent audit was performed to validate all changes:
+
+### Audit Findings
+
+| Agent | Scope | Result |
+|-------|-------|--------|
+| Naming Consistency | 66 files with MotherDuck refs | 9 CRITICAL (fixed), 46 HISTORICAL (preserved) |
+| Code Logic | 14 potential issues | Verified: gap_tracking table correct, SQL safe |
+| Doc-Code Mismatch | 5 inconsistencies | Fixed: deploy.sh, README.md, CLAUDE.md |
+| Skills & Scripts | 35 broken refs | Fixed: 8 files updated to use ClickHouse |
+| Config & Secrets | 6 active secrets | Clean: all secrets correctly configured |
+| Deployment Scripts | 3 dependency issues | Fixed: duckdb → clickhouse-connect |
+| Gap Tracking Table | Schema validation | Verified: ethereum_mainnet.gap_tracking exists |
+| Dependencies | 3 files with wrong deps | Fixed: Dockerfile, requirements.txt, deploy.sh |
+| Documentation | 3 README inconsistencies | Fixed: gap-monitor, vm, CLAUDE.md |
+
+### New Scripts Created
+
+- `scripts/clickhouse/verify_blocks.py` - Block verification with gap detection
+
+### Files Modified
+
+Phase 1 (audit fixes):
+- `CLAUDE.md` - Fixed ADR path
+- `deployment/cloud-run/Dockerfile.data-quality` - duckdb → clickhouse-connect
+- `deployment/cloud-run/requirements.txt` - Removed duckdb/pyarrow
+- `deployment/gcp-functions/gap-monitor/README.md` - Added --set-secrets flag
+- `deployment/vm/README.md` - Updated dependency list
+- `deployment/vm/deploy.sh` - Updated dependencies
+
+Phase 2 (skill refs):
+- `.claude/skills/README.md` - Updated examples and database ops
+- `.claude/skills/bigquery-ethereum-data-acquisition/SKILL.md` - ClickHouse workflow
+- `.claude/skills/data-pipeline-monitoring/SKILL.md` - Cross-reference section
+- `.claude/skills/historical-backfill-execution/references/troubleshooting.md` - Gap detection
+- `.claude/skills/historical-backfill-execution/scripts/chunked_executor.sh` - Verification
+- `.claude/skills/vm-infrastructure-ops/references/vm-failure-modes.md` - Data flow
+- `.claude/skills/vm-infrastructure-ops/scripts/restart_collector.sh` - Next steps
+- `specifications/cloud-local-alignment-phase.yaml` - Examples section
