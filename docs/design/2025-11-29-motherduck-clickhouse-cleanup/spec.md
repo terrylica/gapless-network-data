@@ -1,6 +1,6 @@
 # Design Spec: MotherDuck to ClickHouse Cleanup
 
-**Status**: In Progress
+**Status**: Complete
 **Last Updated**: 2025-11-29
 **ADR**: [MotherDuck to ClickHouse Cleanup](/docs/adr/2025-11-29-motherduck-clickhouse-cleanup.md)
 
@@ -25,8 +25,8 @@
 
 ### Phase 3: Deployment
 
-- [ ] Gap monitor deployed to Cloud Functions with two-tier alerting
-- [ ] All changes committed and pushed
+- [x] Gap monitor deployed to Cloud Functions with two-tier alerting
+- [x] All changes committed and pushed
 
 ## Recommended Approach: Phased Cleanup
 
