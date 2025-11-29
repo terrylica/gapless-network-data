@@ -60,35 +60,28 @@ Rationale:
 
 ```mermaid
 flowchart TB
-    subgraph before["Before Cleanup"]
-        MD["motherduck-monitor/"]
-        GM1["gap-monitor/"]
+    subgraph BEFORE[" "]
+        MD["🗑 motherduck-monitor/"]
+        GM1["✓ gap-monitor/"]
     end
 
-    DUP(["Both directories have identical code"])
-    MD -.-> DUP
-    GM1 -.-> DUP
+    BEFORE -->|"Phase 1: Delete duplicate"| AFTER
 
-    subgraph after["After Cleanup"]
+    subgraph AFTER[" "]
         GM2["gap-monitor/"]
         CH[("ClickHouse Cloud")]
+        GM2 --> CH
     end
 
-    GM2 --> CH
-
-    subgraph gcp["GCP Resources — names unchanged"]
-        CF["motherduck-gap-detector"]
-        SA["motherduck-monitor-sa"]
-        SCH["motherduck-monitor-trigger"]
-    end
-
-    before -->|"Delete duplicate"| after
+    GCP["GCP Resources<br/>───────────────<br/>• motherduck-gap-detector<br/>• motherduck-monitor-sa<br/>• motherduck-monitor-trigger<br/>Names unchanged"]
 
     style MD fill:#dc3545,color:#fff
     style GM1 fill:#198754,color:#fff
     style GM2 fill:#198754,color:#fff
     style CH fill:#0d6efd,color:#fff
-    style DUP fill:#fff3cd,color:#212529
+    style GCP fill:#f8f9fa,color:#495057,stroke:#dee2e6
+    style BEFORE fill:#fff5f5,stroke:#dc3545
+    style AFTER fill:#f0fff4,stroke:#198754
 ```
 
 ## User Decisions (Plan Mode)
