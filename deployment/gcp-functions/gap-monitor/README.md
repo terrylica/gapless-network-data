@@ -42,6 +42,7 @@ gcloud functions deploy motherduck-gap-detector \
   --no-allow-unauthenticated \
   --service-account=motherduck-monitor-sa@eonlabs-ethereum-bq.iam.gserviceaccount.com \
   --set-env-vars="HEALTHCHECKS_PING_URL=$(doppler secrets get HEALTHCHECKS_PING_URL --plain)" \
+  --set-secrets="CLICKHOUSE_HOST=clickhouse-host:latest,CLICKHOUSE_PASSWORD=clickhouse-password:latest,PUSHOVER_TOKEN=pushover-token:latest,PUSHOVER_USER=pushover-user:latest" \
   --max-instances=1 \
   --timeout=540s \
   --memory=512MB

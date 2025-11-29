@@ -190,7 +190,7 @@ result = client.query('SELECT COUNT(*) FROM ethereum_mainnet.blocks FINAL')
 
 **Purpose**: Opinionated API for financial time series forecasting with Ethereum block data.
 
-**Design Decision**: ADR `docs/decisions/2025-11-28-alpha-features-api.md`
+**Design Decision**: ADR `docs/architecture/decisions/2025-11-28-alpha-features-api.md`
 
 ### Quick Start
 

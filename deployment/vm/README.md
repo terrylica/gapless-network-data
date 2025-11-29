@@ -30,7 +30,7 @@ The script performs:
 
 1. Verify Secret Manager permissions for VM service account
 2. Copy `realtime_collector.py` to VM
-3. Install Python dependencies (websockets, duckdb, pyarrow, google-cloud-secret-manager)
+3. Install Python dependencies (websockets, clickhouse-connect, tenacity, google-cloud-secret-manager)
 4. Move script to `~/eth-collector/`
 5. Install systemd service
 6. Verify service status and Secret Manager access
