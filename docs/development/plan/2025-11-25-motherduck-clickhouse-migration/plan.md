@@ -1,10 +1,9 @@
-# Plan 0013: MotherDuck to ClickHouse AWS Migration
+# Plan: MotherDuck to ClickHouse AWS Migration
 
-**ADR ID**: 0013
 **Status**: Completed
 **Created**: 2025-11-24
 **Completed**: 2025-11-25
-**Related MADR**: `docs/decisions/0013-motherduck-clickhouse-migration.md`
+**Related ADR**: [MotherDuck to ClickHouse Migration](/docs/architecture/decisions/2025-11-25-motherduck-clickhouse-migration.md)
 
 ## (a) Context
 

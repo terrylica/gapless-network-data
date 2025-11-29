@@ -1,6 +1,6 @@
 [project]
 name = "gapless-network-data"
-version = "2.4.0"
+version = "3.0.0"
 description = "Ethereum blockchain network metrics collection infrastructure with zero-gap guarantee (multi-chain support planned)"
 readme = "README.md"
 requires-python = ">=3.9"
@@ -39,11 +39,11 @@ dependencies = [
     "httpx>=0.28.0",
     "polars>=1.0.0",
     "pandas>=2.0.0",
-    "duckdb>=1.1.0",
     "pydantic>=2.0.0",
     "pydantic-settings>=2.0.0",
     "tenacity>=9.0.0",
     "web3>=7.0.0",
+    "clickhouse-connect>=0.10.0",
 ]
 
 [project.optional-dependencies]
@@ -114,8 +114,3 @@ warn_unused_configs = true
 disallow_untyped_defs = true
 strict = true
 
-[dependency-groups]
-dev = [
-    "pytest>=8.4.2",
-    "pytest-cov>=7.0.0",
-]

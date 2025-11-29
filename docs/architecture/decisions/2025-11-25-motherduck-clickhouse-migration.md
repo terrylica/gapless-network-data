@@ -1,8 +1,12 @@
-# ADR 0013: MotherDuck to ClickHouse Cloud Migration
+# MotherDuck to ClickHouse Cloud Migration
 
 ## Status
 
-Accepted (2025-11-25)
+Accepted
+
+## Date
+
+2025-11-25
 
 ## Context
 
@@ -71,7 +75,7 @@ Migrate from MotherDuck to ClickHouse Cloud (managed AWS) using dual-write strat
 
 ## Implementation
 
-**Migration Plan**: [docs/development/plan/0013-motherduck-clickhouse-migration/plan.md](../development/plan/0013-motherduck-clickhouse-migration/plan.md)
+**Migration Plan**: [ClickHouse Migration Plan](/docs/development/plan/2025-11-25-motherduck-clickhouse-migration/plan.md)
 
 **Scripts**: `scripts/clickhouse/`
 

@@ -6,7 +6,6 @@ Follows exception-only failure pattern - no fallbacks, no defaults, no silent er
 """
 
 from datetime import datetime, timezone
-from typing import Optional
 
 
 class MempoolException(Exception):
@@ -16,7 +15,7 @@ class MempoolException(Exception):
     All exceptions include ISO 8601 timestamp for observability.
     """
 
-    def __init__(self, message: str, timestamp: Optional[datetime] = None) -> None:
+    def __init__(self, message: str, timestamp: datetime | None = None) -> None:
         """
         Initialize base exception.
 
@@ -53,9 +52,9 @@ class MempoolHTTPException(MempoolException):
         self,
         message: str,
         endpoint: str,
-        http_status: Optional[int] = None,
+        http_status: int | None = None,
         retry_count: int = 0,
-        timestamp: Optional[datetime] = None,
+        timestamp: datetime | None = None,
     ) -> None:
         """
         Initialize HTTP exception.
@@ -106,10 +105,10 @@ class MempoolValidationException(MempoolException):
     def __init__(
         self,
         message: str,
-        field: Optional[str] = None,
-        value: Optional[float | int | str] = None,
-        constraint: Optional[str] = None,
-        timestamp: Optional[datetime] = None,
+        field: str | None = None,
+        value: float | int | str | None = None,
+        constraint: str | None = None,
+        timestamp: datetime | None = None,
     ) -> None:
         """
         Initialize validation exception.
@@ -166,8 +165,8 @@ class MempoolRateLimitException(MempoolHTTPException):
         self,
         message: str = "Rate limit exceeded",
         endpoint: str = "",
-        retry_after: Optional[int] = None,
-        timestamp: Optional[datetime] = None,
+        retry_after: int | None = None,
+        timestamp: datetime | None = None,
     ) -> None:
         """
         Initialize rate limit exception.
@@ -198,19 +197,45 @@ class MempoolRateLimitException(MempoolHTTPException):
         return base
 
 
+class CredentialException(MempoolException):
+    """
+    Credential resolution failure.
+
+    Raised when ClickHouse credentials cannot be resolved from Doppler or env vars.
+    """
+
+    def __init__(
+        self,
+        message: str,
+        timestamp: datetime | None = None,
+    ) -> None:
+        """
+        Initialize credential exception with setup instructions.
+
+        Args:
+            message: Human-readable error description with setup instructions
+            timestamp: When error occurred (defaults to current UTC time)
+        """
+        super().__init__(message, timestamp)
+
+    def __str__(self) -> str:
+        """String representation with setup instructions."""
+        return self.message
+
+
 class DatabaseException(MempoolException):
     """
-    Database operation failure (DuckDB).
+    Database operation failure (ClickHouse).
 
-    Raised when database initialization, insert, checkpoint, or query fails.
+    Raised when database connection, insert, or query fails.
     Includes operation context for debugging.
     """
 
     def __init__(
         self,
         message: str,
-        context: Optional[dict[str, str | int]] = None,
-        timestamp: Optional[datetime] = None,
+        context: dict[str, str | int] | None = None,
+        timestamp: datetime | None = None,
     ) -> None:
         """
         Initialize database exception.

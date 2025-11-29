@@ -30,7 +30,7 @@ Project-specific skills that capture validated workflows from scratch investigat
 
 ### blockchain-data-collection-validation
 
-**Description**: Empirical validation workflow for blockchain data collection pipelines before production implementation. Use when validating data sources, testing DuckDB integration, building POC collectors, or verifying complete fetch-to-storage pipelines.
+**Description**: Empirical validation workflow for blockchain data collection pipelines before production implementation. Use when validating data sources, testing ClickHouse integration, building POC collectors, or verifying complete fetch-to-storage pipelines.
 
 **Key Principle**: Validate every component empirically before implementation—connectivity, schema, rate limits, storage, and complete pipeline.
 
@@ -38,19 +38,19 @@ Project-specific skills that capture validated workflows from scratch investigat
 
 - 5-step validation workflow (Connectivity → Schema → Rate Limits → Pipeline → Decision)
 - POC template scripts: `poc_single_block.py`, `poc_complete_pipeline.py`
-- DuckDB patterns: CHECKPOINT for durability, batch INSERT, CHECK constraints
-- References: `duckdb-patterns.md` (crash-tested patterns), `ethereum-collector-poc-findings.md` (complete case study)
-- Common pitfalls to avoid (forgetting CHECKPOINT, testing with too few blocks, parallel fetching on free tiers)
+- ClickHouse patterns: ReplacingMergeTree for deduplication, batch INSERT, schema validation
+- References: `ethereum-collector-poc-findings.md` (complete case study)
+- Common pitfalls to avoid (testing with too few blocks, parallel fetching on free tiers)
 
 **When to Use**:
 
 - Validating a new blockchain RPC provider before implementation
-- Testing DuckDB integration for blockchain data
+- Testing ClickHouse integration for blockchain data
 - Building POC collector for new blockchain
 - Verifying complete fetch-to-storage pipeline
 - Investigating data quality issues
 
-**Validated Pattern From**: `scratch/ethereum-collector-poc/` (5 POC scripts progression) and `scratch/duckdb-batch-validation/` (CHECKPOINT crash testing, 124K blocks/sec performance)
+**Validated Pattern From**: `scratch/ethereum-collector-poc/` (5 POC scripts progression)
 
 ### bigquery-ethereum-data-acquisition
 
@@ -74,7 +74,7 @@ Project-specific skills that capture validated workflows from scratch investigat
 **When to Use**:
 
 - eth-collector systemd service down or failed
-- Real-time data stream stopped (MotherDuck not receiving blocks)
+- Real-time data stream stopped (ClickHouse not receiving blocks)
 - VM network connectivity issues, DNS resolution failures
 - gRPC metadata validation errors
 - Need to check logs, restart service, or reset VM
@@ -85,7 +85,7 @@ Project-specific skills that capture validated workflows from scratch investigat
 
 ### historical-backfill-execution
 
-**Description**: Execute chunked historical blockchain data backfills using canonical 1-year pattern. Use when loading multi-year historical data, filling gaps in MotherDuck, or preventing OOM failures on Cloud Run.
+**Description**: Execute chunked historical blockchain data backfills using canonical 1-year pattern. Use when loading multi-year historical data, filling gaps in ClickHouse, or preventing OOM failures on Cloud Run.
 
 **Key Principle**: Canonical 1-year chunks - empirically validated as memory-safe (<4GB), fast (~2min/year), and reliable (zero OOM errors).
 
@@ -99,7 +99,7 @@ Project-specific skills that capture validated workflows from scratch investigat
 **When to Use**:
 
 - Loading multi-year historical data (2015-2025 Ethereum, 23.8M blocks)
-- Gaps detected in MotherDuck requiring backfill
+- Gaps detected in ClickHouse requiring backfill
 - Preventing OOM failures on Cloud Run (4GB limit)
 - Need memory-safe backfill with good retry granularity
 - Keywords: chunked_backfill.sh, BigQuery historical, gap filling
@@ -127,7 +127,7 @@ These skills are provided by the `anthropic-agent-skills` plugin and available g
 
 ### blockchain-data-collection-validation (managed)
 
-**Description**: Empirical validation workflow for blockchain data collection pipelines before production implementation. Use when validating data sources, testing DuckDB integration, building POC collectors, or verifying complete fetch-to-storage pipelines for blockchain data.
+**Description**: Empirical validation workflow for blockchain data collection pipelines before production implementation. Use when validating data sources, testing ClickHouse integration, building POC collectors, or verifying complete fetch-to-storage pipelines for blockchain data.
 
 **Location**: `managed` (anthropic-agent-skills plugin)
 

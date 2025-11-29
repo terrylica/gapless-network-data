@@ -1,10 +1,12 @@
-# MADR-0015: Gap Detector ClickHouse Fix
+# Gap Detector ClickHouse Fix
 
-**Status**: Accepted
-**Date**: 2025-11-26
-**Deciders**: Terry Li
-**Related ADR**: [MADR-0013: MotherDuck to ClickHouse Migration](./0013-motherduck-clickhouse-migration.md)
-**Plan**: [`docs/development/plan/0015-gap-detector-clickhouse-fix/plan.md`](../development/plan/0015-gap-detector-clickhouse-fix/plan.md)
+## Status
+
+Accepted
+
+## Date
+
+2025-11-26
 
 ## Context
 
@@ -85,8 +87,8 @@ Configuration values abstracted for maintainability:
 5. Verify Healthchecks.io shows success ping
 6. Monitor for 24 hours (8 cycles)
 
-## References
+## Related
 
-- [MADR-0013: MotherDuck to ClickHouse Migration](./0013-motherduck-clickhouse-migration.md)
-- [Plan 0015](../development/plan/0015-gap-detector-clickhouse-fix/plan.md)
+- [MotherDuck to ClickHouse Migration](./2025-11-25-motherduck-clickhouse-migration.md)
+- [Implementation Plan](/docs/development/plan/2025-11-26-gap-detector-clickhouse-fix/plan.md)
 - [Cloud Function logs](https://console.cloud.google.com/functions/details/us-east1/motherduck-gap-detector)

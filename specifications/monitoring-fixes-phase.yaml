@@ -60,22 +60,22 @@ x-architectural-decisions:
   - id: MADR-0001
     title: "Healthchecks.io Grace Period Calibration Strategy"
     status: proposed
-    file: docs/decisions/0001-healthchecks-grace-period-calibration.md
+    file: docs/architecture/decisions/2025-11-13-healthchecks-grace-period-calibration.md
 
   - id: MADR-0002
     title: "Exception Handler Notification Strategy"
     status: proposed
-    file: docs/decisions/0002-exception-handler-notifications.md
+    file: docs/architecture/decisions/2025-11-13-exception-handler-notifications.md
 
   - id: MADR-0003
     title: "MotherDuck Connection Timeout and Fallback Architecture"
     status: proposed
-    file: docs/decisions/0003-motherduck-timeout-fallback.md
+    file: docs/architecture/decisions/2025-11-13-motherduck-timeout-fallback.md
 
   - id: MADR-0004
     title: "Staleness Threshold Empirical Calibration"
     status: proposed
-    file: docs/decisions/0004-staleness-threshold-calibration.md
+    file: docs/architecture/decisions/2025-11-13-staleness-threshold-calibration.md
 
 paths:
   /monitoring/fixes/p0:

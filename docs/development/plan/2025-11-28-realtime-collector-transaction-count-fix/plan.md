@@ -26,6 +26,7 @@ transaction_count = len(block_data.get('transactions', []))  # Always 0!
 ### Solution
 
 Standard block indexer pattern:
+
 ```
 newHeads notification → eth_getBlockByNumber → parse → insert
 ```
@@ -63,10 +64,10 @@ newHeads notification → eth_getBlockByNumber → parse → insert
 
 ## Files Modified
 
-| File | Change |
-|------|--------|
-| `deployment/vm/realtime_collector.py` | Added `ALCHEMY_HTTP_URL`, `fetch_full_block()`, updated block flow |
-| `docs/architecture/decisions/2025-11-28-realtime-collector-transaction-count-fix.md` | New ADR |
+| File                                                                                 | Change                                                             |
+| ------------------------------------------------------------------------------------ | ------------------------------------------------------------------ |
+| `deployment/vm/realtime_collector.py`                                                | Added `ALCHEMY_HTTP_URL`, `fetch_full_block()`, updated block flow |
+| `docs/architecture/decisions/2025-11-28-realtime-collector-transaction-count-fix.md` | New ADR                                                            |
 
 ---
 
@@ -86,9 +87,9 @@ Expected: All rows should have `transaction_count > 0` (except possibly empty bl
 
 ## Progress Log
 
-| Date       | Update                                                           |
-|------------|------------------------------------------------------------------|
-| 2025-11-28 | Root cause identified: newHeads lacks transactions array         |
-| 2025-11-28 | Implemented fix with eth_getBlockByNumber pattern               |
-| 2025-11-28 | Deployed to VM, service restarted                               |
-| 2025-11-28 | Migrated ADR to YYYY-MM-DD format                               |
+| Date       | Update                                                   |
+| ---------- | -------------------------------------------------------- |
+| 2025-11-28 | Root cause identified: newHeads lacks transactions array |
+| 2025-11-28 | Implemented fix with eth_getBlockByNumber pattern        |
+| 2025-11-28 | Deployed to VM, service restarted                        |
+| 2025-11-28 | Migrated ADR to YYYY-MM-DD format                        |

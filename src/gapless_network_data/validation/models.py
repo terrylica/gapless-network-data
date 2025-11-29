@@ -2,8 +2,7 @@
 Validation models for mempool data quality checks.
 """
 
-from datetime import datetime
-from typing import Optional
+from datetime import datetime, timezone
 
 from pydantic import BaseModel, Field
 
@@ -19,7 +18,7 @@ class MempoolValidationReport(BaseModel):
     # Core metadata
     timestamp: datetime = Field(..., description="Snapshot timestamp (UTC)")
     validation_time: datetime = Field(
-        default_factory=lambda: datetime.utcnow(),
+        default_factory=lambda: datetime.now(timezone.utc),
         description="When validation was performed",
     )
 
@@ -43,16 +42,16 @@ class MempoolValidationReport(BaseModel):
 
     # Gap detection
     has_gap: bool = Field(default=False, description="Whether gap detected before this snapshot")
-    gap_duration_seconds: Optional[int] = Field(
+    gap_duration_seconds: int | None = Field(
         default=None, description="Duration of gap in seconds"
     )
 
     # Anomaly detection
     is_anomaly: bool = Field(default=False, description="Whether snapshot is anomalous")
-    anomaly_score: Optional[float] = Field(
+    anomaly_score: float | None = Field(
         default=None, description="Anomaly score (0-1, higher = more anomalous)"
     )
-    anomaly_reason: Optional[str] = Field(default=None, description="Reason for anomaly flag")
+    anomaly_reason: str | None = Field(default=None, description="Reason for anomaly flag")
 
     class Config:
         json_schema_extra = {

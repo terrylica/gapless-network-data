@@ -37,7 +37,7 @@ Gapless Network Data is a multi-chain blockchain network metrics collection tool
 **This package follows architectural patterns from [gapless-crypto-data](https://github.com/terrylica/gapless-crypto-data)**, the OHLCV data collection package that serves as the referential implementation for:
 
 - SDK quality standards (PEP 561 compliance, structured exceptions, AI discoverability)
-- Validation pipeline architecture (5-layer validation, DuckDB persistence)
+- Validation pipeline architecture (5-layer validation)
 - Documentation patterns (hub-and-spoke, version tracking, SLO framework)
 - API design (function-based API, DatetimeIndex output, exception-only failures)
 - Development toolchain (uv, pytest, ruff, mypy)
@@ -61,7 +61,6 @@ Coordinates all project phases, specifications, and implementation work.
 
 - `clickhouse-migration.yaml` - ClickHouse AWS migration (operational 2025-11-25)
 - `documentation-audit-phase.yaml` - Documentation audit (completed 2025-11-03, 6 findings resolved)
-- `duckdb-integration-strategy.yaml` - DuckDB integration (23 features, 29-40 hours total)
 - `archive/motherduck-integration.yaml` - MotherDuck dual pipeline (deprecated 2025-11-25, migrated to ClickHouse)
 - `archive/core-collection-phase1.yaml` - Bitcoin-only Phase 1 (superseded 2025-11-04, archived)
 
@@ -102,7 +101,7 @@ Coordinates all project phases, specifications, and implementation work.
 ### Validation System
 
 - [Validation Overview](./docs/validation/OVERVIEW.md) - 5-layer validation pipeline (pending)
-- [ValidationStorage Specification](./docs/validation/STORAGE.md) - Parquet-backed validation reports with DuckDB queries (pending)
+- [ValidationStorage Specification](./docs/validation/STORAGE.md) - Parquet-backed validation reports (pending)
 
 ### Development
 
@@ -120,7 +119,7 @@ Coordinates all project phases, specifications, and implementation work.
 
 **Status**: Operational - Dual-pipeline (BigQuery hourly + Alchemy real-time) → ClickHouse Cloud (AWS) with ReplacingMergeTree automatic deduplication
 
-**Migration**: MotherDuck → ClickHouse completed 2025-11-25 (trial expiration driven). See `docs/development/plan/0013-motherduck-clickhouse-migration/plan.md` for migration details.
+**Migration**: MotherDuck → ClickHouse completed 2025-11-25 (trial expiration driven). See `docs/development/plan/2025-11-25-motherduck-clickhouse-migration/plan.md` for migration details.
 
 **Operations**:
 
@@ -161,26 +160,104 @@ result = client.query('SELECT COUNT(*) FROM ethereum_mainnet.blocks FINAL')
 - **Monitoring**: Healthchecks.io, Pushover
 - **Purpose**: Network metrics for ML feature engineering pipelines
 
+**Python SDK (v3.0.0)**:
+
+- **Alpha Features API**: `fetch_blocks()` with ranked features for ML pipelines
+- **AI Discoverability**: `probe` module with `get_alpha_features()`, `get_protocol_eras()`, `get_setup_workflow()`
+- **LLM Integration**: `llms.txt` for Claude Code CLI consumption
+
 **Future Work**:
 
-- **Python SDK**: Programmatic API access (`import gapless_network_data`)
 - **Bitcoin Integration**: mempool.space data collection (experimental code exists)
 - **Package Distribution**: pip install (not yet published to PyPI)
 
-**Current Focus**: Infrastructure operation and maintenance. SDK development deferred to future phases.
+**Current Focus**: SDK alpha features API operational. Infrastructure maintenance ongoing.
 
-## SDK Quality Standards (Future Work)
+## SDK Quality Standards
 
 **Intended Use Case**: Programmatic API consumption by downstream packages and AI coding agents
 
-**Implementation Status**: Experimental code following gapless-crypto-data SDK standards
+**Implementation Status**: v3.0.0 - Production API with alpha features optimized for AI agents
 
 **Key Abstractions**:
 
 - **Type Safety**: PEP 561 compliance via py.typed marker (implemented)
-- **AI Discoverability**: llms.txt, probe module (pending)
+- **AI Discoverability**: llms.txt, probe module (implemented v3.0.0)
 - **Structured Exceptions**: Machine-parseable error context with timestamp, endpoint, HTTP status (implemented)
 - **Coverage Strategy**: SDK entry points (85%+), Core engines (70%+) (pending)
+
+## Alpha Features API
+
+**Purpose**: Opinionated API for financial time series forecasting with Ethereum block data.
+
+**Design Decision**: ADR `docs/decisions/2025-11-28-alpha-features-api.md`
+
+### Quick Start
+
+```python
+import gapless_network_data as gmd
+
+# Fetch latest blocks (recommended for live trading)
+df = gmd.fetch_blocks(limit=1000)
+
+# Compute block utilization (alpha feature #2)
+df['utilization'] = df['gas_used'] / df['gas_limit']
+
+# Date range query
+df = gmd.fetch_blocks(start='2024-01-01', end='2024-01-31')
+
+# Include deprecated fields (pre-Merge analysis only)
+df = gmd.fetch_blocks(include_deprecated=True)
+```
+
+### Alpha Feature Rankings
+
+AI agents should prioritize these features for ML pipelines:
+
+| Rank | Feature           | Importance | Formula              |
+| ---- | ----------------- | ---------- | -------------------- |
+| 1    | base_fee_per_gas  | critical   | raw                  |
+| 2    | block_utilization | critical   | gas_used / gas_limit |
+| 3    | transaction_count | high       | raw                  |
+| 4    | timestamp         | high       | raw                  |
+| 5    | number            | high       | raw                  |
+
+Get rankings programmatically: `gmd.probe.get_alpha_features()`
+
+### Protocol Era Boundaries
+
+| Era       | Block      | Date     | Impact                      |
+| --------- | ---------- | -------- | --------------------------- |
+| EIP-1559  | 12,965,000 | Aug 2021 | base_fee_per_gas introduced |
+| The Merge | 15,537,394 | Sep 2022 | difficulty=0 forever        |
+| EIP-4844  | 19,426,587 | Mar 2024 | blob_gas fields introduced  |
+
+Get eras programmatically: `gmd.probe.get_protocol_eras()`
+
+### Deprecated Features
+
+Excluded by default (use `include_deprecated=True` for pre-Merge analysis):
+
+- `difficulty`: Always 0 post-Merge (Sep 2022)
+- `total_difficulty`: Frozen post-Merge
+
+### Credential Setup
+
+Double-layer security: ClickHouse read-only user + Doppler service token
+
+```bash
+# Option 1: Doppler (recommended for teams)
+# Get token from 1Password: Engineering vault → 'gapless-network-data Doppler Service Token'
+doppler configure set token <token_from_1password>
+doppler setup --project gapless-network-data --config prd
+
+# Option 2: Environment variables
+export CLICKHOUSE_HOST_READONLY=<host>
+export CLICKHOUSE_USER_READONLY=<user>
+export CLICKHOUSE_PASSWORD_READONLY=<password>
+```
+
+Get setup instructions: `gmd.probe.get_setup_workflow()`
 
 ## Network Architecture (Future Work: Bitcoin Integration)
 
@@ -228,14 +305,6 @@ result = client.query('SELECT COUNT(*) FROM ethereum_mainnet.blocks FINAL')
 - API interface (fetch_snapshots, get_latest_snapshot) - implemented (src/gapless_network_data/api.py)
 - Bitcoin mempool.space collector - deferred to Phase 2+
 
-## DuckDB Architecture & Strategy
-
-**Strategy**: DuckDB PRIMARY for time-series analytics (10-100x faster than pandas for ASOF JOIN, gap detection, z-score anomaly detection)
-
-**Complete Documentation**: See [DuckDB Strategy](./docs/architecture/duckdb-strategy.md) for 23 features, performance benchmarks, use cases, and integration with gapless-crypto-data.
-
-**Key Features**: ASOF JOIN (16x faster, prevents data leakage), LAG() window function (20x faster gap detection), CHECK constraints (schema validation), time_bucket() aggregations.
-
 ## Data Format
 
 ## Data Storage Architecture
@@ -248,15 +317,7 @@ result = client.query('SELECT COUNT(*) FROM ethereum_mainnet.blocks FINAL')
 - **Deployment**: Maintained by cloud pipelines (no user setup required)
 - **Current Status**: Operational (dual-pipeline architecture → ClickHouse)
 
-**Local Development (Optional)**:
-
-- **Location**: `~/.cache/gapless-network-data/data.duckdb`
-- **Purpose**: Local cache for offline analysis (future feature)
-- **Access**: SDK fallback if ClickHouse unreachable (pending implementation)
-- **Deployment**: User can populate with `fetch_snapshots(cache=True)` (pending)
-- **Current Status**: Not implemented (SDK queries ClickHouse cloud only)
-
-**Default Mode**: SDK queries ClickHouse Cloud directly (no local DuckDB setup needed)
+**Default Mode**: SDK queries ClickHouse Cloud directly
 
 **Schema Version**: 1.0.0
 
@@ -284,8 +345,6 @@ CREATE TABLE ethereum_mainnet.blocks (
 ORDER BY number
 PARTITION BY toYYYYMM(timestamp)
 ```
-
-**Complete Schema Specification**: See `./specifications/duckdb-schema-specification.yaml` for local DuckDB patterns (ASOF JOIN, window functions, gap detection)
 
 ## Feature Engineering Integration
 
@@ -443,7 +502,7 @@ supersedes: []
 
 **Master Plan**: `./specifications/master-project-roadmap.yaml` (Single Source of Truth)
 
-**Key Insight**: DuckDB optimizations are implementation details supporting features, not features themselves.
+**Key Insight**: Database optimizations are implementation details supporting features, not features themselves.
 
 ### Phase 1: Core Data Collection Features (3-4 weeks)
 
@@ -530,7 +589,7 @@ supersedes: []
    - **User Value**: Proactive alerts for trading opportunities/risks
 
 2. **Large Dataset Performance** (8-10 hours)
-   - Query optimization for multi-year datasets (DuckDB)
+   - Query optimization for multi-year datasets (ClickHouse)
    - Remote Parquet access (S3, CDN) without local storage
    - Parallel query execution
    - 10x+ speedup for aggregations
@@ -578,7 +637,7 @@ supersedes: []
 - [x] Structured exceptions (HTTP, Validation, RateLimit)
 - [x] Retry logic (exponential backoff, max 3 retries)
 - [x] LlamaRPC research (52 files, comprehensive Ethereum RPC docs)
-- [x] DuckDB investigation (23 features, performance validation)
+- [x] Database architecture investigation (ClickHouse selected)
 - [x] Documentation audit (6 findings resolved)
 
 **Phase 1: Historical Data Collection (Complete History)** - **COMPLETED** (2025-11-12)
@@ -601,7 +660,7 @@ Bitcoin Historical Collection (SECONDARY) - **DEFERRED TO PHASE 2+**:
 
 - [ ] mempool.space historical API integration
 - [ ] 5-year Bitcoin mempool data (H12 granularity, 3,650 snapshots)
-- [ ] DuckDB storage: INSERT INTO bitcoin_mempool
+- [ ] ClickHouse storage: INSERT INTO bitcoin_mempool
 - [ ] Multi-chain API: fetch_snapshots(chain='bitcoin', mode='historical')
 
 Data Quality - **PARTIALLY IMPLEMENTED**:
