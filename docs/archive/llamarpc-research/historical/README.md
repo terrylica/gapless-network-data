@@ -4,7 +4,7 @@ Research conducted on **2025-11-03** to evaluate LlamaRPC for historical Ethereu
 
 ## Quick Links
 
-- **[RESEARCH_SUMMARY.md](/tmp/llamarpc-historical-research/RESEARCH_SUMMARY.md)** - Complete findings and recommendations
+- **[RESEARCH_SUMMARY.md](./RESEARCH_SUMMARY.md)** - Complete findings and recommendations
 
 ## TL;DR
 

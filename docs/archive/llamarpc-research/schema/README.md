@@ -13,7 +13,7 @@ This directory contains comprehensive research on Ethereum block data structure,
 **Run the working demo**:
 
 ```bash
-cd /tmp/llamarpc-schema-research
+cd docs/archive/llamarpc-research/schema
 python3 simple_metrics.py
 ```
 
@@ -37,28 +37,28 @@ python3 simple_metrics.py
 
 ### Core Documentation
 
-| File                                                                                   | Description                       | Use Case                       |
-| -------------------------------------------------------------------------------------- | --------------------------------- | ------------------------------ |
-| **[QUICK_REFERENCE.md](/tmp/llamarpc-schema-research/QUICK_REFERENCE.md)**             | Fast lookup for common operations | Copy-paste code snippets       |
-| **[ETHEREUM_BLOCK_SCHEMA.md](/tmp/llamarpc-schema-research/ETHEREUM_BLOCK_SCHEMA.md)** | Complete field documentation      | Understanding data structure   |
-| **[RESEARCH_SUMMARY.md](/tmp/llamarpc-schema-research/RESEARCH_SUMMARY.md)**           | Executive summary and findings    | Project planning               |
-| **[schemas.json](/tmp/llamarpc-schema-research/schemas.json)**                         | JSON Schema definitions           | Validation and code generation |
+| File                                                   | Description                       | Use Case                       |
+| ------------------------------------------------------ | --------------------------------- | ------------------------------ |
+| **[QUICK_REFERENCE.md](./QUICK_REFERENCE.md)**         | Fast lookup for common operations | Copy-paste code snippets       |
+| **[ETHEREUM_BLOCK_SCHEMA.md](./ETHEREUM_BLOCK_SCHEMA.md)** | Complete field documentation  | Understanding data structure   |
+| **[RESEARCH_SUMMARY.md](./RESEARCH_SUMMARY.md)**       | Executive summary and findings    | Project planning               |
+| **[schemas.json](./schemas.json)**                     | JSON Schema definitions           | Validation and code generation |
 
 ### Working Examples
 
-| File                                                                     | Description                   | Dependencies          |
-| ------------------------------------------------------------------------ | ----------------------------- | --------------------- |
-| **[simple_metrics.py](/tmp/llamarpc-schema-research/simple_metrics.py)** | Verified working demo         | Python stdlib only ✅ |
-| **[examples.py](/tmp/llamarpc-schema-research/examples.py)**             | Full-featured collector class | `requests` library    |
+| File                                       | Description                   | Dependencies          |
+| ------------------------------------------ | ----------------------------- | --------------------- |
+| **[simple_metrics.py](./simple_metrics.py)** | Verified working demo       | Python stdlib only ✅ |
+| **[examples.py](./examples.py)**           | Full-featured collector class | `requests` library    |
 
 ### Sample Data
 
-| File                                                                               | Description                         | Size   |
-| ---------------------------------------------------------------------------------- | ----------------------------------- | ------ |
-| [block_without_txs.json](/tmp/llamarpc-schema-research/block_without_txs.json)     | Block #23,593,185 (tx hashes only)  | 8 KB   |
-| [full_block_with_txs.json](/tmp/llamarpc-schema-research/full_block_with_txs.json) | Block #23,593,185 (full tx objects) | 625 KB |
-| [transaction_detail.json](/tmp/llamarpc-schema-research/transaction_detail.json)   | Single EIP-1559 transaction         | 2 KB   |
-| [fee_history.json](/tmp/llamarpc-schema-research/fee_history.json)                 | 5-block fee history                 | 1 KB   |
+| File                                                 | Description                         | Size   |
+| ---------------------------------------------------- | ----------------------------------- | ------ |
+| [block_without_txs.json](./block_without_txs.json)   | Block #23,593,185 (tx hashes only)  | 8 KB   |
+| [full_block_with_txs.json](./full_block_with_txs.json) | Block #23,593,185 (full tx objects) | 625 KB |
+| [transaction_detail.json](./transaction_detail.json) | Single EIP-1559 transaction         | 2 KB   |
+| [fee_history.json](./fee_history.json)               | 5-block fee history                 | 1 KB   |
 
 ## Key Findings
 
@@ -288,5 +288,5 @@ Research materials are public domain. Code examples are provided as-is for educa
 
 **Last Updated**: 2025-11-04 06:50 UTC
 **Researcher**: Claude Code
-**Working Directory**: `/tmp/llamarpc-schema-research`
+**Location**: `/docs/archive/llamarpc-research/schema/`
 **Data Source**: LlamaRPC (https://eth.llamarpc.com)
