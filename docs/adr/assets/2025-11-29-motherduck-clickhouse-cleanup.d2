@@ -1,0 +1,62 @@
+direction: down
+
+before: Before {
+  style.fill: "#fff5f5"
+  style.stroke: "#dc3545"
+
+  md: "🗑 motherduck-monitor/" {
+    style.fill: "#dc3545"
+    style.font-color: "#fff"
+  }
+  gm1: "✓ gap-monitor/" {
+    style.fill: "#198754"
+    style.font-color: "#fff"
+  }
+  secret: "🗑 motherduck-token" {
+    style.fill: "#dc3545"
+    style.font-color: "#fff"
+  }
+  docs1: "📄 66 stale docs" {
+    style.fill: "#ffc107"
+    style.font-color: "#000"
+  }
+}
+
+after: After {
+  style.fill: "#f0fff4"
+  style.stroke: "#198754"
+
+  gm2: "gap-monitor/" {
+    style.fill: "#198754"
+    style.font-color: "#fff"
+  }
+  docs2: "📄 Docs updated" {
+    style.fill: "#198754"
+    style.font-color: "#fff"
+  }
+}
+
+gcp: "GCP (Unchanged)" {
+  style.fill: "#f8f9fa"
+  style.stroke: "#dee2e6"
+
+  scheduler: Scheduler {
+    style.fill: "#6c757d"
+    style.font-color: "#fff"
+  }
+  cf: "Cloud Function" {
+    style.fill: "#6c757d"
+    style.font-color: "#fff"
+  }
+  scheduler -> cf: triggers
+}
+
+clickhouse: "ClickHouse Cloud" {
+  shape: cylinder
+  style.fill: "#0d6efd"
+  style.font-color: "#fff"
+}
+
+before -> after: "Phase 1 & 2"
+gcp.cf -> after.gm2: runs
+after.gm2 -> clickhouse: queries
