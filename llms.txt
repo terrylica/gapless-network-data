@@ -1,0 +1,112 @@
+# gapless-network-data
+
+> Ethereum blockchain network metrics for financial time series forecasting.
+
+## Quick Start
+
+```python
+import gapless_network_data as gmd
+
+# Fetch latest blocks (recommended for live trading)
+df = gmd.fetch_blocks(limit=1000)
+
+# Compute block utilization (alpha feature #2)
+df['utilization'] = df['gas_used'] / df['gas_limit']
+
+# Date range query
+df = gmd.fetch_blocks(start='2024-01-01', end='2024-01-31')
+```
+
+## Alpha Feature Rankings
+
+AI agents should prioritize these features for ML pipelines:
+
+| Rank | Feature | Importance | Formula |
+|------|---------|------------|---------|
+| 1 | base_fee_per_gas | critical | raw |
+| 2 | block_utilization | critical | gas_used / gas_limit |
+| 3 | transaction_count | high | raw |
+| 4 | timestamp | high | raw |
+| 5 | number | high | raw |
+| 6 | size | medium | raw |
+| 7 | blob_gas_used | medium | raw (post-EIP4844) |
+| 8 | excess_blob_gas | low | raw (post-EIP4844) |
+
+Get rankings programmatically: `gmd.probe.get_alpha_features()`
+
+## Protocol Era Boundaries
+
+Filter data appropriately based on protocol changes:
+
+- **EIP-1559** (block 12,965,000, Aug 2021): base_fee_per_gas introduced
+- **The Merge** (block 15,537,394, Sep 2022): difficulty=0 forever
+- **EIP-4844** (block 19,426,587, Mar 2024): blob_gas fields introduced
+
+Get eras programmatically: `gmd.probe.get_protocol_eras()`
+
+## API Reference
+
+### fetch_blocks()
+
+```python
+gmd.fetch_blocks(
+    start: str | None = None,     # ISO 8601 date
+    end: str | None = None,       # ISO 8601 date
+    limit: int | None = None,     # Max blocks
+    include_deprecated: bool = False  # Include difficulty fields
+) -> pd.DataFrame
+```
+
+Returns pandas DataFrame with columns:
+- timestamp (datetime64[ns, UTC])
+- number (uint64)
+- gas_limit, gas_used, base_fee_per_gas, transaction_count, size (uint64)
+- blob_gas_used, excess_blob_gas (uint64, nullable)
+
+### probe module
+
+```python
+gmd.probe.get_alpha_features()   # Ranked feature list
+gmd.probe.get_protocol_eras()    # Protocol boundaries
+gmd.probe.get_setup_workflow()   # Credential setup
+gmd.probe.get_quick_start()      # Example code
+```
+
+## Setup
+
+Credentials via Doppler (recommended) or environment variables.
+
+```bash
+# Option 1: Doppler (team setup)
+doppler configure set token <token_from_1password>
+doppler setup --project gapless-network-data --config prd
+
+# Option 2: Environment variables
+export CLICKHOUSE_HOST_READONLY=<host>
+export CLICKHOUSE_USER_READONLY=<user>
+export CLICKHOUSE_PASSWORD_READONLY=<password>
+```
+
+Get setup instructions: `gmd.probe.get_setup_workflow()`
+
+## Data Coverage
+
+- **Blocks**: 23.87M Ethereum blocks (2015-2025)
+- **Update frequency**: Real-time (~12 second intervals)
+- **Storage**: ClickHouse Cloud (AWS)
+- **Deduplication**: Automatic via ReplacingMergeTree
+
+## Deprecated Features
+
+Excluded by default (use `include_deprecated=True` for pre-Merge analysis):
+
+- `difficulty`: Always 0 post-Merge (Sep 2022)
+- `total_difficulty`: Frozen post-Merge
+
+## Exceptions
+
+All exceptions include structured context (timestamp, endpoint, HTTP status):
+
+- `CredentialException`: Credential resolution failed
+- `DatabaseException`: ClickHouse query failed
+- `MempoolException`: Base exception class
