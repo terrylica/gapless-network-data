@@ -58,36 +58,57 @@ Rationale:
 
 ## Architecture
 
-```mermaid
-flowchart TD
-    subgraph Current["Current State (Pre-Cleanup)"]
-        MD[motherduck-monitor/]
-        GM[gap-monitor/]
-        BOTH["Both contain<br/>identical code"]
-        MD --> BOTH
-        GM --> BOTH
-    end
-
-    subgraph GCP["GCP Resources (Keep Legacy Names)"]
-        CF[motherduck-gap-detector<br/>Cloud Function]
-        SA[motherduck-monitor-sa<br/>Service Account]
-        SCH[motherduck-monitor-trigger<br/>Cloud Scheduler]
-    end
-
-    subgraph Target["Target State (Post-Cleanup)"]
-        GM2[gap-monitor/<br/>Single Source]
-        CH[(ClickHouse Cloud<br/>AWS us-west-2)]
-        GM2 --> CH
-    end
-
-    Current -->|"Phase 1:<br/>Delete duplicate"| Target
-    GCP -->|"Keep with<br/>historical note"| GCP
-
-    style MD fill:#ff6b6b,color:#fff
-    style GM fill:#51cf66,color:#fff
-    style GM2 fill:#51cf66,color:#fff
-    style CH fill:#339af0,color:#fff
 ```
+                                ┌─────────────────────────┐
+                                │ [x] motherduck-monitor/ │
+                                └─────────────────────────┘
+                                  │
+                                  │ delete
+                                  ∨
+┌─────────────────┐  triggers   ┌─────────────────────────┐  delete   ┌──────────────────────┐
+│ GCP (unchanged) │ ──────────> │    [+] gap-monitor/     │ <──────── │ [x] motherduck-token │
+└─────────────────┘             └─────────────────────────┘           └──────────────────────┘
+                                  │
+                                  │ queries
+                                  ∨
+                                ┌─────────────────────────┐
+                                │    ClickHouse Cloud     │
+                                └─────────────────────────┘
+                                ┌─────────────────────────┐
+                                │    [*] 66 stale refs    │
+                                └─────────────────────────┘
+                                  │
+                                  │ rewrite
+                                  ∨
+                                ┌─────────────────────────┐
+                                │    [*] Docs updated     │
+                                └─────────────────────────┘
+```
+
+<details>
+<summary>graph-easy source</summary>
+
+```
+graph { flow: south; }
+
+[delete1] { label: "[x] motherduck-monitor/"; }
+[delete2] { label: "[x] motherduck-token"; }
+[stale] { label: "[*] 66 stale refs"; }
+
+[keep] { label: "[+] gap-monitor/"; }
+[docs] { label: "[*] Docs updated"; }
+
+[gcp] { label: "GCP (unchanged)"; }
+[ch] { label: "ClickHouse Cloud"; }
+
+[delete1] -- delete --> [keep]
+[delete2] -- delete --> [keep]
+[stale] -- rewrite --> [docs]
+[gcp] -- triggers --> [keep]
+[keep] -- queries --> [ch]
+```
+
+</details>
 
 ## User Decisions (Plan Mode)
 
