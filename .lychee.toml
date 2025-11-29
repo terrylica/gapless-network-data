@@ -4,6 +4,12 @@
 # Usage: ./scripts/lint-links.sh [--offline] [path]
 # The script uses --root-dir to resolve /docs/... repo-relative links.
 
+############################# Features ##############################
+offline = true              # Only check local files (no network requests)
+no_progress = true          # Required for non-interactive shells
+include_fragments = true    # Validate anchor fragments (#section)
+include_verbatim = false    # Skip code blocks
+
 # Exclude URLs that are external or temporary
 exclude = [
   # Temp directories (research artifacts from scratch investigations)
@@ -32,16 +38,13 @@ exclude_path = [
   ".pytest_cache/",
 ]
 
-# Timeout for network requests (seconds)
-timeout = 30
+# Timeout for file operations (seconds)
+timeout = 5
 
-# Accept these status codes as valid
-accept = [200, 204, 206]
+# Max concurrent operations
+max_concurrency = 4
 
-# Max concurrent requests
-max_concurrency = 32
-
-# Don't check mail addresses (reduces noise)
+# Don't check mail addresses
 include_mail = false
 
 # Cache results for faster subsequent runs
