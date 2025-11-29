@@ -216,9 +216,9 @@ WARNING: High CPU usage (>90%)
 
 ## Related Documentation
 
-- [SKILL.md](../SKILL.md) - VM operations workflows
-- [Systemd Commands Reference](./systemd-commands.md) - Complete systemd operations
-- [MotherDuck Dual Pipeline Architecture](../../../../docs/architecture/_archive/motherduck-dual-pipeline.md) - Architecture overview (DEPRECATED - see MADR-0013)
+- [SKILL.md](/.claude/skills/vm-infrastructure-ops/SKILL.md) - VM operations workflows
+- [Systemd Commands Reference](/.claude/skills/vm-infrastructure-ops/references/systemd-commands.md) - Complete systemd operations
+- [MotherDuck Dual Pipeline Architecture](/docs/architecture/_archive/motherduck-dual-pipeline.md) - Architecture overview (DEPRECATED - see MADR-0013)
 
 ## Operational History
 

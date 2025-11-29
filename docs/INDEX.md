@@ -33,7 +33,7 @@ Hub-and-spoke documentation architecture for multi-chain blockchain network metr
 
 ### Architecture 🚧 PHASE 1 (Pending)
 
-- [Architecture Overview](./architecture/README.md) - Core components, data flow, SLOs
+- [Architecture Overview](/docs/architecture/README.md) - Core components, data flow, SLOs
 - [Data Format Specification](/docs/architecture/DATA_FORMAT.md) - Multi-chain schemas (Ethereum 6 fields, Bitcoin 9 fields)
 
 **Status**: Documentation pending Phase 1 implementation. See [CLAUDE.md](/CLAUDE.md) for current architectural context.

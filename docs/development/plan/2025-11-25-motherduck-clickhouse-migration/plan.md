@@ -155,7 +155,7 @@ MotherDuck trial ending in 2-3 days requires urgent migration to ClickHouse Clou
 
 **2.5 Deploy to GCP** ✅ COMPLETED
 
-> **Detailed Guide**: See [`DEPLOYMENT.md`](./DEPLOYMENT.md) for step-by-step deployment instructions.
+> **Detailed Guide**: See [`DEPLOYMENT.md`](/docs/development/plan/2025-11-25-motherduck-clickhouse-migration/DEPLOYMENT.md) for step-by-step deployment instructions.
 
 **Deployment Summary** (2025-11-25):
 

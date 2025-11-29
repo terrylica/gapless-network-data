@@ -89,6 +89,6 @@ Configuration values abstracted for maintainability:
 
 ## Related
 
-- [MotherDuck to ClickHouse Migration](./2025-11-25-motherduck-clickhouse-migration.md)
+- [MotherDuck to ClickHouse Migration](/docs/architecture/decisions/2025-11-25-motherduck-clickhouse-migration.md)
 - [Implementation Plan](/docs/development/plan/2025-11-26-gap-detector-clickhouse-fix/plan.md)
 - [Cloud Function logs](https://console.cloud.google.com/functions/details/us-east1/motherduck-gap-detector)

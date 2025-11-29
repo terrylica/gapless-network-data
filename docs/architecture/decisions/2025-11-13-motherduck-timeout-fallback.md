@@ -2,7 +2,7 @@
 
 ## Status
 
-**Superseded** by [MotherDuck to ClickHouse Migration](./2025-11-25-motherduck-clickhouse-migration.md) (2025-11-25)
+**Superseded** by [MotherDuck to ClickHouse Migration](/docs/architecture/decisions/2025-11-25-motherduck-clickhouse-migration.md) (2025-11-25)
 
 ## Date
 
@@ -226,4 +226,4 @@ except Exception as e:
 
 ## Related
 
-- [Exception Handler Notifications](./2025-11-13-exception-handler-notifications.md) (complementary pattern)
+- [Exception Handler Notifications](/docs/architecture/decisions/2025-11-13-exception-handler-notifications.md) (complementary pattern)

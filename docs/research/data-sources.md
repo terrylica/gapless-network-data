@@ -6,7 +6,7 @@
 
 ## Overview
 
-This document describes **production data sources** for gapless-network-data. For comprehensive research on all evaluated sources, see [Research Index](./INDEX.md).
+This document describes **production data sources** for gapless-network-data. For comprehensive research on all evaluated sources, see [Research Index](/docs/research/INDEX.md).
 
 ## Scope
 
@@ -181,8 +181,8 @@ This document describes **production data sources** for gapless-network-data. Fo
 
 ## Related Documentation
 
-- [Architecture Overview](../architecture/README.md) - Core components, data flow, SLOs
-- [MotherDuck Dual Pipeline](../architecture/_archive/motherduck-dual-pipeline.md) - Former architecture (DEPRECATED - see MADR-0013)
-- [BigQuery Integration](../architecture/_archive/bigquery-motherduck-integration.md) - PyArrow zero-copy (DEPRECATED - see MADR-0013)
-- [Research Index](./INDEX.md) - Comprehensive data source research (35+ sources)
-- [LlamaRPC Research Archive](../archive/llamarpc-research/INDEX.md) - Ethereum RPC deep dive (archived)
+- [Architecture Overview](/docs/architecture/README.md) - Core components, data flow, SLOs
+- [MotherDuck Dual Pipeline](/docs/architecture/_archive/motherduck-dual-pipeline.md) - Former architecture (DEPRECATED - see MADR-0013)
+- [BigQuery Integration](/docs/architecture/_archive/bigquery-motherduck-integration.md) - PyArrow zero-copy (DEPRECATED - see MADR-0013)
+- [Research Index](/docs/research/INDEX.md) - Comprehensive data source research (35+ sources)
+- [LlamaRPC Research Archive](/docs/archive/llamarpc-research/INDEX.md) - Ethereum RPC deep dive (archived)

@@ -9,7 +9,7 @@ research_date: "2025-11-03"
 
 > **⚠️ Research Artifact**: This documentation describes data source evaluation (2025-11-03).
 > **Production uses BigQuery + Alchemy** (LlamaRPC rejected after empirical testing: 1.37 RPS sustained vs 50 RPS documented).
-> See [Ethereum Collector POC Report](../../scratch/ethereum-collector-poc/ETHEREUM_COLLECTOR_POC_REPORT.md) for rate limit findings.
+> See [Ethereum Collector POC Report](/scratch/ethereum-collector-poc/ETHEREUM_COLLECTOR_POC_REPORT.md) for rate limit findings.
 
 Comprehensive research on free data sources with M1/M5/M15+ frequency and 3+ years historical depth (2022+).
 
