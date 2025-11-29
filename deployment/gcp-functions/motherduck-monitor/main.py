@@ -4,6 +4,11 @@ ClickHouse Gap Detection Monitor (GCP Cloud Functions)
 Monitors ClickHouse Ethereum database for gaps and staleness.
 Triggered by Cloud Scheduler every 3 hours via HTTP.
 
+Two-Tier Alerting Strategy (ADR: 2025-11-29-gap-alerting-strategy):
+    - Tier 1: New gaps stored in gap_tracking table, NO immediate alert
+    - Tier 2: Gaps persisting >30 min trigger EMERGENCY alert
+    - Bonus: Gap resolution triggers INFO notification
+
 Gap Detection:
     - Method: Block number sequence validation
     - Checks: Missing blocks in continuous sequence
@@ -15,11 +20,11 @@ Staleness Detection:
 
 Monitoring:
     - Healthchecks.io Dead Man's Switch (POST to ping URL)
-    - Pushover notifications (emergency for issues, normal for healthy)
+    - Pushover notifications (emergency for persistent gaps, normal for resolved)
 
 HTTP Response Codes:
-    200: Healthy (no gaps, data fresh)
-    500: Unhealthy (gaps detected or data stale)
+    200: Healthy (no persistent gaps, data fresh)
+    500: Unhealthy (persistent gaps or data stale)
     503: Fatal error (query failed, database unreachable)
 
 Environment Variables:
@@ -29,9 +34,11 @@ Environment Variables:
     CLICKHOUSE_PASSWORD: ClickHouse password (from Secret Manager)
     STALENESS_THRESHOLD_SECONDS: Max age before data considered stale (default: 960)
     GAP_DETECTION_LIMIT: Max gaps to report (default: 20)
+    GAP_GRACE_PERIOD_SECONDS: Grace period before alerting on gap (default: 1800)
     HEALTHCHECKS_PING_URL: Healthchecks.io ping URL
 
 Related:
+    - Design: /docs/design/2025-11-29-gap-alerting-strategy/spec.md
     - MADR-0015: Gap Detector ClickHouse Fix
     - MADR-0013: MotherDuck to ClickHouse Migration
 """
@@ -65,6 +72,13 @@ GAP_DETECTION_LIMIT = int(os.environ.get('GAP_DETECTION_LIMIT', '20'))
 # Staleness threshold: 16 minutes (~80 Ethereum blocks at 12s/block)
 # Rationale: Allows for temporary pipeline delays without false positives
 STALENESS_THRESHOLD_SECONDS = int(os.environ.get('STALENESS_THRESHOLD_SECONDS', '960'))
+
+# Two-tier alerting: Grace period before alerting on gaps (default: 30 minutes)
+# Rationale: Self-healing mechanisms (inline backfill, BigQuery hourly sync) need time
+GAP_GRACE_PERIOD_SECONDS = int(os.environ.get('GAP_GRACE_PERIOD_SECONDS', '1800'))
+
+# Gap tracking table for persistence
+GAP_TRACKING_TABLE = 'gap_tracking'
 
 # Healthchecks.io ping URL (from environment)
 HEALTHCHECKS_PING_URL = os.environ.get('HEALTHCHECKS_PING_URL', '')
@@ -280,6 +294,164 @@ def check_staleness_clickhouse(client) -> tuple[bool, int, datetime, int]:
 
 
 # ================================================================================
+# Two-Tier Gap Tracking
+# ================================================================================
+
+def get_tracked_gaps(client) -> list[dict]:
+    """
+    Get all currently tracked gaps from gap_tracking table.
+
+    Returns:
+        List of gap dictionaries with gap_start, gap_end, first_seen, notified
+    """
+    result = client.query(f"""
+        SELECT gap_start, gap_end, gap_size, first_seen, last_seen, notified
+        FROM {CLICKHOUSE_DATABASE}.{GAP_TRACKING_TABLE} FINAL
+    """)
+
+    return [
+        {
+            'gap_start': row[0],
+            'gap_end': row[1],
+            'gap_size': row[2],
+            'first_seen': row[3],
+            'last_seen': row[4],
+            'notified': row[5],
+        }
+        for row in result.result_rows
+    ]
+
+
+def upsert_gap_tracking(client, gap_start: int, gap_end: int, gap_size: int, now: datetime):
+    """
+    Insert or update a gap in the tracking table.
+    ReplacingMergeTree will keep the latest version based on last_seen.
+    """
+    # Check if gap already exists
+    existing = client.query(f"""
+        SELECT first_seen FROM {CLICKHOUSE_DATABASE}.{GAP_TRACKING_TABLE} FINAL
+        WHERE gap_start = {gap_start} AND gap_end = {gap_end}
+    """)
+
+    if existing.result_rows:
+        # Update last_seen
+        first_seen = existing.result_rows[0][0]
+        client.command(f"""
+            INSERT INTO {CLICKHOUSE_DATABASE}.{GAP_TRACKING_TABLE}
+            (gap_start, gap_end, gap_size, first_seen, last_seen, notified)
+            VALUES ({gap_start}, {gap_end}, {gap_size}, '{first_seen}', '{now}', false)
+        """)
+    else:
+        # New gap
+        client.command(f"""
+            INSERT INTO {CLICKHOUSE_DATABASE}.{GAP_TRACKING_TABLE}
+            (gap_start, gap_end, gap_size, first_seen, last_seen, notified)
+            VALUES ({gap_start}, {gap_end}, {gap_size}, '{now}', '{now}', false)
+        """)
+
+
+def mark_gap_notified(client, gap_start: int, gap_end: int, now: datetime):
+    """Mark a gap as having been notified."""
+    existing = client.query(f"""
+        SELECT first_seen FROM {CLICKHOUSE_DATABASE}.{GAP_TRACKING_TABLE} FINAL
+        WHERE gap_start = {gap_start} AND gap_end = {gap_end}
+    """)
+
+    if existing.result_rows:
+        first_seen = existing.result_rows[0][0]
+        client.command(f"""
+            INSERT INTO {CLICKHOUSE_DATABASE}.{GAP_TRACKING_TABLE}
+            (gap_start, gap_end, gap_size, first_seen, last_seen, notified)
+            VALUES ({gap_start}, {gap_end}, {gap_end - gap_start + 1}, '{first_seen}', '{now}', true)
+        """)
+
+
+def delete_gap_tracking(client, gap_start: int, gap_end: int):
+    """Remove a resolved gap from tracking."""
+    client.command(f"""
+        ALTER TABLE {CLICKHOUSE_DATABASE}.{GAP_TRACKING_TABLE}
+        DELETE WHERE gap_start = {gap_start} AND gap_end = {gap_end}
+    """)
+
+
+def process_gap_tracking(
+    client,
+    current_gaps: list[dict],
+    secrets: dict,
+    now: datetime
+) -> tuple[list[dict], list[dict], list[dict]]:
+    """
+    Process gaps with two-tier alerting logic.
+
+    Returns:
+        Tuple of (new_gaps, persistent_gaps, resolved_gaps)
+    """
+    print(f"[GAP TRACKING] Processing two-tier alerting...")
+
+    tracked_gaps = get_tracked_gaps(client)
+    print(f"  Previously tracked: {len(tracked_gaps)} gaps")
+
+    # Build sets for comparison
+    current_gap_keys = {(g['block_number'], g.get('end_block', g['block_number'])) for g in current_gaps}
+    tracked_gap_keys = {(g['gap_start'], g['gap_end']) for g in tracked_gaps}
+
+    new_gaps = []
+    persistent_gaps = []
+    resolved_gaps = []
+
+    # Process current gaps
+    for gap in current_gaps:
+        gap_start = gap['block_number']
+        # Parse end block from description
+        desc = gap['description']
+        if 'to' in desc:
+            gap_end = int(desc.split('to')[-1].strip().replace(',', ''))
+        else:
+            gap_end = gap_start
+        gap_size = gap_end - gap_start + 1
+
+        key = (gap_start, gap_end)
+
+        # Check if already tracked
+        tracked = next((t for t in tracked_gaps if (t['gap_start'], t['gap_end']) == key), None)
+
+        if tracked is None:
+            # New gap - store but don't alert
+            new_gaps.append({'gap_start': gap_start, 'gap_end': gap_end, 'gap_size': gap_size})
+            upsert_gap_tracking(client, gap_start, gap_end, gap_size, now)
+            print(f"  NEW: {gap_start:,} to {gap_end:,} (tracking, no alert)")
+        else:
+            # Existing gap - check age
+            age_seconds = (now - tracked['first_seen']).total_seconds()
+
+            if age_seconds > GAP_GRACE_PERIOD_SECONDS and not tracked['notified']:
+                # Persistent gap - alert!
+                persistent_gaps.append({
+                    'gap_start': gap_start,
+                    'gap_end': gap_end,
+                    'gap_size': gap_size,
+                    'first_seen': tracked['first_seen'],
+                    'age_seconds': int(age_seconds),
+                })
+                mark_gap_notified(client, gap_start, gap_end, now)
+                print(f"  PERSISTENT: {gap_start:,} to {gap_end:,} (age: {int(age_seconds)}s > {GAP_GRACE_PERIOD_SECONDS}s)")
+            else:
+                # Still in grace period - update last_seen
+                upsert_gap_tracking(client, gap_start, gap_end, gap_size, now)
+                print(f"  GRACE: {gap_start:,} to {gap_end:,} (age: {int(age_seconds)}s)")
+
+    # Check for resolved gaps
+    for tracked in tracked_gaps:
+        key = (tracked['gap_start'], tracked['gap_end'])
+        if key not in current_gap_keys:
+            resolved_gaps.append(tracked)
+            delete_gap_tracking(client, tracked['gap_start'], tracked['gap_end'])
+            print(f"  RESOLVED: {tracked['gap_start']:,} to {tracked['gap_end']:,}")
+
+    return new_gaps, persistent_gaps, resolved_gaps
+
+
+# ================================================================================
 # Monitoring Integration
 # ================================================================================
 
@@ -363,25 +535,32 @@ def ping_healthchecks(ping_url: str, diagnostic_data: str, is_healthy: bool):
 
 def monitor(request):
     """
-    Cloud Functions HTTP entry point.
+    Cloud Functions HTTP entry point with two-tier gap alerting.
 
     Triggered by Cloud Scheduler every 3 hours.
+
+    Two-Tier Alerting:
+        - New gaps: Stored in gap_tracking, NO immediate alert
+        - Persistent gaps (>30 min): Emergency alert
+        - Resolved gaps: Info notification
 
     Args:
         request: Flask request object (unused)
 
     Returns:
         Tuple of (response_body, http_status_code)
-            200: Healthy (no gaps, data fresh)
-            500: Unhealthy (gaps detected or data stale)
+            200: Healthy (no persistent gaps, data fresh)
+            500: Unhealthy (persistent gaps or data stale)
             503: Fatal error
     """
     print("=" * 80)
-    print("ClickHouse Gap Detection Monitor")
+    print("ClickHouse Gap Detection Monitor (Two-Tier Alerting)")
     print("=" * 80)
-    print(f"Timestamp: {datetime.now(timezone.utc).isoformat().replace('+00:00', 'Z')}")
+    now = datetime.now(timezone.utc).replace(tzinfo=None)
+    print(f"Timestamp: {now.isoformat()}Z")
     print(f"Database: {CLICKHOUSE_DATABASE}.{CLICKHOUSE_TABLE}")
     print(f"Staleness threshold: {STALENESS_THRESHOLD_SECONDS}s")
+    print(f"Gap grace period: {GAP_GRACE_PERIOD_SECONDS}s")
     print("=" * 80)
     print()
 
@@ -398,62 +577,104 @@ def monitor(request):
         is_fresh, age_seconds, latest_timestamp, latest_block = check_staleness_clickhouse(client)
         print()
 
-        # Step 4: Detect gaps
+        # Step 4: Detect current gaps
         gaps, total_blocks, min_block, max_block = detect_gaps_clickhouse(client)
         print()
 
-        # Step 5: Determine health status
-        is_healthy = is_fresh and len(gaps) == 0
+        # Step 5: Process gaps with two-tier alerting
+        new_gaps, persistent_gaps, resolved_gaps = process_gap_tracking(
+            client, gaps, secrets, now
+        )
+        print()
 
-        # Step 6: Build notification message
-        if is_healthy:
-            title = "HEALTHY"
+        # Step 6: Determine health status (only persistent gaps count)
+        is_healthy = is_fresh and len(persistent_gaps) == 0
+
+        # Step 7: Send notifications based on two-tier logic
+        print("[NOTIFICATIONS]")
+        notifications_sent = 0
+
+        # Send resolution notifications (normal priority)
+        for resolved in resolved_gaps:
+            duration_mins = int((now - resolved['first_seen']).total_seconds() / 60)
+            message = (
+                f"Previously tracked gap has been filled\n\n"
+                f"Gap: blocks {resolved['gap_start']:,} to {resolved['gap_end']:,}\n"
+                f"Size: {resolved['gap_size']} blocks\n"
+                f"First detected: {resolved['first_seen']}\n"
+                f"Resolved after: {duration_mins} minutes"
+            )
+            send_pushover_notification(
+                secrets["pushover_token"],
+                secrets["pushover_user"],
+                message,
+                "GAP RESOLVED",
+                priority=0  # Normal priority
+            )
+            notifications_sent += 1
+
+        # Send persistent gap notifications (emergency)
+        for persistent in persistent_gaps:
+            duration_mins = int(persistent['age_seconds'] / 60)
+            message = (
+                f"Gap persists for >{GAP_GRACE_PERIOD_SECONDS // 60} minutes\n\n"
+                f"Gap: blocks {persistent['gap_start']:,} to {persistent['gap_end']:,}\n"
+                f"Size: {persistent['gap_size']} blocks\n"
+                f"First detected: {persistent['first_seen']}\n"
+                f"Duration: {duration_mins} minutes\n\n"
+                f"Action required: Manual backfill needed"
+            )
+            send_pushover_notification(
+                secrets["pushover_token"],
+                secrets["pushover_user"],
+                message,
+                "PERSISTENT GAP",
+                priority=2  # Emergency
+            )
+            notifications_sent += 1
+
+        # Send staleness notification if stale (emergency)
+        if not is_fresh:
+            message = (
+                f"Data is stale (>{STALENESS_THRESHOLD_SECONDS}s old)\n\n"
+                f"Latest block: {latest_block:,}\n"
+                f"Age: {age_seconds}s\n"
+                f"Threshold: {STALENESS_THRESHOLD_SECONDS}s"
+            )
+            send_pushover_notification(
+                secrets["pushover_token"],
+                secrets["pushover_user"],
+                message,
+                "DATA STALE",
+                priority=2  # Emergency
+            )
+            notifications_sent += 1
+
+        # If healthy, send normal status (only if no other notifications)
+        if is_healthy and notifications_sent == 0:
             message = (
                 f"Blocks: {total_blocks:,}\n"
                 f"Range: {min_block:,} to {max_block:,}\n"
                 f"Age: {age_seconds}s\n"
-                f"Gaps: None\n"
+                f"New gaps tracked: {len(new_gaps)}\n"
                 f"Sequence: Complete"
             )
-            notification_priority = 0  # Normal priority when healthy
-        else:
-            issues = []
-            if not is_fresh:
-                issues.append(f"STALE ({age_seconds}s)")
-            if gaps:
-                issues.append(f"GAPS ({len(gaps)} regions)")
-
-            title = "UNHEALTHY"
-            gap_detail = ""
-            if gaps:
-                if len(gaps) <= 3:
-                    gap_detail = "\n\nGaps:\n" + "\n".join(
-                        [f"  {g['description']}" for g in gaps]
-                    )
-                else:
-                    gap_detail = f"\n\nLargest gap: {gaps[0]['description']}"
-
-            message = (
-                f"Issues: {', '.join(issues)}\n\n"
-                f"Blocks: {total_blocks:,}\n"
-                f"Range: {min_block:,} to {max_block:,}\n"
-                f"Age: {age_seconds}s"
-                f"{gap_detail}"
+            send_pushover_notification(
+                secrets["pushover_token"],
+                secrets["pushover_user"],
+                message,
+                "HEALTHY",
+                priority=0  # Normal priority
             )
-            notification_priority = 2  # Emergency priority for issues
 
-        diagnostic_data = f"{title}\n\n{message}"
-
-        # Step 7: Send notifications
-        print("[NOTIFICATIONS]")
-        send_pushover_notification(
-            secrets["pushover_token"],
-            secrets["pushover_user"],
-            message,
-            title,
-            priority=notification_priority
+        # Ping Healthchecks.io
+        diagnostic_data = (
+            f"Status: {'HEALTHY' if is_healthy else 'UNHEALTHY'}\n"
+            f"Fresh: {is_fresh}\n"
+            f"New gaps: {len(new_gaps)}\n"
+            f"Persistent gaps: {len(persistent_gaps)}\n"
+            f"Resolved gaps: {len(resolved_gaps)}"
         )
-
         if HEALTHCHECKS_PING_URL:
             ping_healthchecks(HEALTHCHECKS_PING_URL, diagnostic_data, is_healthy)
         else:
@@ -462,12 +683,21 @@ def monitor(request):
         print()
 
         # Step 8: Return HTTP response
+        response_data = {
+            "status": "healthy" if is_healthy else "unhealthy",
+            "blocks": total_blocks,
+            "latest": latest_block,
+            "new_gaps": len(new_gaps),
+            "persistent_gaps": len(persistent_gaps),
+            "resolved_gaps": len(resolved_gaps),
+        }
+
         if is_healthy:
             print("RESULT: HEALTHY")
-            return ({"status": "healthy", "blocks": total_blocks, "latest": latest_block}, 200)
+            return (response_data, 200)
         else:
             print("RESULT: UNHEALTHY")
-            return ({"status": "unhealthy", "message": message}, 500)
+            return (response_data, 500)
 
     except Exception as e:
         print(f"\nFATAL ERROR: {e}")
