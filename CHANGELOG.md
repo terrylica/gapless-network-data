@@ -1,3 +1,26 @@
+# [4.2.0](https://github.com/terrylica/gapless-network-data/compare/v4.1.0...v4.2.0) (2025-11-29)
+
+
+### Bug Fixes
+
+* add offline=true to .lychee.toml for hook compatibility ([71c7d2d](https://github.com/terrylica/gapless-network-data/commit/71c7d2d6bfcdeebc2e5f763e1b387b603b622fed)), closes [#anchors](https://github.com/terrylica/gapless-network-data/issues/anchors)
+* convert absolute paths to repo-relative in 34 files ([f05f598](https://github.com/terrylica/gapless-network-data/commit/f05f59861b86f1e5d0e9081ee4274e26fbbe4d65))
+* convert relative paths to repo-relative format ([3436f79](https://github.com/terrylica/gapless-network-data/commit/3436f79f7e60c29d600f1b1414d3e662ccdd815f))
+* exclude scratch/ from lychee file scanning ([c1f765a](https://github.com/terrylica/gapless-network-data/commit/c1f765a4b1172158a1b4f4ccb3536261935fc5cc))
+* replace broken motherduck-pipeline-operations refs with ClickHouse ([6c7ed41](https://github.com/terrylica/gapless-network-data/commit/6c7ed415760c2cd287c742b727656fd87c2f8894))
+* resolve 198 broken documentation links ([76481a5](https://github.com/terrylica/gapless-network-data/commit/76481a5cfd144d9e4e3709c7ed7831b0dcbfdc59))
+* update dependencies and docs from comprehensive audit ([d09b9fb](https://github.com/terrylica/gapless-network-data/commit/d09b9fb0495a5f10506289902d2279f1070da16e))
+* update spec file to reference ClickHouse instead of MotherDuck ([ecaf9cf](https://github.com/terrylica/gapless-network-data/commit/ecaf9cfd2f584123e7eb62d19e299222df6ba7a5))
+* update tmp/ paths to relative paths in research docs ([67b7f5c](https://github.com/terrylica/gapless-network-data/commit/67b7f5ce70fc46123db86d5ab8dec319b05a822d))
+* use repo-relative paths (/) instead of directory-relative (./) ([ba0fe43](https://github.com/terrylica/gapless-network-data/commit/ba0fe43bfcfb0c38f72701eaef322e7a1ae9235a))
+
+
+### Features
+
+* add lychee link checker configuration ([091db49](https://github.com/terrylica/gapless-network-data/commit/091db493ab69cb75319dd40a07808fb20af856bf))
+* add verify_blocks.py for ClickHouse block verification ([e2d59be](https://github.com/terrylica/gapless-network-data/commit/e2d59bec75e61e3a7014cc72283a8bca7e87f5c7))
+* **monitoring:** deploy two-tier gap alerting to Cloud Functions ([2c3f8e9](https://github.com/terrylica/gapless-network-data/commit/2c3f8e931b1d88796874624fd8f4c4b283e39b12))
+
 # [4.1.0](https://github.com/terrylica/gapless-network-data/compare/v4.0.1...v4.1.0) (2025-11-29)
 
 ### Features
