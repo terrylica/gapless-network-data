@@ -279,6 +279,6 @@ df['gas_adjusted_return'] = (df['close'] - df['open']) / (df['baseFeePerGas'] + 
 **Related Documentation**:
 
 - [Python API Reference](/docs/guides/python-api.md) - Data collection API
-- [DuckDB Integration Strategy](/specifications/duckdb-integration-strategy.yaml) - Performance benchmarks
+- [ClickHouse Migration](/docs/architecture/decisions/2025-11-25-motherduck-clickhouse-migration.md) - Performance benchmarks
 
 **This document will be completed during Phase 3 implementation.**

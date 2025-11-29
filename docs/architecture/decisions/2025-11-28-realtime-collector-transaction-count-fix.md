@@ -86,5 +86,5 @@ LIMIT 10
 ## Related
 
 - [MotherDuck to ClickHouse Migration](/docs/architecture/decisions/2025-11-25-motherduck-clickhouse-migration.md)
-- [Gap Detector ClickHouse Fix](/docs/architecture/decisions/2025-11-27-gap-detector-clickhouse-fix.md)
+- [Gap Detector ClickHouse Fix](/docs/architecture/decisions/2025-11-26-gap-detector-clickhouse-fix.md)
 - [`realtime_collector.py`](/deployment/vm/realtime_collector.py) - Collector source code

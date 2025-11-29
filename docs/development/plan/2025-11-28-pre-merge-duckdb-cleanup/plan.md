@@ -1,6 +1,6 @@
 # Plan: Pre-Merge DuckDB Elimination & Code Quality Audit
 
-**ADR**: [2025-11-28-pre-merge-duckdb-cleanup](../../architecture/decisions/2025-11-28-pre-merge-duckdb-cleanup.md)
+**ADR**: [Pre-Merge DuckDB Cleanup](/docs/architecture/decisions/2025-11-28-pre-merge-duckdb-cleanup.md)
 **Branch**: `migrate-to-clickhouse` → `main`
 **Created**: 2025-11-28
 
