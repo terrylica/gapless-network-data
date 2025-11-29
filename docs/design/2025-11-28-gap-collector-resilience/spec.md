@@ -1,8 +1,9 @@
 # Design Spec: Gap Collector Resilience
 
 **ADR**: [Gap Collector Resilience ADR](/docs/adr/2025-11-28-gap-collector-resilience.md)
-**Status**: Implementation In Progress
-**Last Updated**: 2025-11-28
+**Status**: Complete
+**Last Updated**: 2025-11-29
+**Release**: v4.0.1
 
 ## Overview
 
@@ -103,14 +104,14 @@ if received_block > expected_next_block:
 
 ## Verification Checklist
 
-- [ ] tenacity added to script dependencies
-- [ ] `fetch_full_block()` retries 3x with exponential backoff
-- [ ] WebSocket loop catches all exceptions
-- [ ] Gap detection tracks expected vs received blocks
-- [ ] Inline backfill for ≤5 block gaps
-- [ ] `batch_flush_worker()` handles exceptions without crashing
-- [ ] Deployed to VM and running
-- [ ] No gaps detected after 1 hour of operation
+- [x] tenacity added to script dependencies
+- [x] `fetch_full_block()` retries 3x with exponential backoff
+- [x] WebSocket loop catches all exceptions
+- [x] Gap detection tracks expected vs received blocks
+- [x] Inline backfill for ≤5 block gaps
+- [x] `batch_flush_worker()` handles exceptions without crashing
+- [x] Deployed to VM and running
+- [ ] No gaps detected after 1 hour of operation (monitoring)
 
 ## Progress Tracking
 
@@ -123,4 +124,4 @@ if received_block > expected_next_block:
 | Add self-healing gap detection | Done |
 | Fix batch_flush_worker | Done |
 | Deploy to VM | Done |
-| Create release | In Progress |
+| Create release | Done (v4.0.1) |
