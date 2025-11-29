@@ -10,13 +10,13 @@ The Ethereum real-time block collector (`deployment/vm/realtime_collector.py`) h
 
 Sub-agent investigation identified **5 critical data loss points** where exceptions cause permanent block loss:
 
-| Location | Issue | Impact |
-|----------|-------|--------|
-| `fetch_full_block()` lines 146-150 | 10s timeout, no retry | Single timeout = permanent block loss |
-| `json.loads()` line 434 | No JSONDecodeError handling | Malformed message crashes loop |
-| `data['params']['result']` lines 437-438 | KeyError unhandled | Missing key crashes loop |
-| `batch_flush_worker()` lines 360-368 | Prints error, doesn't re-raise | Silent data loss |
-| WebSocket loop lines 477-479 | Only catches `ConnectionClosed` | Other exceptions crash loop |
+| Location                                 | Issue                           | Impact                                |
+| ---------------------------------------- | ------------------------------- | ------------------------------------- |
+| `fetch_full_block()` lines 146-150       | 10s timeout, no retry           | Single timeout = permanent block loss |
+| `json.loads()` line 434                  | No JSONDecodeError handling     | Malformed message crashes loop        |
+| `data['params']['result']` lines 437-438 | KeyError unhandled              | Missing key crashes loop              |
+| `batch_flush_worker()` lines 360-368     | Prints error, doesn't re-raise  | Silent data loss                      |
+| WebSocket loop lines 477-479             | Only catches `ConnectionClosed` | Other exceptions crash loop           |
 
 ## Decision
 
