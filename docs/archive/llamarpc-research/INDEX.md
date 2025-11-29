@@ -25,7 +25,7 @@ Comprehensive research on LlamaRPC as a free Ethereum RPC provider for collectin
 
 ### Official Documentation & Capabilities
 
-**Location**: [`official/`](./official/)
+**Location**: [`official/`](/docs/archive/llamarpc-research/official/)
 
 **Key Findings**:
 
@@ -36,11 +36,11 @@ Comprehensive research on LlamaRPC as a free Ethereum RPC provider for collectin
 - Authentication: ❌ None required
 - Pricing: Free tier + premium ($0.04 per 100K requests)
 
-**Quick Start**: [`00-EXECUTIVE-SUMMARY.md`](./official/00-EXECUTIVE-SUMMARY.md)
+**Quick Start**: [`00-EXECUTIVE-SUMMARY.md`](/docs/archive/llamarpc-research/official/00-EXECUTIVE-SUMMARY.md)
 
 ### Python SDK Recommendations
 
-**Location**: [`sdk/`](./sdk/)
+**Location**: [`sdk/`](/docs/archive/llamarpc-research/sdk/)
 
 **Recommendation**: **web3.py** (industry standard, Ethereum Foundation maintained)
 
@@ -50,11 +50,11 @@ Comprehensive research on LlamaRPC as a free Ethereum RPC provider for collectin
 - ⚠️ pythereum: WebSocket-only (LlamaRPC HTTP preferred)
 - ✅ httpx: Minimal alternative (manual hex encoding required)
 
-**Quick Start**: [`QUICK_REFERENCE.md`](./sdk/QUICK_REFERENCE.md)
+**Quick Start**: [`QUICK_REFERENCE.md`](/docs/archive/llamarpc-research/sdk/QUICK_REFERENCE.md)
 
 ### Ethereum Block Data Schema
 
-**Location**: [`schema/`](./schema/)
+**Location**: [`schema/`](/docs/archive/llamarpc-research/schema/)
 
 **Schema Coverage**:
 
@@ -64,11 +64,11 @@ Comprehensive research on LlamaRPC as a free Ethereum RPC provider for collectin
 
 **Derivable Metrics**: 20+ network metrics (gas utilization, base fee trends, congestion classification, recommended gas prices)
 
-**Quick Start**: [`QUICK_REFERENCE.md`](./schema/QUICK_REFERENCE.md)
+**Quick Start**: [`QUICK_REFERENCE.md`](/docs/archive/llamarpc-research/schema/QUICK_REFERENCE.md)
 
 ### Historical Data Access Patterns
 
-**Location**: [`historical/`](./historical/)
+**Location**: [`historical/`](/docs/archive/llamarpc-research/historical/)
 
 **Key Findings**:
 
@@ -79,11 +79,11 @@ Comprehensive research on LlamaRPC as a free Ethereum RPC provider for collectin
 
 **Recommendation**: For production bulk ingestion, use Alchemy/Infura instead (more generous rate limits)
 
-**Quick Start**: [`README.md`](./historical/README.md)
+**Quick Start**: [`README.md`](/docs/archive/llamarpc-research/historical/README.md)
 
 ### Community Resources & Patterns
 
-**Location**: [`community/`](./community/)
+**Location**: [`community/`](/docs/archive/llamarpc-research/community/)
 
 **GitHub Projects**: 12 projects analyzed (Uniswap, DefiLlama, ethereum-rpc-mpc)
 
@@ -91,7 +91,7 @@ Comprehensive research on LlamaRPC as a free Ethereum RPC provider for collectin
 
 **Collector Patterns**: 5 major projects analyzed (Flashbots mempool-dumpster, ethereum-etl, ChainStorage, etc.)
 
-**Quick Start**: [`collector-patterns.md`](./community/collector-patterns.md)
+**Quick Start**: [`collector-patterns.md`](/docs/archive/llamarpc-research/community/collector-patterns.md)
 
 ## Getting Started
 
