@@ -1,3 +1,47 @@
+# [4.0.0](https://github.com/terrylica/gapless-network-data/compare/v3.1.2...v4.0.0) (2025-11-29)
+
+
+### Bug Fixes
+
+* **collector:** add graceful shutdown and buffer flush for gap prevention ([11715dd](https://github.com/terrylica/gapless-network-data/commit/11715dd5f8c26a588cb13c7d817a2b888d5112c6))
+* **collector:** fetch full block data for accurate transaction_count ([ac1cec0](https://github.com/terrylica/gapless-network-data/commit/ac1cec0f83ed215f0b46cddf0d6e51791f301f96))
+* **gap-detector:** migrate to ClickHouse-native queries ([a713c09](https://github.com/terrylica/gapless-network-data/commit/a713c09f25e6088634d8585e639d4bfc54ece567))
+* **skills:** add YAML frontmatter to vm-infrastructure-ops and historical-backfill-execution ([dc3af41](https://github.com/terrylica/gapless-network-data/commit/dc3af41496cef7e2fa765a4b021519b3f0605d7c))
+* **tests:** improve test coverage and fix package exports ([6fef94b](https://github.com/terrylica/gapless-network-data/commit/6fef94b435d495044bdb26da32f1b24e054e7cf4))
+* **verify:** use max block as primary dual-write health metric ([9ed9d09](https://github.com/terrylica/gapless-network-data/commit/9ed9d09c95b4db2b56bff98432483df2c6b6fa28))
+
+
+### Code Refactoring
+
+* remove DuckDB/MotherDuck code post-ClickHouse migration ([3a93deb](https://github.com/terrylica/gapless-network-data/commit/3a93deb55bf3b1095b990181ffbb8d41528064ec))
+
+
+### Features
+
+* add probe module for AI-discoverable alpha features ([668aeb9](https://github.com/terrylica/gapless-network-data/commit/668aeb9c08a2c0c30080c68bbd9ef30343254009))
+* **clickhouse:** complete Phase 2 code with Cloud Console deployment guide ([ebdef60](https://github.com/terrylica/gapless-network-data/commit/ebdef60076d06cefd27a7e28b1f166031bb0e89a))
+* **clickhouse:** deploy dual-write to production ([944c9de](https://github.com/terrylica/gapless-network-data/commit/944c9dee563372853970bf0c9ca64cbce2f6741d))
+* **migration:** complete ClickHouse gap backfill from MotherDuck ([20c53f1](https://github.com/terrylica/gapless-network-data/commit/20c53f14ea5980996e6c5e58426863000c521f2a))
+* **migration:** implement MotherDuck to ClickHouse dual-write (MADR-0013) ([85de8ac](https://github.com/terrylica/gapless-network-data/commit/85de8ac000757cd90cdc474dcb62be9e7f098402))
+* **skills:** extract VM ops and historical backfill workflows (Phase 2) ([e2bc107](https://github.com/terrylica/gapless-network-data/commit/e2bc1076274f6036532d5c225ab8da5c7ee4b500))
+
+
+### BREAKING CHANGES
+
+* DuckDB/MotherDuck integrations no longer available.
+Use ClickHouse Cloud for all data operations.
+* **skills:** .claude/skills/bigquery-ethereum-data-acquisition/CLAUDE.md renamed to DECISION_RATIONALE.md
+
+- Create vm-infrastructure-ops skill (systemd, gcloud, troubleshooting)
+- Create historical-backfill-execution skill (1-year chunks, memory-safe)
+- Rename bigquery CLAUDE.md → DECISION_RATIONALE.md (enforces zero child CLAUDE.md)
+- Update Skills Catalog (5 → 7 skills)
+- Update root CLAUDE.md to reference new skills
+
+Implements: MADR-0007 (Skills Extraction Criteria)
+Related: specifications/doc-normalization-phase.yaml Phase 2 (N2-1, N2-2, N2-3)
+SLO: Observability (100% discoverability via Skill tool), Maintainability (atomic skill workflows)
+
 ## [3.1.2](https://github.com/terrylica/gapless-network-data/compare/v3.1.1...v3.1.2) (2025-11-13)
 
 
