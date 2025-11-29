@@ -1,3 +1,10 @@
+## [4.0.1](https://github.com/terrylica/gapless-network-data/compare/v4.0.0...v4.0.1) (2025-11-29)
+
+
+### Bug Fixes
+
+* **collector:** implement bulletproof resilience for zero block loss ([#1](https://github.com/terrylica/gapless-network-data/issues/1)) ([ae701d3](https://github.com/terrylica/gapless-network-data/commit/ae701d3d4d14b385198f432de169dea3d7b859ec))
+
 # [4.0.0](https://github.com/terrylica/gapless-network-data/compare/v3.1.2...v4.0.0) (2025-11-29)
 
 
