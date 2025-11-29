@@ -41,8 +41,8 @@ cd /tmp/ethereum-research
 
 ### Read the Docs
 
-| Document                           | Purpose                                  | Size  |
-| ---------------------------------- | ---------------------------------------- | ----- |
+| Document                                                   | Purpose                                  | Size  |
+| ---------------------------------------------------------- | ---------------------------------------- | ----- |
 | **[QUICKSTART.md](/docs/research/ethereum/QUICKSTART.md)** | Fast-track guide for common use cases    | 8 KB  |
 | **[SUMMARY.md](/docs/research/ethereum/SUMMARY.md)**       | Executive summary with recommendations   | 12 KB |
 | **[FINDINGS.md](/docs/research/ethereum/FINDINGS.md)**     | Complete research report (all 8 sources) | 20 KB |
