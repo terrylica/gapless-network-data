@@ -1,10 +1,9 @@
-# Plan 0010: Documentation Accuracy
+# Plan: Documentation Accuracy
 
-**ADR ID**: 0010
 **Status**: Complete
 **Created**: 2025-11-20
 **Completed**: 2025-11-20
-**Related MADR**: `docs/decisions/0010-documentation-accuracy-standards.md`
+**Related ADR**: [Documentation Accuracy Standards](/docs/architecture/decisions/2025-11-20-documentation-accuracy-standards.md)
 
 ## (a) Context
 

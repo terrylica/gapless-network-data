@@ -1,9 +1,8 @@
-# Plan 0014: Post-Migration Documentation Rectification
+# Plan: Post-Migration Documentation Rectification
 
-**ADR ID**: 0014
 **Status**: In Progress
 **Created**: 2025-11-25
-**Related MADR**: `docs/decisions/0014-documentation-rectification.md`
+**Related ADR**: [Documentation Rectification](/docs/architecture/decisions/2025-11-25-documentation-rectification.md)
 
 ## (a) Context
 

@@ -6,12 +6,11 @@ Local navigation hub for architectural design documents, system diagrams, and te
 
 - [Architecture Overview](./README.md) - Core components, data flow, SLOs, operational infrastructure
 - [Data Format Specification](./DATA_FORMAT.md) - Mempool snapshot schema, column definitions, data types
-- [DuckDB Strategy](./duckdb-strategy.md) - DuckDB PRIMARY architecture, 23 features, performance benchmarks, use cases
-- [ClickHouse Migration](../decisions/0013-motherduck-clickhouse-migration.md) - Production database migration (MADR-0013)
+- [ADR Index](./decisions/README.md) - Architectural decision records (date-based format)
 
 ## Related Documentation
 
 - [Root CLAUDE.md](../../CLAUDE.md) - Project overview and quick navigation
 - [Deployment Guides](../deployment/) - Infrastructure deployment documentation (future)
-- [Decisions (MADRs)](../decisions/) - Architectural Decision Records (future)
+- [Decisions (ADRs)](./decisions/) - 17 Architectural Decision Records (date-based)
 - [Skills Catalog](../../.claude/skills/CATALOG.md) - Project skills (7 operational skills)

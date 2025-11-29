@@ -1,9 +1,8 @@
-# Plan 0016: Enable Healthchecks.io for Gap Detector
+# Plan: Enable Healthchecks.io for Gap Detector
 
-**ADR ID**: 0016
 **Status**: Completed
 **Created**: 2025-11-26
-**Related MADR**: [`docs/decisions/0016-healthchecks-gap-detector-enable.md`](../../../decisions/0016-healthchecks-gap-detector-enable.md)
+**Related ADR**: [Healthchecks Gap Detector Enable](/docs/architecture/decisions/2025-11-28-healthchecks-gap-detector-enable.md)
 
 ## (a) Context
 
@@ -113,7 +112,7 @@ gcloud functions logs read motherduck-gap-detector \
 ## Critical Files
 
 - `deployment/gcp-functions/motherduck-monitor/main.py` (no changes - code complete)
-- `docs/decisions/0016-healthchecks-gap-detector-enable.md` (ADR)
+- `/docs/architecture/decisions/2025-11-28-healthchecks-gap-detector-enable.md` (ADR)
 
 ## Notes
 

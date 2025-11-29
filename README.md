@@ -154,7 +154,7 @@ uv run scripts/clickhouse/verify_blocks.py
 
 - [Architecture Overview](https://github.com/terrylica/gapless-network-data/blob/main/docs/architecture/README.md)
 - [Data Format Specification](https://github.com/terrylica/gapless-network-data/blob/main/docs/architecture/DATA_FORMAT.md)
-- [ClickHouse Migration Decision](https://github.com/terrylica/gapless-network-data/blob/main/docs/decisions/0013-motherduck-clickhouse-migration.md)
+- [ADR Index](https://github.com/terrylica/gapless-network-data/blob/main/docs/architecture/decisions/README.md)
 
 ## License
 

@@ -4,7 +4,6 @@ Mempool data collector using mempool.space REST API.
 
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
-from typing import Optional
 
 import httpx
 import pandas as pd
@@ -32,7 +31,7 @@ class MempoolCollector:
     def __init__(
         self,
         base_url: str = "https://mempool.space/api",
-        output_dir: Optional[str] = None,
+        output_dir: str | None = None,
         timeout: float = 30.0,
     ) -> None:
         """

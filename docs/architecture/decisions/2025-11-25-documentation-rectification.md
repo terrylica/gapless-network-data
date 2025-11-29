@@ -1,8 +1,12 @@
-# ADR 0014: Post-Migration Documentation Rectification
+# Post-Migration Documentation Rectification
 
 ## Status
 
-In Progress (2025-11-25)
+In Progress
+
+## Date
+
+2025-11-25
 
 ## Context
 
@@ -50,7 +54,7 @@ Systematically rectify all documentation to reflect ClickHouse as the production
 
 ## Implementation
 
-**Plan**: [docs/development/plan/0014-documentation-rectification/plan.md](../development/plan/0014-documentation-rectification/plan.md)
+**Plan**: [Documentation Rectification Plan](/docs/development/plan/2025-11-25-documentation-rectification/plan.md)
 
 **Phases**:
 
@@ -60,7 +64,7 @@ Systematically rectify all documentation to reflect ClickHouse as the production
 4. Decision Records: Add supersession notes
 5. Cleanup: Archive specifications, add deprecation notices
 
-## References
+## Related
 
-- [MADR-0013: MotherDuck to ClickHouse Migration](./0013-motherduck-clickhouse-migration.md)
-- [Plan File](../development/plan/0014-documentation-rectification/plan.md)
+- [MotherDuck to ClickHouse Migration](./2025-11-25-motherduck-clickhouse-migration.md)
+- [Documentation Rectification Plan](/docs/development/plan/2025-11-25-documentation-rectification/plan.md)

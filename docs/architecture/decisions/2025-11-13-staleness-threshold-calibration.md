@@ -1,8 +1,12 @@
-# MADR-0004: Staleness Threshold Empirical Calibration
+# Staleness Threshold Empirical Calibration
 
 ## Status
 
-**Superseded** by [MADR-0013: MotherDuck to ClickHouse Migration](./0013-motherduck-clickhouse-migration.md) (2025-11-25)
+**Superseded** by [MotherDuck to ClickHouse Migration](./2025-11-25-motherduck-clickhouse-migration.md) (2025-11-25)
+
+## Date
+
+2025-11-13
 
 > **Note**: MotherDuck was replaced by ClickHouse Cloud as the production database. The staleness monitoring now uses ClickHouse queries via the `clickhouse-gap-detector` Cloud Function. Threshold values may differ for the new architecture.
 
@@ -207,16 +211,7 @@ curl -H "X-Api-Key: $HEALTHCHECKS_API_KEY" \
 - Empirical data: 100 execution samples (P99: 312s, P95: 287s)
 - Industry standard: 2× P99 safety margin for staleness thresholds
 
-## Decision Date
+## Related
 
-2025-11-13
-
-## Decision Makers
-
-- Monitoring Infrastructure Team
-- Threshold Validation Agent (empirical analysis)
-
-## Related ADRs
-
-- MADR-0001: Grace Period Calibration (complementary slow alerting)
-- MADR-0002: Exception Handler Notifications (complementary fast alerting)
+- [Grace Period Calibration](./2025-11-13-healthchecks-grace-period-calibration.md) (complementary slow alerting)
+- [Exception Handler Notifications](./2025-11-13-exception-handler-notifications.md) (complementary fast alerting)

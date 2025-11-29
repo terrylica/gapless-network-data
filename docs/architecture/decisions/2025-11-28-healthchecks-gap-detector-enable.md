@@ -1,10 +1,12 @@
-# MADR-0016: Enable Healthchecks.io for Gap Detector
+# Enable Healthchecks.io for Gap Detector
 
-**Status**: Accepted
-**Date**: 2025-11-26
-**Deciders**: Terry Li
-**Related ADR**: [MADR-0015: Gap Detector ClickHouse Fix](./0015-gap-detector-clickhouse-fix.md)
-**Plan**: [`docs/development/plan/0016-healthchecks-gap-detector-enable/plan.md`](../development/plan/0016-healthchecks-gap-detector-enable/plan.md)
+## Status
+
+Accepted
+
+## Date
+
+2025-11-28
 
 ## Context
 
@@ -78,8 +80,8 @@ Enable Healthchecks.io monitoring for the gap detector by:
 2. Verify logs show "Pinged Healthchecks.io" (not "skipping")
 3. Confirm Healthchecks.io dashboard shows green status
 
-## References
+## Related
 
-- [MADR-0015: Gap Detector ClickHouse Fix](./0015-gap-detector-clickhouse-fix.md)
-- [MADR-0001: Healthchecks Grace Period Calibration](./0001-healthchecks-grace-period-calibration.md)
-- [Plan 0016](../development/plan/0016-healthchecks-gap-detector-enable/plan.md)
+- [Gap Detector ClickHouse Fix](./2025-11-26-gap-detector-clickhouse-fix.md)
+- [Healthchecks Grace Period Calibration](./2025-11-13-healthchecks-grace-period-calibration.md)
+- [Implementation Plan](/docs/development/plan/2025-11-28-healthchecks-gap-detector-enable/plan.md)

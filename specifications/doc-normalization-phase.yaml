@@ -49,22 +49,22 @@ x-architectural-decisions:
   - id: MADR-0005
     title: "Root CLAUDE.md Scope and Essential Context Strategy"
     status: proposed
-    file: docs/decisions/0005-root-claude-scope.md
+    file: docs/architecture/decisions/2025-11-13-root-claude-scope.md
 
   - id: MADR-0006
     title: "Child CLAUDE.md Spoke Architecture"
     status: proposed
-    file: docs/decisions/0006-child-claude-spokes.md
+    file: docs/architecture/decisions/2025-11-13-child-claude-spokes.md
 
   - id: MADR-0007
     title: "Skills Extraction Criteria and Structure"
     status: proposed
-    file: docs/decisions/0007-skills-extraction.md
+    file: docs/architecture/decisions/2025-11-13-skills-extraction.md
 
   - id: MADR-0008
     title: "Link Format Standardization (Relative GFM)"
     status: proposed
-    file: docs/decisions/0008-link-format.md
+    file: docs/architecture/decisions/2025-11-13-link-format.md
 
 paths:
   /docs/normalization/phase1:

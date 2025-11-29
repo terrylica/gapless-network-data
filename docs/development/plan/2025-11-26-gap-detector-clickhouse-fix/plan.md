@@ -1,10 +1,9 @@
-# Plan 0015: Gap Detector ClickHouse Fix
+# Plan: Gap Detector ClickHouse Fix
 
-**ADR ID**: 0015
 **Status**: Completed
 **Created**: 2025-11-26
 **Completed**: 2025-11-27
-**Related MADR**: [`docs/decisions/0015-gap-detector-clickhouse-fix.md`](../../../decisions/0015-gap-detector-clickhouse-fix.md)
+**Related ADR**: [Gap Detector ClickHouse Fix](/docs/architecture/decisions/2025-11-26-gap-detector-clickhouse-fix.md)
 
 ## (a) Context
 

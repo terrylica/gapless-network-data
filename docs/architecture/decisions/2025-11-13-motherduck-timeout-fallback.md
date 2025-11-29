@@ -1,8 +1,12 @@
-# MADR-0003: MotherDuck Connection Timeout and Fallback Architecture
+# MotherDuck Connection Timeout and Fallback Architecture
 
 ## Status
 
-**Superseded** by [MADR-0013: MotherDuck to ClickHouse Migration](./0013-motherduck-clickhouse-migration.md) (2025-11-25)
+**Superseded** by [MotherDuck to ClickHouse Migration](./2025-11-25-motherduck-clickhouse-migration.md) (2025-11-25)
+
+## Date
+
+2025-11-13
 
 > **Note**: MotherDuck was replaced by ClickHouse Cloud as the production database. ClickHouse uses native TCP connections with built-in retry logic. The timeout and fallback patterns documented here are no longer applicable to the current architecture.
 
@@ -220,10 +224,6 @@ except Exception as e:
 - Specification: `specifications/monitoring-fixes-phase.yaml` (task P0-4)
 - DuckDB config docs: https://duckdb.org/docs/configuration/overview
 
-## Decision Date
+## Related
 
-2025-11-13
-
-## Related ADRs
-
-- MADR-0002: Exception Handler Notifications (complementary pattern)
+- [Exception Handler Notifications](./2025-11-13-exception-handler-notifications.md) (complementary pattern)

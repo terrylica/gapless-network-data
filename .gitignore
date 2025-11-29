@@ -43,15 +43,13 @@ coverage.json
 .lychee-results.json
 .lychee-results.txt
 .lycheecache
+.lint-relative-paths-results.txt
 
 # Scratch/temporary work
 scratch/
 
 # Node.js (for semantic-release)
 node_modules/
-
-# Build artifacts
-dist/
 
 # OS
 .DS_Store
