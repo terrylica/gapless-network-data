@@ -59,34 +59,36 @@ Rationale:
 ## Architecture
 
 ```mermaid
-flowchart TD
-    subgraph Current["Current State (Pre-Cleanup)"]
-        MD[motherduck-monitor/]
-        GM[gap-monitor/]
-        BOTH["Both contain<br/>identical code"]
-        MD --> BOTH
-        GM --> BOTH
+flowchart TB
+    subgraph before["Before Cleanup"]
+        MD["motherduck-monitor/"]
+        GM1["gap-monitor/"]
     end
 
-    subgraph GCP["GCP Resources (Keep Legacy Names)"]
-        CF[motherduck-gap-detector<br/>Cloud Function]
-        SA[motherduck-monitor-sa<br/>Service Account]
-        SCH[motherduck-monitor-trigger<br/>Cloud Scheduler]
+    DUP(["Both directories have identical code"])
+    MD -.-> DUP
+    GM1 -.-> DUP
+
+    subgraph after["After Cleanup"]
+        GM2["gap-monitor/"]
+        CH[("ClickHouse Cloud")]
     end
 
-    subgraph Target["Target State (Post-Cleanup)"]
-        GM2[gap-monitor/<br/>Single Source]
-        CH[(ClickHouse Cloud<br/>AWS us-west-2)]
-        GM2 --> CH
+    GM2 --> CH
+
+    subgraph gcp["GCP Resources — names unchanged"]
+        CF["motherduck-gap-detector"]
+        SA["motherduck-monitor-sa"]
+        SCH["motherduck-monitor-trigger"]
     end
 
-    Current -->|"Phase 1:<br/>Delete duplicate"| Target
-    GCP -->|"Keep with<br/>historical note"| GCP
+    before -->|"Delete duplicate"| after
 
-    style MD fill:#ff6b6b,color:#fff
-    style GM fill:#51cf66,color:#fff
-    style GM2 fill:#51cf66,color:#fff
-    style CH fill:#339af0,color:#fff
+    style MD fill:#dc3545,color:#fff
+    style GM1 fill:#198754,color:#fff
+    style GM2 fill:#198754,color:#fff
+    style CH fill:#0d6efd,color:#fff
+    style DUP fill:#fff3cd,color:#212529
 ```
 
 ## User Decisions (Plan Mode)
