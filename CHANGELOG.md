@@ -1,9 +1,8 @@
 ## [4.3.1](https://github.com/terrylica/gapless-network-data/compare/v4.3.0...v4.3.1) (2025-11-29)
 
-
 ### Bug Fixes
 
-* **adr:** use ASCII markers instead of emojis for GitHub alignment ([aec6a01](https://github.com/terrylica/gapless-network-data/commit/aec6a01ca7eb6d7c8e567d0a9f85d5d5876afe73))
+- **adr:** use ASCII markers instead of emojis for GitHub alignment ([aec6a01](https://github.com/terrylica/gapless-network-data/commit/aec6a01ca7eb6d7c8e567d0a9f85d5d5876afe73))
 
 # [4.3.0](https://github.com/terrylica/gapless-network-data/compare/v4.2.0...v4.3.0) (2025-11-29)
 
