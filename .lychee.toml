@@ -8,8 +8,16 @@
 exclude = [
   # Temp directories (research artifacts from scratch investigations)
   "^file:///tmp/",
+  ".*/tmp/.*",
+  # Scratch directories (transient research, moved to docs/archive/)
+  ".*/scratch/.*",
   # External repo references (gapless-crypto-data is a separate package)
-  "^.*/gapless-crypto-data/",
+  ".*/gapless-crypto-data/",
+  # Pending documentation (marked as 🚧 PENDING in INDEX.md)
+  ".*/docs/development/COMMANDS.md",
+  ".*/docs/development/SETUP.md",
+  ".*/docs/development/PUBLISHING.md",
+  ".*/docs/architecture/OVERVIEW.md",
 ]
 
 # Skip these file patterns

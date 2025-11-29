@@ -21,7 +21,7 @@ Hub-and-spoke documentation architecture for multi-chain blockchain network metr
 ### Research & Data Sources ✅ COMPLETE
 
 - [Research Index](/docs/research/INDEX.md) - Free on-chain network metrics sources (2025-11-03)
-- [LlamaRPC Deep Dive](/docs/llamarpc/INDEX.md) - Comprehensive Ethereum RPC research (PRIMARY source, 27 files, 10,546 lines)
+- [LlamaRPC Deep Dive](/docs/archive/llamarpc-research/INDEX.md) - Comprehensive Ethereum RPC research (PRIMARY source, 27 files, 10,546 lines)
 - [Bitcoin Research](/docs/research/bitcoin/COMPREHENSIVE_FINDINGS.md) - mempool.space findings (SECONDARY source)
 - [Ethereum Research](/docs/research/ethereum/SUMMARY.md) - LlamaRPC validation
 - [Alt-L1 Research](/docs/research/alt-l1/EXECUTIVE_SUMMARY.md) - Solana, Avalanche, Polygon expansion targets
@@ -74,11 +74,11 @@ Hub-and-spoke documentation architecture for multi-chain blockchain network metr
 ### Planning & Coordination
 
 - [Master Project Roadmap](/specifications/master-project-roadmap.yaml) - **SSoT for project planning** (6 phases, feature-driven)
-- [Core Collection Phase 1](/specifications/core-collection-phase1.yaml) - Ethereum + Bitcoin implementation spec
+- [Core Collection Phase 1](/specifications/archive/core-collection-phase1.yaml) - Ethereum + Bitcoin implementation spec (archived)
 
 ### Architecture & Strategy
 
-- [DuckDB Integration Strategy](/specifications/duckdb-integration-strategy.yaml) - 23 features, performance benchmarks (110x storage savings, 10-100x speedups)
+- [ClickHouse Migration](/docs/architecture/decisions/2025-11-25-motherduck-clickhouse-migration.md) - Production database migration (operational)
 - [Documentation Audit](/specifications/documentation-audit-phase.yaml) - Completed 2025-11-03, 6 findings resolved
 
 ### Cross-Package Integration
@@ -118,38 +118,38 @@ See [master-project-roadmap.yaml](/specifications/master-project-roadmap.yaml) f
 
 ### Official Documentation ✅
 
-- [Executive Summary](/docs/llamarpc/official/00-EXECUTIVE-SUMMARY.md) - Key capabilities, pricing, rate limits
-- [Initial Discovery](/docs/llamarpc/official/01-initial-discovery.md) - Block-level data, 12s intervals
-- [GitHub web3-proxy Analysis](/docs/llamarpc/official/02-github-web3-proxy-analysis.md) - Production RPC load balancing
-- [Empirical Testing](/docs/llamarpc/official/03-empirical-testing.md) - API validation results
-- [Pricing and Features](/docs/llamarpc/official/04-pricing-and-features.md) - Free tier limits
-- [Supported Chains](/docs/llamarpc/official/05-supported-chains.md) - Multi-chain endpoints
-- [Method Reference](/docs/llamarpc/official/06-method-reference.md) - JSON-RPC method list
+- [Executive Summary](/docs/archive/llamarpc-research/official/00-EXECUTIVE-SUMMARY.md) - Key capabilities, pricing, rate limits
+- [Initial Discovery](/docs/archive/llamarpc-research/official/01-initial-discovery.md) - Block-level data, 12s intervals
+- [GitHub web3-proxy Analysis](/docs/archive/llamarpc-research/official/02-github-web3-proxy-analysis.md) - Production RPC load balancing
+- [Empirical Testing](/docs/archive/llamarpc-research/official/03-empirical-testing.md) - API validation results
+- [Pricing and Features](/docs/archive/llamarpc-research/official/04-pricing-and-features.md) - Free tier limits
+- [Supported Chains](/docs/archive/llamarpc-research/official/05-supported-chains.md) - Multi-chain endpoints
+- [Method Reference](/docs/archive/llamarpc-research/official/06-method-reference.md) - JSON-RPC method list
 
 ### Python SDK ✅
 
-- [SDK Research Report](/docs/llamarpc/sdk/RESEARCH_REPORT.md) - **web3.py RECOMMENDED** (39 packages, industry standard)
-- [Quick Reference](/docs/llamarpc/sdk/QUICK_REFERENCE.md) - Installation, usage examples
+- [SDK Research Report](/docs/archive/llamarpc-research/sdk/RESEARCH_REPORT.md) - **web3.py RECOMMENDED** (39 packages, industry standard)
+- [Quick Reference](/docs/archive/llamarpc-research/sdk/QUICK_REFERENCE.md) - Installation, usage examples
 
 ### Data Schema ✅
 
-- [Ethereum Block Schema](/docs/llamarpc/schema/ETHEREUM_BLOCK_SCHEMA.md) - 26 block fields, 20+ metrics
-- [Metric Mapping](/docs/llamarpc/schema/METRIC_MAPPING.md) - Feature engineering guidance
-- [Quick Reference](/docs/llamarpc/schema/QUICK_REFERENCE.md) - Core 6 fields for Phase 1
+- [Ethereum Block Schema](/docs/archive/llamarpc-research/schema/ETHEREUM_BLOCK_SCHEMA.md) - 26 block fields, 20+ metrics
+- [Metric Mapping](/docs/archive/llamarpc-research/schema/METRIC_MAPPING.md) - Feature engineering guidance
+- [Quick Reference](/docs/archive/llamarpc-research/schema/QUICK_REFERENCE.md) - Core 6 fields for Phase 1
 
 ### Historical Data Access ✅
 
-- [Historical README](/docs/llamarpc/historical/README.md) - Backfill strategies
-- [Research Summary](/docs/llamarpc/historical/RESEARCH_SUMMARY.md) - Performance considerations
+- [Historical README](/docs/archive/llamarpc-research/historical/README.md) - Backfill strategies
+- [Research Summary](/docs/archive/llamarpc-research/historical/RESEARCH_SUMMARY.md) - Performance considerations
 
 ### Community Resources ✅
 
-- [Collector Patterns](/docs/llamarpc/community/collector-patterns.md) - 24 production-ready patterns
-- [RPC Provider Comparison](/docs/llamarpc/community/rpc-provider-comparison.md) - LlamaRPC vs Alchemy vs Infura
-- [Warnings and Pitfalls](/docs/llamarpc/community/warnings-and-pitfalls.md) - Common mistakes
-- [Tutorials and Blogs](/docs/llamarpc/community/tutorials-and-blogs.md) - Learning resources
-- [GitHub Projects](/docs/llamarpc/community/github-projects-found.md) - Open-source tools
-- [web3-proxy Analysis](/docs/llamarpc/community/web3-proxy-analysis.md) - Production load balancing
+- [Collector Patterns](/docs/archive/llamarpc-research/community/collector-patterns.md) - 24 production-ready patterns
+- [RPC Provider Comparison](/docs/archive/llamarpc-research/community/rpc-provider-comparison.md) - LlamaRPC vs Alchemy vs Infura
+- [Warnings and Pitfalls](/docs/archive/llamarpc-research/community/warnings-and-pitfalls.md) - Common mistakes
+- [Tutorials and Blogs](/docs/archive/llamarpc-research/community/tutorials-and-blogs.md) - Learning resources
+- [GitHub Projects](/docs/archive/llamarpc-research/community/github-projects-found.md) - Open-source tools
+- [web3-proxy Analysis](/docs/archive/llamarpc-research/community/web3-proxy-analysis.md) - Production load balancing
 
 ---
 

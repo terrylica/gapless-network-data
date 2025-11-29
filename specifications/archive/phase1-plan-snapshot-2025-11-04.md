@@ -227,9 +227,9 @@ TOTAL                              20%  →   70%+
 
 **Research**:
 
-- LlamaRPC Index: `/docs/llamarpc/INDEX.md`
-- web3.py SDK: `/docs/llamarpc/sdk/`
-- Block Schema: `/docs/llamarpc/schema/`
+- LlamaRPC Index: `/docs/archive/llamarpc-research/INDEX.md`
+- web3.py SDK: `/docs/archive/llamarpc-research/sdk/`
+- Block Schema: `/docs/archive/llamarpc-research/schema/`
 
 ---
 

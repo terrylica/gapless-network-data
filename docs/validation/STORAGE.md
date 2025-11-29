@@ -347,13 +347,13 @@ Until this document is completed, refer to:
 
 - [CLAUDE.md](/CLAUDE.md) - ValidationStorage overview
 - [Validation Overview](/docs/validation/OVERVIEW.md) - 5-layer pipeline
-- [DuckDB Integration Strategy](/specifications/duckdb-integration-strategy.yaml) - Performance benchmarks
+- [ClickHouse Migration](/docs/architecture/decisions/2025-11-25-motherduck-clickhouse-migration.md) - Production database architecture
 
 ---
 
 **Related Documentation**:
 
 - [Validation Overview](/docs/validation/OVERVIEW.md) - Validation pipeline
-- [DuckDB Integration Strategy](/specifications/duckdb-integration-strategy.yaml) - Query architecture
+- [ClickHouse Migration](/docs/architecture/decisions/2025-11-25-motherduck-clickhouse-migration.md) - Query architecture
 
 **This document will be completed during Phase 2 implementation.**

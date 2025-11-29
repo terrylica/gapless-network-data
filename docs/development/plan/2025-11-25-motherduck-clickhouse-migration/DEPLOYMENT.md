@@ -27,7 +27,7 @@
 
 ```bash
 # From repository root
-cd 
+cd
 
 # Step 1: Setup GCP secrets
 ./scripts/clickhouse/setup_gcp_secrets.sh
