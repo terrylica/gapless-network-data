@@ -122,5 +122,5 @@ if received_block > expected_next_block:
 | Add exception handling | Done |
 | Add self-healing gap detection | Done |
 | Fix batch_flush_worker | Done |
-| Deploy to VM | Pending |
-| Create release | Pending |
+| Deploy to VM | Done |
+| Create release | In Progress |
