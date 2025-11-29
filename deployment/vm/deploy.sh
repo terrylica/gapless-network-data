@@ -64,11 +64,10 @@ gcloud compute ssh "${INSTANCE}" \
     echo 'Installing Python packages...'
     pip3 install --quiet --upgrade \
       websockets \
-      duckdb \
-      pyarrow \
       google-cloud-secret-manager \
       requests \
-      clickhouse-connect
+      clickhouse-connect \
+      tenacity
     echo '✅ Dependencies installed'
   "
 
