@@ -37,28 +37,28 @@ python3 simple_metrics.py
 
 ### Core Documentation
 
-| File                                                                                                               | Description                       | Use Case                       |
-| ------------------------------------------------------------------------------------------------------------------ | --------------------------------- | ------------------------------ |
-| **[QUICK_REFERENCE.md](/docs/archive/llamarpc-research/schema/QUICK_REFERENCE.md)**                                | Fast lookup for common operations | Copy-paste code snippets       |
-| **[ETHEREUM_BLOCK_SCHEMA.md](/docs/archive/llamarpc-research/schema/ETHEREUM_BLOCK_SCHEMA.md)**                    | Complete field documentation      | Understanding data structure   |
-| **[RESEARCH_SUMMARY.md](/docs/archive/llamarpc-research/schema/RESEARCH_SUMMARY.md)**                              | Executive summary and findings    | Project planning               |
-| **[schemas.json](/docs/archive/llamarpc-research/schema/schemas.json)**                                            | JSON Schema definitions           | Validation and code generation |
+| File                                                                                            | Description                       | Use Case                       |
+| ----------------------------------------------------------------------------------------------- | --------------------------------- | ------------------------------ |
+| **[QUICK_REFERENCE.md](/docs/archive/llamarpc-research/schema/QUICK_REFERENCE.md)**             | Fast lookup for common operations | Copy-paste code snippets       |
+| **[ETHEREUM_BLOCK_SCHEMA.md](/docs/archive/llamarpc-research/schema/ETHEREUM_BLOCK_SCHEMA.md)** | Complete field documentation      | Understanding data structure   |
+| **[RESEARCH_SUMMARY.md](/docs/archive/llamarpc-research/schema/RESEARCH_SUMMARY.md)**           | Executive summary and findings    | Project planning               |
+| **[schemas.json](/docs/archive/llamarpc-research/schema/schemas.json)**                         | JSON Schema definitions           | Validation and code generation |
 
 ### Working Examples
 
-| File                                                                                     | Description                   | Dependencies          |
-| ---------------------------------------------------------------------------------------- | ----------------------------- | --------------------- |
-| **[simple_metrics.py](/docs/archive/llamarpc-research/schema/simple_metrics.py)**        | Verified working demo         | Python stdlib only ✅ |
-| **[examples.py](/docs/archive/llamarpc-research/schema/examples.py)**                    | Full-featured collector class | `requests` library    |
+| File                                                                              | Description                   | Dependencies          |
+| --------------------------------------------------------------------------------- | ----------------------------- | --------------------- |
+| **[simple_metrics.py](/docs/archive/llamarpc-research/schema/simple_metrics.py)** | Verified working demo         | Python stdlib only ✅ |
+| **[examples.py](/docs/archive/llamarpc-research/schema/examples.py)**             | Full-featured collector class | `requests` library    |
 
 ### Sample Data
 
-| File                                                                                           | Description                         | Size   |
-| ---------------------------------------------------------------------------------------------- | ----------------------------------- | ------ |
-| [block_without_txs.json](/docs/archive/llamarpc-research/schema/block_without_txs.json)        | Block #23,593,185 (tx hashes only)  | 8 KB   |
-| [full_block_with_txs.json](/docs/archive/llamarpc-research/schema/full_block_with_txs.json)    | Block #23,593,185 (full tx objects) | 625 KB |
-| [transaction_detail.json](/docs/archive/llamarpc-research/schema/transaction_detail.json)      | Single EIP-1559 transaction         | 2 KB   |
-| [fee_history.json](/docs/archive/llamarpc-research/schema/fee_history.json)                    | 5-block fee history                 | 1 KB   |
+| File                                                                                        | Description                         | Size   |
+| ------------------------------------------------------------------------------------------- | ----------------------------------- | ------ |
+| [block_without_txs.json](/docs/archive/llamarpc-research/schema/block_without_txs.json)     | Block #23,593,185 (tx hashes only)  | 8 KB   |
+| [full_block_with_txs.json](/docs/archive/llamarpc-research/schema/full_block_with_txs.json) | Block #23,593,185 (full tx objects) | 625 KB |
+| [transaction_detail.json](/docs/archive/llamarpc-research/schema/transaction_detail.json)   | Single EIP-1559 transaction         | 2 KB   |
+| [fee_history.json](/docs/archive/llamarpc-research/schema/fee_history.json)                 | 5-block fee history                 | 1 KB   |
 
 ## Key Findings
 
