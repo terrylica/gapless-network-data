@@ -386,6 +386,6 @@ url = f"https://mempool.space/api/v1/mempool/history?timestamp={ts}"
 ## References
 
 - **This Research**: Ethereum schema via LlamaRPC
-- **Target Schema**: `/Users/terryli/eon/gapless-network-data/docs/architecture/DATA_FORMAT.md` (pending)
+- **Target Schema**: `/docs/architecture/DATA_FORMAT.md` (pending)
 - **mempool.space API**: https://mempool.space/docs/api
-- **gapless-network-data**: `/Users/terryli/eon/gapless-network-data/CLAUDE.md`
+- **gapless-network-data**: `/CLAUDE.md`

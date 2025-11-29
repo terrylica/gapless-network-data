@@ -15,7 +15,7 @@ The gapless-network-data repository has **EXCELLENT** documentation of the BigQu
 ## DOCUMENTATION INVENTORY
 
 ### PRIMARY DOCUMENTATION (Skill-based)
-Location: `/Users/terryli/eon/gapless-network-data/.claude/skills/bigquery-ethereum-data-acquisition/`
+Location: `/.claude/skills/bigquery-ethereum-data-acquisition/`
 
 #### 1. **SKILL.md** (Overview & Workflow)
 - **Status**: ✅ Excellent
@@ -48,7 +48,7 @@ Location: `/Users/terryli/eon/gapless-network-data/.claude/skills/bigquery-ether
   - Testing methodology documented (platform, Python version, authentication)
 
 ### RESEARCH DOCUMENTS (references/)
-Location: `/Users/terryli/eon/gapless-network-data/.claude/skills/bigquery-ethereum-data-acquisition/references/`
+Location: `/.claude/skills/bigquery-ethereum-data-acquisition/references/`
 
 #### 4. **ethereum_columns_ml_evaluation.md** (PRIMARY: Column-by-Column Analysis)
 - **Status**: ✅ EXCELLENT - This is the centerpiece document
@@ -228,7 +228,7 @@ Location: `/Users/terryli/eon/gapless-network-data/.claude/skills/bigquery-ether
 - **Justifies**: Why BigQuery > local node
 
 ### SCRIPTS WITH INLINE DOCUMENTATION
-Location: `/Users/terryli/eon/gapless-network-data/.claude/skills/bigquery-ethereum-data-acquisition/scripts/`
+Location: `/.claude/skills/bigquery-ethereum-data-acquisition/scripts/`
 
 #### 12. **test_bigquery_cost.py**
 - **Status**: ✅ Code + documentation

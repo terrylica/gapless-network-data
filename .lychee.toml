@@ -1,20 +1,15 @@
 # Lychee link checker configuration
 # See: https://lychee.cli.rs/
 #
-# IMPORTANT: Run lychee with --base-url to resolve repo-relative paths:
-#   lychee --base-url "file://$PWD" .
-#
-# This is required because the codebase uses /docs/... style links
-# (repository-relative) which lychee interprets as filesystem root.
+# Usage: ./scripts/lint-links.sh [--offline] [path]
+# The script uses --root-dir to resolve /docs/... repo-relative links.
 
-# Exclude external paths that we can't control
+# Exclude URLs that are external or temporary
 exclude = [
   # Temp directories (research artifacts from scratch investigations)
   "^file:///tmp/",
   # External repo references (gapless-crypto-data is a separate package)
-  "^file:///Users/.*/gapless-crypto-data/",
-  # Full absolute paths that should have been relative
-  "^file:///Users/.*/gapless-network-data/",
+  "^.*/gapless-crypto-data/",
 ]
 
 # Skip these file patterns

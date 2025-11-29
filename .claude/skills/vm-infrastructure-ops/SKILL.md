@@ -109,7 +109,7 @@ gcloud compute instances reset eth-realtime-collector --zone=us-east1-b
 After restarting services, verify data is flowing to ClickHouse:
 
 ```bash
-cd /Users/terryli/eon/gapless-network-data
+cd 
 doppler run --project aws-credentials --config prd -- python3 -c "
 import clickhouse_connect
 import os

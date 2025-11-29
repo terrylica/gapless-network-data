@@ -107,7 +107,7 @@ brew install duckdb
 ### Phase 1: Cost Estimation (Validated)
 
 ```bash
-cd /Users/terryli/eon/gapless-network-data/.claude/skills/bigquery-ethereum-data-acquisition
+cd /.claude/skills/bigquery-ethereum-data-acquisition
 
 # Check query cost before downloading
 uv run scripts/test_bigquery_cost.py
@@ -260,7 +260,7 @@ These three skills form a complete workflow for blockchain data acquisition.
 
 ## Distribution
 
-**Package**: Available as `/Users/terryli/eon/gapless-network-data/.claude/skills/bigquery-ethereum-data-acquisition.zip ` for distribution
+**Package**: Available as `/.claude/skills/bigquery-ethereum-data-acquisition.zip ` for distribution
 
 **Contents**:
 - SKILL.md - Workflow documentation

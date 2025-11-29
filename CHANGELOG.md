@@ -1,9 +1,8 @@
 # [4.1.0](https://github.com/terrylica/gapless-network-data/compare/v4.0.1...v4.1.0) (2025-11-29)
 
-
 ### Features
 
-* **monitor:** implement two-tier gap alerting to reduce noise ([461830a](https://github.com/terrylica/gapless-network-data/commit/461830a8e3e4295855550ed9abb7cb6a0737897f))
+- **monitor:** implement two-tier gap alerting to reduce noise ([461830a](https://github.com/terrylica/gapless-network-data/commit/461830a8e3e4295855550ed9abb7cb6a0737897f))
 
 ## [4.0.1](https://github.com/terrylica/gapless-network-data/compare/v4.0.0...v4.0.1) (2025-11-29)
 

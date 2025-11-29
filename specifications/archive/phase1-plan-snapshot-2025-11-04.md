@@ -221,15 +221,15 @@ TOTAL                              20%  →   70%+
 
 **Specifications**:
 
-- Master Plan: `/Users/terryli/eon/gapless-network-data/specifications/master-project-roadmap.yaml`
-- Ethereum Spec: `/Users/terryli/eon/gapless-network-data/specifications/ethereum-collector-phase1.yaml`
-- Archived Bitcoin: `/Users/terryli/eon/gapless-network-data/specifications/archive/core-collection-phase1.yaml`
+- Master Plan: `/specifications/master-project-roadmap.yaml`
+- Ethereum Spec: `/specifications/ethereum-collector-phase1.yaml`
+- Archived Bitcoin: `/specifications/archive/core-collection-phase1.yaml`
 
 **Research**:
 
-- LlamaRPC Index: `/Users/terryli/eon/gapless-network-data/docs/llamarpc/INDEX.md`
-- web3.py SDK: `/Users/terryli/eon/gapless-network-data/docs/llamarpc/sdk/`
-- Block Schema: `/Users/terryli/eon/gapless-network-data/docs/llamarpc/schema/`
+- LlamaRPC Index: `/docs/llamarpc/INDEX.md`
+- web3.py SDK: `/docs/llamarpc/sdk/`
+- Block Schema: `/docs/llamarpc/schema/`
 
 ---
 

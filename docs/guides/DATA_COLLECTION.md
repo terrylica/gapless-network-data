@@ -88,8 +88,8 @@ gapless-network-data validate \
 
 Until this document is completed, refer to:
 
-- [README.md](/Users/terryli/eon/gapless-network-data/README.md) - CLI quick start section (lines 66-87)
-- [CLAUDE.md](/Users/terryli/eon/gapless-network-data/CLAUDE.md) - Data collection patterns
+- [README.md](/README.md) - CLI quick start section (lines 66-87)
+- [CLAUDE.md](/CLAUDE.md) - Data collection patterns
 
 **Example from README.md**:
 
@@ -111,7 +111,7 @@ gapless-network-data stream \
 
 **Related Documentation**:
 
-- [Python API Reference](/Users/terryli/eon/gapless-network-data/docs/guides/python-api.md) - Programmatic collection
-- [Data Format Specification](/Users/terryli/eon/gapless-network-data/docs/architecture/DATA_FORMAT.md) - Output schemas
+- [Python API Reference](/docs/guides/python-api.md) - Programmatic collection
+- [Data Format Specification](/docs/architecture/DATA_FORMAT.md) - Output schemas
 
 **This document will be completed during Phase 1 implementation.**

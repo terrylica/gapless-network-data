@@ -159,7 +159,7 @@ ExecStartPost=/usr/bin/curl -fsS --retry 3 https://hc-ping.com/a2fba09b-9635-4e7
 export PUSHOVER_TOKEN=$(doppler secrets get PUSHOVER_TOKEN --project claude-config --config dev --plain)
 export PUSHOVER_USER=$(doppler secrets get PUSHOVER_USER --project claude-config --config dev --plain)
 
-cd /Users/terryli/eon/gapless-network-data/.claude/skills/data-pipeline-monitoring
+cd /.claude/skills/data-pipeline-monitoring
 uv run scripts/send_pushover_alert.py --title "Test" --message "Hello" --priority -1
 ```
 
@@ -185,7 +185,7 @@ All credentials stored in **Doppler** (`claude-config/dev`):
 ```bash
 export HEALTHCHECKS_API_KEY=$(doppler secrets get HEALTHCHECKS_API_KEY --project claude-config --config dev --plain)
 
-cd /Users/terryli/eon/gapless-network-data/.claude/skills/data-pipeline-monitoring
+cd /.claude/skills/data-pipeline-monitoring
 uv run scripts/ping_healthchecks.py --check-name "eth-collector real-time stream"
 ```
 
@@ -195,7 +195,7 @@ uv run scripts/ping_healthchecks.py --check-name "eth-collector real-time stream
 export PUSHOVER_TOKEN=$(doppler secrets get PUSHOVER_TOKEN --project claude-config --config dev --plain)
 export PUSHOVER_USER=$(doppler secrets get PUSHOVER_USER --project claude-config --config dev --plain)
 
-cd /Users/terryli/eon/gapless-network-data/.claude/skills/data-pipeline-monitoring
+cd /.claude/skills/data-pipeline-monitoring
 uv run scripts/send_pushover_alert.py --title "🧪 Test" --message "Direct Pushover test" --priority -1
 ```
 

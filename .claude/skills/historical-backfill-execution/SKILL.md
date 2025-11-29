@@ -48,7 +48,7 @@ See [Backfill Patterns Reference](./references/backfill-patterns.md) for complet
 Run the canonical 1-year chunking script:
 
 ```bash
-cd /Users/terryli/eon/gapless-network-data/deployment/backfill
+cd /deployment/backfill
 ./chunked_backfill.sh 2015 2025
 ```
 
@@ -88,7 +88,7 @@ Total time: 18m45s
 After backfill completes, verify all blocks loaded:
 
 ```bash
-cd /Users/terryli/eon/gapless-network-data
+cd 
 doppler run --project aws-credentials --config prd -- python3 -c "
 import clickhouse_connect
 import os

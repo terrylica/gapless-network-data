@@ -17,7 +17,7 @@ MADR-0008 established the standard: All links must be relative markdown format.
 **Violation Pattern**:
 
 ```markdown
-❌ [File](/Users/terryli/eon/gapless-network-data/docs/file.md)
+❌ [File](/docs/file.md)
 ✅ [File](../docs/file.md)
 ```
 
@@ -35,7 +35,7 @@ MADR-0008 established the standard: All links must be relative markdown format.
 
 ## Decision
 
-1. **Automated Conversion**: Replace `/Users/terryli/eon/gapless-network-data/` with calculated relative paths
+1. **Automated Conversion**: Replace `/` with calculated relative paths
    - Preserve anchor links: `file.md#section` → `../file.md#section`
    - Handle edge cases: root CLAUDE.md, nested subdirectories
 

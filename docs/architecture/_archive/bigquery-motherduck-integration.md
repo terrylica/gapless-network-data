@@ -631,13 +631,13 @@ gcloud projects add-iam-policy-binding eonlabs-ethereum-bq \
 
 ### Documentation Created
 
-- `/Users/terryli/eon/gapless-network-data/docs/motherduck/INDEX.md`
-- `/Users/terryli/eon/gapless-network-data/docs/motherduck/bigquery-integration.md`
-- `/Users/terryli/eon/gapless-network-data/docs/motherduck/credentials.md`
+- `/docs/motherduck/INDEX.md`
+- `/docs/motherduck/bigquery-integration.md`
+- `/docs/motherduck/credentials.md`
 
 ### Specifications
 
-- `/Users/terryli/eon/gapless-network-data/specifications/master-project-roadmap.yaml`
+- `/specifications/master-project-roadmap.yaml`
   - Phase 1 updated: BigQuery approach (624x speedup)
   - Decision log: 2025-11-08 - "Use BigQuery for Ethereum historical backfill"
 

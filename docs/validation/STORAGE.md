@@ -345,15 +345,15 @@ cleanup_old_reports(
 
 Until this document is completed, refer to:
 
-- [CLAUDE.md](/Users/terryli/eon/gapless-network-data/CLAUDE.md) - ValidationStorage overview
-- [Validation Overview](/Users/terryli/eon/gapless-network-data/docs/validation/OVERVIEW.md) - 5-layer pipeline
-- [DuckDB Integration Strategy](/Users/terryli/eon/gapless-network-data/specifications/duckdb-integration-strategy.yaml) - Performance benchmarks
+- [CLAUDE.md](/CLAUDE.md) - ValidationStorage overview
+- [Validation Overview](/docs/validation/OVERVIEW.md) - 5-layer pipeline
+- [DuckDB Integration Strategy](/specifications/duckdb-integration-strategy.yaml) - Performance benchmarks
 
 ---
 
 **Related Documentation**:
 
-- [Validation Overview](/Users/terryli/eon/gapless-network-data/docs/validation/OVERVIEW.md) - Validation pipeline
-- [DuckDB Integration Strategy](/Users/terryli/eon/gapless-network-data/specifications/duckdb-integration-strategy.yaml) - Query architecture
+- [Validation Overview](/docs/validation/OVERVIEW.md) - Validation pipeline
+- [DuckDB Integration Strategy](/specifications/duckdb-integration-strategy.yaml) - Query architecture
 
 **This document will be completed during Phase 2 implementation.**
