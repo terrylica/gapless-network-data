@@ -1,60 +1,51 @@
 #!/usr/bin/env python3
 # /// script
-# dependencies = ["websockets", "duckdb", "pyarrow", "google-cloud-secret-manager", "requests", "clickhouse-connect"]
+# dependencies = ["websockets", "pyarrow", "google-cloud-secret-manager", "requests", "clickhouse-connect"]
 # ///
 """
-Alchemy WebSocket Real-Time Ethereum Block Collector (Dual-Write)
+Alchemy WebSocket Real-Time Ethereum Block Collector
 
 Subscribes to Alchemy's newHeads WebSocket stream for real-time block notifications.
 On each new block, fetches full block data via eth_getBlockByNumber to get accurate
 transaction_count (newHeads only returns headers without transactions array).
-Writes to both MotherDuck AND ClickHouse for migration (dual-write strategy).
-Designed to run as a long-lived systemd service on VM.
+Writes to ClickHouse Cloud. Designed to run as a long-lived systemd service on VM.
 
 Environment Variables:
     GCP_PROJECT: GCP project ID (default: eonlabs-ethereum-bq)
-    MD_DATABASE: MotherDuck database name (default: ethereum_mainnet)
-    MD_TABLE: MotherDuck table name (default: blocks)
     BATCH_INTERVAL_SECONDS: Batch write interval in seconds (default: 300 = 5 minutes)
                             Set to 0 for immediate writes (real-time mode)
-    CLICKHOUSE_HOST: ClickHouse Cloud hostname (required for dual-write)
+    CLICKHOUSE_HOST: ClickHouse Cloud hostname (required)
     CLICKHOUSE_PORT: ClickHouse port (default: 8443)
     CLICKHOUSE_USER: ClickHouse username (default: default)
-    CLICKHOUSE_PASSWORD: ClickHouse password (required for dual-write)
-    DUAL_WRITE_ENABLED: Enable writes to ClickHouse (default: true)
-    MOTHERDUCK_WRITE_ENABLED: Enable writes to MotherDuck (default: true)
-                              Set to 'false' during Phase 4 cutover to stop MotherDuck writes
+    CLICKHOUSE_PASSWORD: ClickHouse password (required)
 
 Secrets (Google Secret Manager):
     alchemy-api-key: Alchemy API key (fetched via get_secret())
-    motherduck-token: MotherDuck authentication token (fetched via get_secret())
 
 Error Policy: Fail-fast. If ClickHouse write fails, raise exception immediately.
 """
 
-import os
-import sys
-import json
-import time
 import asyncio
+import json
+import os
+import signal
+import sys
 import threading
+import time
 from datetime import datetime, timezone
-from google.cloud import secretmanager
-import websockets
-import duckdb
+
 import requests
+import websockets
+from google.cloud import secretmanager
 
 # Configuration
 GCP_PROJECT = os.environ.get('GCP_PROJECT', 'eonlabs-ethereum-bq')
-MD_DATABASE = os.environ.get('MD_DATABASE', 'ethereum_mainnet')
-MD_TABLE = os.environ.get('MD_TABLE', 'blocks')
 BATCH_INTERVAL_SECONDS = int(os.environ.get('BATCH_INTERVAL_SECONDS', '300'))  # Default: 5 minutes
 ALCHEMY_WS_URL = None  # Will be set by validate_config() from Secret Manager
 ALCHEMY_HTTP_URL = None  # HTTP endpoint for JSON-RPC calls (eth_getBlockByNumber)
 HEALTHCHECK_URL = 'https://hc-ping.com/d73a71f2-9457-4e58-9ed6-8a31db5bbed1'  # Healthchecks.io heartbeat
 
-# ClickHouse dual-write configuration
-DUAL_WRITE_ENABLED = os.environ.get('DUAL_WRITE_ENABLED', 'true').lower() == 'true'
+# ClickHouse configuration
 CLICKHOUSE_HOST = os.environ.get('CLICKHOUSE_HOST')
 CLICKHOUSE_PORT = int(os.environ.get('CLICKHOUSE_PORT', '8443'))
 CLICKHOUSE_USER = os.environ.get('CLICKHOUSE_USER', 'default')
@@ -62,15 +53,41 @@ CLICKHOUSE_PASSWORD = os.environ.get('CLICKHOUSE_PASSWORD')
 CLICKHOUSE_DATABASE = 'ethereum_mainnet'
 CLICKHOUSE_TABLE = 'blocks'
 
-# Cutover control: Set to 'false' to disable MotherDuck writes (Phase 4)
-MOTHERDUCK_WRITE_ENABLED = os.environ.get('MOTHERDUCK_WRITE_ENABLED', 'true').lower() == 'true'
-
 # Global ClickHouse client (initialized in main())
 clickhouse_client = None
 
 # Block buffer for batching (thread-safe)
 block_buffer = []
 buffer_lock = threading.Lock()
+
+# Shutdown flag for graceful termination
+shutdown_requested = False
+
+
+def graceful_shutdown(signum, frame):
+    """Handle SIGTERM/SIGINT for graceful shutdown with buffer flush.
+
+    This is CRITICAL for systemd service management - without this,
+    `systemctl restart` will lose any buffered blocks.
+    """
+    global shutdown_requested
+    shutdown_requested = True
+
+    sig_name = signal.Signals(signum).name
+    now = datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M:%S')
+    print(f"\n[{now}] [SHUTDOWN] Received {sig_name}, initiating graceful shutdown...")
+
+    # Flush any remaining buffered blocks
+    if BATCH_INTERVAL_SECONDS > 0:
+        print(f"[{now}] [SHUTDOWN] Flushing remaining buffered blocks...")
+        try:
+            flushed = flush_buffer()
+            print(f"[{now}] [SHUTDOWN] ✅ Flushed {flushed} blocks before exit")
+        except Exception as e:
+            print(f"[{now}] [SHUTDOWN] ❌ Flush failed: {e}")
+
+    print(f"[{now}] [SHUTDOWN] Exiting cleanly")
+    sys.exit(0)
 
 # Block fields to collect (matches BigQuery schema)
 BLOCK_FIELDS = [
@@ -92,7 +109,7 @@ def get_secret(secret_id: str, project_id: str = GCP_PROJECT) -> str:
     """Fetch secret from Google Secret Manager.
 
     Args:
-        secret_id: Secret name (e.g., 'motherduck-token')
+        secret_id: Secret name (e.g., 'alchemy-api-key')
         project_id: GCP project ID
 
     Returns:
@@ -152,10 +169,10 @@ def heartbeat_worker():
             response = requests.get(HEALTHCHECK_URL, timeout=10)
             response.raise_for_status()
             now = datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M:%S')
-            print(f"[{now}] [HEARTBEAT] ✅ Pinged Healthchecks.io")
+            print(f"[{now}] [HEARTBEAT] Pinged Healthchecks.io")
         except Exception as e:
             now = datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M:%S')
-            print(f"[{now}] [HEARTBEAT] ⚠️  Failed to ping: {e}")
+            print(f"[{now}] [HEARTBEAT] Failed to ping: {e}")
 
         # Sleep for 5 minutes
         time.sleep(300)
@@ -167,66 +184,28 @@ def validate_config():
 
     print("[INIT] Fetching secrets from Secret Manager...")
 
-    # Fetch secrets
+    # Fetch Alchemy API key
     alchemy_key = get_secret('alchemy-api-key')
-    motherduck_token = get_secret('motherduck-token')
-
-    # Set for DuckDB connection
-    os.environ['motherduck_token'] = motherduck_token
 
     # Build Alchemy URLs (WebSocket for subscriptions, HTTP for JSON-RPC)
     global ALCHEMY_WS_URL, ALCHEMY_HTTP_URL
     ALCHEMY_WS_URL = f"wss://eth-mainnet.g.alchemy.com/v2/{alchemy_key}"
     ALCHEMY_HTTP_URL = f"https://eth-mainnet.g.alchemy.com/v2/{alchemy_key}"
 
-    # Fetch ClickHouse credentials if dual-write enabled
-    if DUAL_WRITE_ENABLED:
-        print("[INIT] Fetching ClickHouse credentials...")
-        try:
-            CLICKHOUSE_HOST = get_secret('clickhouse-host')
-            CLICKHOUSE_PASSWORD = get_secret('clickhouse-password')
-            print(f"[INIT] ✅ ClickHouse credentials loaded (host: {CLICKHOUSE_HOST})")
-        except Exception as e:
-            print(f"[INIT] ⚠️  ClickHouse secrets not found: {e}")
-            print(f"[INIT]    Dual-write will be disabled")
-            # Don't fail - just disable dual-write
+    # Fetch ClickHouse credentials
+    print("[INIT] Fetching ClickHouse credentials...")
+    try:
+        CLICKHOUSE_HOST = get_secret('clickhouse-host')
+        CLICKHOUSE_PASSWORD = get_secret('clickhouse-password')
+        print(f"[INIT] ClickHouse credentials loaded (host: {CLICKHOUSE_HOST})")
+    except Exception as e:
+        raise ValueError(f"ClickHouse secrets required: {e}")
 
-    print("[INIT] ✅ Secrets loaded")
-
-
-def init_motherduck():
-    """Initialize MotherDuck connection and ensure table exists."""
-    print(f"[INIT] Connecting to MotherDuck database: {MD_DATABASE}")
-
-    conn = duckdb.connect('md:')  # MotherDuck cloud connection
-
-    # Create database if needed
-    conn.execute(f"CREATE DATABASE IF NOT EXISTS {MD_DATABASE}")
-    conn.execute(f"USE {MD_DATABASE}")
-
-    # Create table with same schema as BigQuery pipeline
-    conn.execute(f"""
-        CREATE TABLE IF NOT EXISTS {MD_TABLE} (
-            timestamp TIMESTAMP NOT NULL,
-            number BIGINT PRIMARY KEY,
-            gas_limit BIGINT,
-            gas_used BIGINT,
-            base_fee_per_gas BIGINT,
-            transaction_count BIGINT,
-            difficulty HUGEINT,
-            total_difficulty HUGEINT,
-            size BIGINT,
-            blob_gas_used BIGINT,
-            excess_blob_gas BIGINT
-        )
-    """)
-
-    print(f"✅ MotherDuck connected: {MD_DATABASE}.{MD_TABLE}")
-    return conn
+    print("[INIT] Secrets loaded")
 
 
 def init_clickhouse():
-    """Initialize ClickHouse Cloud connection for dual-write.
+    """Initialize ClickHouse Cloud connection.
 
     Returns:
         ClickHouse client instance
@@ -256,7 +235,7 @@ def init_clickhouse():
 
     # Verify connection
     version = client.server_version
-    print(f"✅ ClickHouse connected: {CLICKHOUSE_DATABASE}.{CLICKHOUSE_TABLE} (server {version})")
+    print(f"[INIT] ClickHouse connected: {CLICKHOUSE_DATABASE}.{CLICKHOUSE_TABLE} (server {version})")
 
     return client
 
@@ -344,18 +323,14 @@ def flush_to_clickhouse(blocks):
     )
 
 
-def flush_buffer(conn):
-    """Flush buffered blocks to MotherDuck AND ClickHouse (dual-write).
-
-    Args:
-        conn: DuckDB connection
+def flush_buffer():
+    """Flush buffered blocks to ClickHouse.
 
     Returns:
         Number of blocks flushed
 
     Error Policy:
-        Fail-fast - if either database write fails, raise exception immediately.
-        ClickHouse is written FIRST to ensure it gets all data during migration.
+        Fail-fast - if ClickHouse write fails, raise exception immediately.
     """
     global block_buffer
 
@@ -369,95 +344,56 @@ def flush_buffer(conn):
 
     now = datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M:%S')
 
-    # DUAL-WRITE: ClickHouse FIRST (fail-fast)
-    if DUAL_WRITE_ENABLED and clickhouse_client:
-        try:
-            flush_to_clickhouse(blocks_to_insert)
-            print(f"[{now}] [BATCH] ✅ Flushed {len(blocks_to_insert)} blocks to ClickHouse")
-        except Exception as e:
-            print(f"[{now}] [BATCH] ❌ ClickHouse flush FAILED: {e}")
-            # Re-add blocks to buffer before raising
-            with buffer_lock:
-                block_buffer.extend(blocks_to_insert)
-            raise  # Fail-fast: propagate exception
-
-    # Then write to MotherDuck (if enabled)
-    if MOTHERDUCK_WRITE_ENABLED:
-        try:
-            conn.executemany(f"""
-                INSERT OR REPLACE INTO {MD_TABLE} VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-            """, blocks_to_insert)
-
-            print(f"[{now}] [BATCH] ✅ Flushed {len(blocks_to_insert)} blocks to MotherDuck")
-        except Exception as e:
-            print(f"[{now}] [BATCH] ❌ MotherDuck flush FAILED: {e}")
-            # Re-add blocks to buffer for retry
-            with buffer_lock:
-                block_buffer.extend(blocks_to_insert)
-            raise
-    else:
-        print(f"[{now}] [BATCH] ⏭️  MotherDuck write SKIPPED (cutover mode)")
+    try:
+        flush_to_clickhouse(blocks_to_insert)
+        print(f"[{now}] [BATCH] Flushed {len(blocks_to_insert)} blocks to ClickHouse")
+    except Exception as e:
+        print(f"[{now}] [BATCH] ClickHouse flush FAILED: {e}")
+        # Re-add blocks to buffer before raising
+        with buffer_lock:
+            block_buffer.extend(blocks_to_insert)
+        raise  # Fail-fast: propagate exception
 
     return len(blocks_to_insert)
 
 
-def batch_flush_worker(conn):
-    """Background thread that flushes buffer every BATCH_INTERVAL_SECONDS.
-
-    Args:
-        conn: DuckDB connection
-    """
+def batch_flush_worker():
+    """Background thread that flushes buffer every BATCH_INTERVAL_SECONDS."""
     while True:
         time.sleep(BATCH_INTERVAL_SECONDS)
         try:
-            flush_buffer(conn)
+            flush_buffer()
         except Exception as e:
             now = datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M:%S')
-            print(f"[{now}] [BATCH] ⚠️  Flush error: {e}")
+            print(f"[{now}] [BATCH] Flush error: {e}")
 
 
-def insert_block(conn, block_tuple):
-    """Insert or replace block in MotherDuck AND ClickHouse (dual-write).
+def insert_block(block_tuple):
+    """Insert block to ClickHouse.
 
     Behavior depends on BATCH_INTERVAL_SECONDS:
-    - If 0: Immediate write (real-time mode) to both databases
+    - If 0: Immediate write (real-time mode)
     - If >0: Buffer block for batch write
 
     Args:
-        conn: DuckDB connection
         block_tuple: Tuple of block data
 
     Error Policy:
         Fail-fast - if ClickHouse write fails in immediate mode, raise exception.
     """
     if BATCH_INTERVAL_SECONDS == 0:
-        # Immediate write mode (real-time) - DUAL-WRITE
-        # ClickHouse FIRST (fail-fast)
-        if DUAL_WRITE_ENABLED and clickhouse_client:
-            flush_to_clickhouse([block_tuple])
-
-        # Then MotherDuck (if enabled)
-        if MOTHERDUCK_WRITE_ENABLED:
-            conn.execute(f"""
-                INSERT OR REPLACE INTO {MD_TABLE} VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-            """, block_tuple)
+        # Immediate write mode (real-time)
+        flush_to_clickhouse([block_tuple])
     else:
         # Batch mode: add to buffer
         with buffer_lock:
             block_buffer.append(block_tuple)
 
 
-async def subscribe_to_blocks(conn):
+async def subscribe_to_blocks():
     """Subscribe to Alchemy newHeads WebSocket stream.
 
-    Flow: newHeads notification → eth_getBlockByNumber → parse → insert
-
-    The newHeads subscription only returns block headers (no transactions array).
-    For each new block, we call eth_getBlockByNumber to get full block data
-    including the accurate transaction count.
-
-    Args:
-        conn: DuckDB connection for inserting blocks
+    Flow: newHeads notification -> eth_getBlockByNumber -> parse -> insert
     """
     print(f"[WEBSOCKET] Connecting to Alchemy: {ALCHEMY_WS_URL[:50]}...")
 
@@ -471,7 +407,7 @@ async def subscribe_to_blocks(conn):
         }
 
         await ws.send(json.dumps(subscribe_msg))
-        print("✅ Subscribed to eth_subscribe newHeads")
+        print("[WEBSOCKET] Subscribed to eth_subscribe newHeads")
 
         # Wait for subscription confirmation
         response = await ws.recv()
@@ -479,7 +415,7 @@ async def subscribe_to_blocks(conn):
 
         if 'result' in sub_response:
             subscription_id = sub_response['result']
-            print(f"✅ Subscription ID: {subscription_id}")
+            print(f"[WEBSOCKET] Subscription ID: {subscription_id}")
         else:
             raise Exception(f"Subscription failed: {sub_response}")
 
@@ -487,9 +423,9 @@ async def subscribe_to_blocks(conn):
         block_count = 0
         print("\n" + "=" * 80)
         if BATCH_INTERVAL_SECONDS == 0:
-            print("🔴 REAL-TIME STREAMING ACTIVE (Immediate Writes)")
+            print("REAL-TIME STREAMING ACTIVE (Immediate Writes)")
         else:
-            print(f"🔴 BATCH STREAMING ACTIVE (Flush every {BATCH_INTERVAL_SECONDS}s)")
+            print(f"BATCH STREAMING ACTIVE (Flush every {BATCH_INTERVAL_SECONDS}s)")
         print("=" * 80)
         print()
 
@@ -500,55 +436,77 @@ async def subscribe_to_blocks(conn):
                 # Check if it's a block notification
                 if 'params' in data and 'result' in data['params']:
                     block_header = data['params']['result']
-                    block_number_hex = block_header['number']
+
+                    # Defensive check: Ensure block_header is valid
+                    if block_header is None:
+                        now = datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M:%S')
+                        print(f"[{now}] [WARN] Received null block header, skipping...")
+                        continue
+
+                    block_number_hex = block_header.get('number')
+                    if block_number_hex is None:
+                        now = datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M:%S')
+                        print(f"[{now}] [WARN] Block header missing 'number' field, skipping...")
+                        continue
 
                     # Fetch full block data (newHeads only returns headers, no transactions)
                     block_data = fetch_full_block(block_number_hex)
+
+                    # Defensive check: Ensure block_data is valid
+                    if block_data is None:
+                        now = datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M:%S')
+                        print(f"[{now}] [WARN] eth_getBlockByNumber returned null for {block_number_hex}, skipping...")
+                        continue
 
                     # Parse and insert block
                     block_tuple = parse_block(block_data)
                     block_number = block_tuple[1]
 
-                    insert_block(conn, block_tuple)
+                    insert_block(block_tuple)
                     block_count += 1
 
                     # Print status
                     now = datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M:%S')
                     if BATCH_INTERVAL_SECONDS == 0:
-                        print(f"[{now}] ✅ Block {block_number:,} inserted (total: {block_count:,})")
+                        print(f"[{now}] Block {block_number:,} inserted (total: {block_count:,})")
                     else:
                         with buffer_lock:
                             buffer_size = len(block_buffer)
-                        print(f"[{now}] ✅ Block {block_number:,} buffered (buffer: {buffer_size}, total: {block_count:,})")
+                        print(f"[{now}] Block {block_number:,} buffered (buffer: {buffer_size}, total: {block_count:,})")
 
         except websockets.exceptions.ConnectionClosed:
-            print("\n⚠️  WebSocket connection closed. Reconnecting...")
+            print("\n[WEBSOCKET] Connection closed. Reconnecting...")
             raise  # Will trigger reconnect in main()
 
 
-async def main_loop(conn):
-    """Main loop with automatic reconnection.
-
-    Args:
-        conn: DuckDB connection (passed from main())
-    """
+async def main_loop():
+    """Main loop with automatic reconnection."""
     # Subscribe to blocks with automatic reconnection
     retry_count = 0
     max_retries = 3
 
     while True:
         try:
-            await subscribe_to_blocks(conn)
+            await subscribe_to_blocks()
         except Exception as e:
             retry_count += 1
-            print(f"\n❌ Error: {e}")
+            print(f"\nError: {e}")
 
             if retry_count >= max_retries:
-                print(f"❌ Max retries ({max_retries}) reached. Exiting.")
+                print(f"Max retries ({max_retries}) reached. Exiting.")
+                # CRITICAL: Flush buffer before exit to prevent data loss
+                if BATCH_INTERVAL_SECONDS > 0:
+                    now = datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M:%S')
+                    print(f"[{now}] [EXIT] Flushing remaining buffered blocks before exit...")
+                    try:
+                        flushed = flush_buffer()
+                        print(f"[{now}] [EXIT] ✅ Flushed {flushed} blocks before exit")
+                    except Exception as flush_error:
+                        print(f"[{now}] [EXIT] ❌ Flush failed: {flush_error}")
                 return 1
 
             wait_time = min(2 ** retry_count, 60)  # Exponential backoff, max 60s
-            print(f"⏳ Retrying in {wait_time} seconds... (attempt {retry_count}/{max_retries})")
+            print(f"Retrying in {wait_time} seconds... (attempt {retry_count}/{max_retries})")
             await asyncio.sleep(wait_time)
         else:
             # Reset retry count on successful connection
@@ -559,62 +517,51 @@ def main():
     """Entry point."""
     global clickhouse_client
 
+    # Register signal handlers for graceful shutdown (CRITICAL for systemd)
+    signal.signal(signal.SIGTERM, graceful_shutdown)
+    signal.signal(signal.SIGINT, graceful_shutdown)
+
     print("=" * 80)
-    print("Alchemy WebSocket Real-Time Collector (Dual-Write)")
+    print("Alchemy WebSocket Real-Time Collector (ClickHouse)")
     print("=" * 80)
     print(f"Timestamp: {datetime.now(timezone.utc).isoformat().replace('+00:00', 'Z')}")
-    print(f"MotherDuck: {MD_DATABASE}.{MD_TABLE} ({'ENABLED' if MOTHERDUCK_WRITE_ENABLED else 'DISABLED'})")
-    print(f"ClickHouse: {CLICKHOUSE_DATABASE}.{CLICKHOUSE_TABLE} ({'ENABLED' if DUAL_WRITE_ENABLED else 'DISABLED'})")
-    write_mode = 'Dual-Write' if DUAL_WRITE_ENABLED and MOTHERDUCK_WRITE_ENABLED else 'ClickHouse-Only' if DUAL_WRITE_ENABLED else 'MotherDuck-Only'
+    print(f"ClickHouse: {CLICKHOUSE_DATABASE}.{CLICKHOUSE_TABLE}")
     batch_mode = 'Real-time (immediate writes)' if BATCH_INTERVAL_SECONDS == 0 else f'Batch (flush every {BATCH_INTERVAL_SECONDS}s)'
-    print(f"Write Mode: {write_mode}")
     print(f"Batch Mode: {batch_mode}")
+    print("Signal handlers: SIGTERM/SIGINT → graceful shutdown with buffer flush")
     print("=" * 80)
     print()
 
     # Validate configuration
     validate_config()
 
-    # Initialize MotherDuck
-    conn = init_motherduck()
+    # Initialize ClickHouse (fail-fast if connection fails)
+    clickhouse_client = init_clickhouse()
     print()
-
-    # Initialize ClickHouse (fail-fast if enabled and connection fails)
-    if DUAL_WRITE_ENABLED:
-        clickhouse_client = init_clickhouse()
-        print()
 
     # Start background heartbeat thread for Healthchecks.io monitoring
     print("[INIT] Starting Healthchecks.io heartbeat thread...")
     heartbeat_thread = threading.Thread(target=heartbeat_worker, daemon=True)
     heartbeat_thread.start()
-    print("✅ Heartbeat thread started (pings every 5 minutes)")
+    print("[INIT] Heartbeat thread started (pings every 5 minutes)")
     print()
 
     # Start batch flush worker thread if batching enabled
     if BATCH_INTERVAL_SECONDS > 0:
         print(f"[INIT] Starting batch flush worker (interval: {BATCH_INTERVAL_SECONDS}s)...")
-        batch_thread = threading.Thread(target=batch_flush_worker, args=(conn,), daemon=True)
+        batch_thread = threading.Thread(target=batch_flush_worker, daemon=True)
         batch_thread.start()
-        print("✅ Batch flush worker started")
+        print("[INIT] Batch flush worker started")
         print()
 
     try:
-        asyncio.run(main_loop(conn))
+        asyncio.run(main_loop())
         return 0
-    except KeyboardInterrupt:
-        print("\n\n⏹️  Stopped by user (Ctrl+C)")
-        # Flush any remaining buffered blocks before exit
-        if BATCH_INTERVAL_SECONDS > 0:
-            print("\n[SHUTDOWN] Flushing remaining buffered blocks...")
-            try:
-                flushed = flush_buffer(conn)
-                print(f"✅ Flushed {flushed} blocks")
-            except Exception as e:
-                print(f"⚠️  Flush failed: {e}")
+    except SystemExit:
+        # Raised by graceful_shutdown signal handler - this is expected
         return 0
     except Exception as e:
-        print(f"\n❌ FATAL ERROR: {e}")
+        print(f"\nFATAL ERROR: {e}")
         import traceback
         traceback.print_exc()
         return 1
