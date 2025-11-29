@@ -240,6 +240,6 @@ alias ethtail='sudo journalctl -u eth-collector -n 100'
 
 ## Related Documentation
 
-- [SKILL.md](../SKILL.md) - VM operations workflows
-- [VM Failure Modes](./vm-failure-modes.md) - Troubleshooting guide
+- [SKILL.md](/.claude/skills/vm-infrastructure-ops/SKILL.md) - VM operations workflows
+- [VM Failure Modes](/.claude/skills/vm-infrastructure-ops/references/vm-failure-modes.md) - Troubleshooting guide
 - [systemd documentation](https://www.freedesktop.org/software/systemd/man/systemd.service.html) - Official systemd reference

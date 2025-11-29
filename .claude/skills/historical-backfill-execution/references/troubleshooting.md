@@ -283,6 +283,6 @@ gcloud logging read "resource.type=cloud_run_job AND resource.labels.job_name=et
 
 ## Related Documentation
 
-- [SKILL.md](../SKILL.md) - Historical backfill workflows
-- [Backfill Patterns](./backfill-patterns.md) - 1-year chunking rationale
+- [SKILL.md](/.claude/skills/historical-backfill-execution/SKILL.md) - Historical backfill workflows
+- [Backfill Patterns](/.claude/skills/historical-backfill-execution/references/backfill-patterns.md) - 1-year chunking rationale
 - [Gap Monitor README](/deployment/gcp-functions/gap-monitor/README.md) - Automated gap detection (Cloud Functions)

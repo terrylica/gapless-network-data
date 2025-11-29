@@ -322,5 +322,5 @@ gcloud compute ssh eth-realtime-collector \
 
 ## Related Documentation
 
-- [BigQuery Integration](bigquery-motherduck-integration.md)
+- [BigQuery Integration](/docs/architecture/_archive/bigquery-motherduck-integration.md)
 - [ClickHouse Migration Decision](/docs/architecture/decisions/2025-11-25-motherduck-clickhouse-migration.md) - Current architecture

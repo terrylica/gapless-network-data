@@ -2,7 +2,7 @@
 
 > **⚠️ Research Artifact**: This documentation describes LlamaRPC evaluation (2025-11-03).
 > **Production uses BigQuery + Alchemy** (empirical testing showed 1.37 RPS sustained vs 50 RPS documented).
-> See [Ethereum Collector POC Report](../../../scratch/ethereum-collector-poc/ETHEREUM_COLLECTOR_POC_REPORT.md) for rate limit findings.
+> See [Ethereum Collector POC Report](/scratch/ethereum-collector-poc/ETHEREUM_COLLECTOR_POC_REPORT.md) for rate limit findings.
 
 **Research Date**: 2025-11-03
 **Objective**: Identify free APIs/datasets with M1/M5/M15+ frequency going back to 2022
@@ -43,11 +43,11 @@ cd /tmp/ethereum-research
 
 | Document                           | Purpose                                  | Size  |
 | ---------------------------------- | ---------------------------------------- | ----- |
-| **[QUICKSTART.md](QUICKSTART.md)** | Fast-track guide for common use cases    | 8 KB  |
-| **[SUMMARY.md](SUMMARY.md)**       | Executive summary with recommendations   | 12 KB |
-| **[FINDINGS.md](FINDINGS.md)**     | Complete research report (all 8 sources) | 20 KB |
+| **[QUICKSTART.md](/docs/research/ethereum/QUICKSTART.md)** | Fast-track guide for common use cases    | 8 KB  |
+| **[SUMMARY.md](/docs/research/ethereum/SUMMARY.md)**       | Executive summary with recommendations   | 12 KB |
+| **[FINDINGS.md](/docs/research/ethereum/FINDINGS.md)**     | Complete research report (all 8 sources) | 20 KB |
 
-**Start here**: 👉 [QUICKSTART.md](QUICKSTART.md)
+**Start here**: 👉 [QUICKSTART.md](/docs/research/ethereum/QUICKSTART.md)
 
 ---
 
@@ -97,7 +97,7 @@ All sources (except The Graph subgraphs) provide **full archive access back to g
 
 ### LlamaRPC Empirical Test (2025-11-03)
 
-**Test Script**: [test_llamarpc_curl.sh](test_llamarpc_curl.sh)
+**Test Script**: [test_llamarpc_curl.sh](/docs/research/ethereum/test_llamarpc_curl.sh)
 
 **Results**:
 
@@ -209,7 +209,7 @@ This research supports the **gapless-network-data** package by providing:
 2. **Cross-domain feature engineering** (combine with BTC OHLCV)
 3. **Validation strategies** for data quality
 
-See [FINDINGS.md](FINDINGS.md) section "Integration with gapless-network-data" for complete examples.
+See [FINDINGS.md](/docs/research/ethereum/FINDINGS.md) section "Integration with gapless-network-data" for complete examples.
 
 ---
 
@@ -263,7 +263,7 @@ datetime,open,high,low,close,gasUsed,utilization
 
 ### Immediate Actions
 
-1. ✅ Review [QUICKSTART.md](QUICKSTART.md) for your use case
+1. ✅ Review [QUICKSTART.md](/docs/research/ethereum/QUICKSTART.md) for your use case
 2. ✅ Run `./test_llamarpc_curl.sh` to validate access
 3. ✅ Choose data source based on requirements (see SUMMARY.md)
 4. ✅ Sign up for Dune Analytics (recommended for bulk downloads)
@@ -299,7 +299,7 @@ This research documentation is provided as-is for educational and development pu
 
 For questions or issues:
 
-1. Check [FINDINGS.md](FINDINGS.md) for detailed documentation
+1. Check [FINDINGS.md](/docs/research/ethereum/FINDINGS.md) for detailed documentation
 2. Review API provider documentation (links above)
 3. Open issue in gapless-network-data repository
 

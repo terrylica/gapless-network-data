@@ -8,11 +8,11 @@
 
 ## Quick Links
 
-📊 **[FINDINGS_SUMMARY.md](FINDINGS_SUMMARY.md)** - Complete research findings and recommendations
+📊 **[FINDINGS_SUMMARY.md](/docs/research/defi/FINDINGS_SUMMARY.md)** - Complete research findings and recommendations
 
-📚 **[API_ENDPOINTS_REFERENCE.md](API_ENDPOINTS_REFERENCE.md)** - Detailed API documentation and code examples
+📚 **[API_ENDPOINTS_REFERENCE.md](/docs/research/defi/API_ENDPOINTS_REFERENCE.md)** - Detailed API documentation and code examples
 
-🧪 **[test_recommended_sources.sh](test_recommended_sources.sh)** - Quick validation script
+🧪 **[test_recommended_sources.sh](/docs/research/defi/test_recommended_sources.sh)** - Quick validation script
 
 ---
 

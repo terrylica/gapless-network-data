@@ -132,7 +132,7 @@ Latest block: 23,800,000+ at <within last 60 seconds>
 
 ## Common Failure Modes
 
-See [VM Failure Modes](./references/vm-failure-modes.md) for detailed troubleshooting guide.
+See [VM Failure Modes](/.claude/skills/vm-infrastructure-ops/references/vm-failure-modes.md) for detailed troubleshooting guide.
 
 **Quick Reference**:
 
@@ -145,7 +145,7 @@ See [VM Failure Modes](./references/vm-failure-modes.md) for detailed troublesho
 
 ## Systemd Commands
 
-See [Systemd Commands Reference](./references/systemd-commands.md) for complete systemd operations.
+See [Systemd Commands Reference](/.claude/skills/vm-infrastructure-ops/references/systemd-commands.md) for complete systemd operations.
 
 **Quick Reference**:
 
@@ -191,14 +191,14 @@ sudo journalctl -u eth-collector -f
 - [ClickHouse Migration ADR](/docs/architecture/decisions/2025-11-25-motherduck-clickhouse-migration.md) - Production database migration
 - [Real-Time Collector Deployment Guide](/docs/deployment/realtime-collector.md) - VM deployment
 - [Gap Monitor README](/deployment/gcp-functions/gap-monitor/README.md) - Automated gap detection
-- [Data Pipeline Monitoring Skill](../data-pipeline-monitoring/SKILL.md) - Cloud Run Jobs monitoring
+- [Data Pipeline Monitoring Skill](/.claude/skills/data-pipeline-monitoring/SKILL.md) - Cloud Run Jobs monitoring
 
 ## Scripts
 
-- [`check_vm_status.sh`](./scripts/check_vm_status.sh) - Automated status check via gcloud
-- [`restart_collector.sh`](./scripts/restart_collector.sh) - Safe restart with pre-checks
+- [`check_vm_status.sh`](/.claude/skills/vm-infrastructure-ops/scripts/check_vm_status.sh) - Automated status check via gcloud
+- [`restart_collector.sh`](/.claude/skills/vm-infrastructure-ops/scripts/restart_collector.sh) - Safe restart with pre-checks
 
 ## References
 
-- [`vm-failure-modes.md`](./references/vm-failure-modes.md) - Common failure scenarios and solutions
-- [`systemd-commands.md`](./references/systemd-commands.md) - Complete systemd operations reference
+- [`vm-failure-modes.md`](/.claude/skills/vm-infrastructure-ops/references/vm-failure-modes.md) - Common failure scenarios and solutions
+- [`systemd-commands.md`](/.claude/skills/vm-infrastructure-ops/references/systemd-commands.md) - Complete systemd operations reference

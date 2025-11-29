@@ -88,20 +88,20 @@ Coordinates all project phases, specifications, and implementation work.
 
 ### Architecture
 
-- [Architecture Overview](./docs/architecture/README.md) - Core components, data flow, SLOs
-- [Data Format Specification](./docs/architecture/DATA_FORMAT.md) - Mempool snapshot schema
+- [Architecture Overview](/docs/architecture/README.md) - Core components, data flow, SLOs
+- [Data Format Specification](/docs/architecture/DATA_FORMAT.md) - Mempool snapshot schema
 - [Cross-Package Integration](/Users/terryli/eon/gapless-crypto-data/docs/architecture/cross-package-feature-integration.yaml) - How to use with gapless-crypto-data
 
 ### Usage Guides
 
-- [Data Collection Guide](./docs/guides/DATA_COLLECTION.md) - CLI usage, collection modes (pending)
-- [Python API Reference](./docs/guides/python-api.md) - `fetch_snapshots()`, `get_latest_snapshot()` (pending)
-- [Feature Engineering Guide](./docs/guides/FEATURE_ENGINEERING.md) - Temporal alignment, feature fusion (pending)
+- [Data Collection Guide](/docs/guides/DATA_COLLECTION.md) - CLI usage, collection modes (pending)
+- [Python API Reference](/docs/guides/python-api.md) - `fetch_snapshots()`, `get_latest_snapshot()` (pending)
+- [Feature Engineering Guide](/docs/guides/FEATURE_ENGINEERING.md) - Temporal alignment, feature fusion (pending)
 
 ### Validation System
 
-- [Validation Overview](./docs/validation/OVERVIEW.md) - 5-layer validation pipeline (pending)
-- [ValidationStorage Specification](./docs/validation/STORAGE.md) - Parquet-backed validation reports (pending)
+- [Validation Overview](/docs/validation/OVERVIEW.md) - 5-layer validation pipeline (pending)
+- [ValidationStorage Specification](/docs/validation/STORAGE.md) - Parquet-backed validation reports (pending)
 
 ### Development
 
@@ -113,7 +113,7 @@ Coordinates all project phases, specifications, and implementation work.
 
 **Production**: BigQuery (historical) + Alchemy (real-time) → ClickHouse Cloud (AWS)
 
-**Complete Documentation**: See [Data Sources](./docs/research/data-sources.md) for production sources, rejected alternatives (LlamaRPC: 1.37 RPS sustained vs 50 RPS documented), and future multi-chain plans.
+**Complete Documentation**: See [Data Sources](/docs/research/data-sources.md) for production sources, rejected alternatives (LlamaRPC: 1.37 RPS sustained vs 50 RPS documented), and future multi-chain plans.
 
 ## ClickHouse Integration
 
@@ -147,7 +147,7 @@ result = client.query('SELECT COUNT(*) FROM ethereum_mainnet.blocks FINAL')
 
 **Skills**: 5 project skills + 2 managed skills (blockchain RPC research, data collection validation, BigQuery acquisition, ClickHouse operations, pipeline monitoring)
 
-**Complete Catalog**: See [Skills Catalog](./.claude/skills/CATALOG.md) for descriptions, when-to-use guidance, and validated patterns from scratch investigations.
+**Complete Catalog**: See [Skills Catalog](/.claude/skills/CATALOG.md) for descriptions, when-to-use guidance, and validated patterns from scratch investigations.
 
 ## Project Scope
 

@@ -82,6 +82,6 @@ Enable Healthchecks.io monitoring for the gap detector by:
 
 ## Related
 
-- [Gap Detector ClickHouse Fix](./2025-11-26-gap-detector-clickhouse-fix.md)
-- [Healthchecks Grace Period Calibration](./2025-11-13-healthchecks-grace-period-calibration.md)
+- [Gap Detector ClickHouse Fix](/docs/architecture/decisions/2025-11-26-gap-detector-clickhouse-fix.md)
+- [Healthchecks Grace Period Calibration](/docs/architecture/decisions/2025-11-13-healthchecks-grace-period-calibration.md)
 - [Implementation Plan](/docs/development/plan/2025-11-28-healthchecks-gap-detector-enable/plan.md)

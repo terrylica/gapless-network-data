@@ -2,7 +2,7 @@
 
 ## Status
 
-**Superseded** by [MotherDuck to ClickHouse Migration](./2025-11-25-motherduck-clickhouse-migration.md) (2025-11-25)
+**Superseded** by [MotherDuck to ClickHouse Migration](/docs/architecture/decisions/2025-11-25-motherduck-clickhouse-migration.md) (2025-11-25)
 
 ## Date
 
@@ -213,5 +213,5 @@ curl -H "X-Api-Key: $HEALTHCHECKS_API_KEY" \
 
 ## Related
 
-- [Grace Period Calibration](./2025-11-13-healthchecks-grace-period-calibration.md) (complementary slow alerting)
-- [Exception Handler Notifications](./2025-11-13-exception-handler-notifications.md) (complementary fast alerting)
+- [Grace Period Calibration](/docs/architecture/decisions/2025-11-13-healthchecks-grace-period-calibration.md) (complementary slow alerting)
+- [Exception Handler Notifications](/docs/architecture/decisions/2025-11-13-exception-handler-notifications.md) (complementary fast alerting)

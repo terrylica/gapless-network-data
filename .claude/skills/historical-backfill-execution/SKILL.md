@@ -31,7 +31,7 @@ Use this skill when:
 
 **Why 1-Year Chunks?**
 
-See [Backfill Patterns Reference](./references/backfill-patterns.md) for complete rationale (memory constraints, retry granularity, progress tracking).
+See [Backfill Patterns Reference](/.claude/skills/historical-backfill-execution/references/backfill-patterns.md) for complete rationale (memory constraints, retry granularity, progress tracking).
 
 ## Prerequisites
 
@@ -171,7 +171,7 @@ Cloud Run safe: (under 4GB limit)
 
 ## Troubleshooting
 
-See [Troubleshooting Reference](./references/troubleshooting.md) for complete guide.
+See [Troubleshooting Reference](/.claude/skills/historical-backfill-execution/references/troubleshooting.md) for complete guide.
 
 **Common Issues**:
 
@@ -185,7 +185,7 @@ See [Troubleshooting Reference](./references/troubleshooting.md) for complete gu
 
 ## Backfill Patterns
 
-See [Backfill Patterns Reference](./references/backfill-patterns.md) for alternatives and rationale.
+See [Backfill Patterns Reference](/.claude/skills/historical-backfill-execution/references/backfill-patterns.md) for alternatives and rationale.
 
 **Pattern Comparison**:
 
@@ -210,16 +210,16 @@ See [Backfill Patterns Reference](./references/backfill-patterns.md) for alterna
 
 ## Related Documentation
 
-- [BigQuery Ethereum Data Acquisition Skill](../bigquery-ethereum-data-acquisition/SKILL.md) - Column selection rationale
+- [BigQuery Ethereum Data Acquisition Skill](/.claude/skills/bigquery-ethereum-data-acquisition/SKILL.md) - Column selection rationale
 - [ClickHouse Migration ADR](/docs/architecture/decisions/2025-11-25-motherduck-clickhouse-migration.md) - Production database migration
 - [Gap Monitor README](/deployment/gcp-functions/gap-monitor/README.md) - Automated gap detection
 
 ## Scripts
 
-- [`validate_chunk_size.py`](./scripts/validate_chunk_size.py) - Estimate memory requirements before execution
-- [`chunked_executor.sh`](./scripts/chunked_executor.sh) - Wrapper for `deployment/backfill/chunked_backfill.sh` with validation
+- [`validate_chunk_size.py`](/.claude/skills/historical-backfill-execution/scripts/validate_chunk_size.py) - Estimate memory requirements before execution
+- [`chunked_executor.sh`](/.claude/skills/historical-backfill-execution/scripts/chunked_executor.sh) - Wrapper for `deployment/backfill/chunked_backfill.sh` with validation
 
 ## References
 
-- [`backfill-patterns.md`](./references/backfill-patterns.md) - 1-year chunking rationale, comparison with alternatives
-- [`troubleshooting.md`](./references/troubleshooting.md) - OOM errors, retry strategies, Cloud Run logs analysis
+- [`backfill-patterns.md`](/.claude/skills/historical-backfill-execution/references/backfill-patterns.md) - 1-year chunking rationale, comparison with alternatives
+- [`troubleshooting.md`](/.claude/skills/historical-backfill-execution/references/troubleshooting.md) - OOM errors, retry strategies, Cloud Run logs analysis
