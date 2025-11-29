@@ -36,6 +36,8 @@ exclude_path = [
   "node_modules/",
   "__pycache__/",
   ".pytest_cache/",
+  # Scratch directories (gitignored, transient research)
+  "scratch/",
 ]
 
 # Timeout for file operations (seconds)
