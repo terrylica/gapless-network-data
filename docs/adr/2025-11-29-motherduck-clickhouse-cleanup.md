@@ -58,74 +58,54 @@ Rationale:
 
 ## Architecture
 
-![Architecture Diagram](/docs/adr/assets/2025-11-29-motherduck-clickhouse-cleanup.svg)
+```
+                                ┌───────────────────────┐
+                                │ 🗑 motherduck-monitor/ │
+                                └───────────────────────┘
+                                  │
+                                  │ delete
+                                  ∨
+┌─────────────────┐  triggers   ┌───────────────────────┐  delete   ┌────────────────────┐
+│ GCP (unchanged) │ ──────────> │    ✓ gap-monitor/     │ <──────── │ 🗑 motherduck-token │
+└─────────────────┘             └───────────────────────┘           └────────────────────┘
+                                  │
+                                  │ queries
+                                  ∨
+                                ┌───────────────────────┐
+                                │   ClickHouse Cloud    │
+                                └───────────────────────┘
+                                ┌───────────────────────┐
+                                │    📄 66 stale refs    │
+                                └───────────────────────┘
+                                  │
+                                  │ rewrite
+                                  ∨
+                                ┌───────────────────────┐
+                                │    📄 Docs updated     │
+                                └───────────────────────┘
+```
 
 <details>
-<summary>D2 Source</summary>
+<summary>graph-easy source</summary>
 
-```d2
-direction: down
+```
+graph { flow: south; }
 
-before: Before {
-  style.fill: "#fff5f5"
-  style.stroke: "#dc3545"
+[delete1] { label: "🗑 motherduck-monitor/"; }
+[delete2] { label: "🗑 motherduck-token"; }
+[delete3] { label: "📄 66 stale refs"; }
 
-  md: "🗑 motherduck-monitor/" {
-    style.fill: "#dc3545"
-    style.font-color: "#fff"
-  }
-  gm1: "✓ gap-monitor/" {
-    style.fill: "#198754"
-    style.font-color: "#fff"
-  }
-  secret: "🗑 motherduck-token" {
-    style.fill: "#dc3545"
-    style.font-color: "#fff"
-  }
-  docs1: "📄 66 stale docs" {
-    style.fill: "#ffc107"
-    style.font-color: "#000"
-  }
-}
+[keep] { label: "✓ gap-monitor/"; }
+[docs] { label: "📄 Docs updated"; }
 
-after: After {
-  style.fill: "#f0fff4"
-  style.stroke: "#198754"
+[gcp] { label: "GCP (unchanged)"; }
+[ch] { label: "ClickHouse Cloud"; }
 
-  gm2: "gap-monitor/" {
-    style.fill: "#198754"
-    style.font-color: "#fff"
-  }
-  docs2: "📄 Docs updated" {
-    style.fill: "#198754"
-    style.font-color: "#fff"
-  }
-}
-
-gcp: "GCP (Unchanged)" {
-  style.fill: "#f8f9fa"
-  style.stroke: "#dee2e6"
-
-  scheduler: Scheduler {
-    style.fill: "#6c757d"
-    style.font-color: "#fff"
-  }
-  cf: "Cloud Function" {
-    style.fill: "#6c757d"
-    style.font-color: "#fff"
-  }
-  scheduler -> cf: triggers
-}
-
-clickhouse: "ClickHouse Cloud" {
-  shape: cylinder
-  style.fill: "#0d6efd"
-  style.font-color: "#fff"
-}
-
-before -> after: "Phase 1 & 2"
-gcp.cf -> after.gm2: runs
-after.gm2 -> clickhouse: queries
+[delete1] -- delete --> [keep]
+[delete2] -- delete --> [keep]
+[delete3] -- rewrite --> [docs]
+[gcp] -- triggers --> [keep]
+[keep] -- queries --> [ch]
 ```
 
 </details>
