@@ -13,7 +13,7 @@ For detailed rankings and setup workflow, use probe.get_alpha_features() and
 probe.get_setup_workflow().
 """
 
-__version__ = "4.3.1"
+__version__ = "4.4.0"
 
 from gapless_network_data import probe
 from gapless_network_data.api import (
