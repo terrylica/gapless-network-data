@@ -190,7 +190,7 @@ def get_protocol_eras() -> list[ProtocolEra]:
     ]
 
 
-def get_setup_workflow() -> dict[str, str | list[str]]:
+def get_setup_workflow() -> dict[str, object]:
     """
     Get setup instructions for ClickHouse credentials.
 
