@@ -13,7 +13,13 @@ For detailed rankings and setup workflow, use probe.get_alpha_features() and
 probe.get_setup_workflow().
 """
 
-__version__ = "4.5.1"
+# ADR: 2025-12-02-sdk-user-feedback-v451 - Dynamic version discovery
+try:
+    from importlib.metadata import version as _get_version
+
+    __version__ = _get_version("gapless-network-data")
+except Exception:
+    __version__ = "4.5.1"  # Fallback for editable installs
 
 from gapless_network_data import probe
 from gapless_network_data.api import (

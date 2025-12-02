@@ -94,7 +94,7 @@ Returns pandas DataFrame with columns:
 - timestamp (datetime64[ns, UTC])
 - number (uint64)
 - gas_limit, gas_used, base_fee_per_gas, transaction_count, size (uint64)
-- blob_gas_used, excess_blob_gas (uint64, nullable)
+- blob_gas_used, excess_blob_gas (Int64, nullable - pd.NA for pre-EIP4844)
 
 ### Deprecated Fields
 
@@ -106,6 +106,14 @@ Excluded by default (use `include_deprecated=True` for pre-Merge analysis):
 ## Setup
 
 Credentials via .env file (simplest), Doppler (recommended for teams), or environment variables.
+
+### Environment Variables
+
+| Variable                       | Description               |
+| ------------------------------ | ------------------------- |
+| `CLICKHOUSE_HOST_READONLY`     | ClickHouse Cloud hostname |
+| `CLICKHOUSE_USER_READONLY`     | Read-only username        |
+| `CLICKHOUSE_PASSWORD_READONLY` | Password                  |
 
 ```bash
 # Option 1: .env file (simplest for small teams)
