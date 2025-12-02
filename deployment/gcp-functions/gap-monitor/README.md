@@ -23,8 +23,11 @@ gcloud auth login
 gcloud config set project eonlabs-ethereum-bq
 
 # Store secrets (if not already done)
-doppler secrets get PUSHOVER_TOKEN --plain | gcloud secrets create pushover-token --data-file=-
-doppler secrets get PUSHOVER_USER --plain | gcloud secrets create pushover-user --data-file=-
+# Pushover tokens are stored in the dedicated gapless-network-data Doppler project
+doppler secrets get PUSHOVER_APP_TOKEN --project gapless-network-data --config prd --plain | \
+  gcloud secrets create pushover-token --data-file=-
+doppler secrets get PUSHOVER_USER_KEY --project gapless-network-data --config prd --plain | \
+  gcloud secrets create pushover-user --data-file=-
 ```
 
 ### Deploy Function
