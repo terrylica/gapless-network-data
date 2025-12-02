@@ -1,3 +1,10 @@
+# [4.6.0](https://github.com/terrylica/gapless-network-data/compare/v4.5.1...v4.6.0) (2025-12-02)
+
+
+### Features
+
+* fix blob gas dtype and add dynamic version discovery ([b4fb6dc](https://github.com/terrylica/gapless-network-data/commit/b4fb6dcfe03f0ad92dd06f3861b331701365edc4))
+
 ## [4.5.1](https://github.com/terrylica/gapless-network-data/compare/v4.5.0...v4.5.1) (2025-12-02)
 
 
