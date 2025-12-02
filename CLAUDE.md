@@ -12,7 +12,7 @@ Gapless Network Data is a multi-chain blockchain network metrics collection tool
 - **Bitcoin**: Mempool snapshots via mempool.space (5-minute intervals, future work)
 - **Multi-chain**: Extensible to Solana, Avalanche, Polygon, etc.
 
-**Version**: v4.5.1 (production operational)
+**Version**: v4.6.0 (production operational)
 
 ## Data Scope
 
@@ -283,7 +283,7 @@ Get setup instructions: `gmd.probe.get_setup_workflow()`
 
 ## Current Architecture
 
-**Version**: v4.5.1 (production operational)
+**Version**: v4.6.0 (production operational)
 
 **Status**: Production operational - dual-pipeline collection with 23.87M blocks
 
