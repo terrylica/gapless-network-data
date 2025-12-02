@@ -6,6 +6,7 @@ Follows exception-only failure pattern - no fallbacks, no defaults, no silent er
 """
 
 from datetime import datetime, timezone
+from http import HTTPStatus
 
 
 class MempoolException(Exception):
@@ -180,7 +181,7 @@ class MempoolRateLimitException(MempoolHTTPException):
         super().__init__(
             message=message,
             endpoint=endpoint,
-            http_status=429,
+            http_status=HTTPStatus.TOO_MANY_REQUESTS.value,
             timestamp=timestamp,
         )
         self.retry_after = retry_after

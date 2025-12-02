@@ -5,6 +5,9 @@ Command-line interface for gapless-network-data.
 import sys
 from datetime import datetime
 
+# Minimum argv length: sys.argv[0] (program name) + sys.argv[1] (command)
+MIN_ARGV_LENGTH = 2
+
 
 def main() -> None:
     """
@@ -15,7 +18,7 @@ def main() -> None:
         stream: Stream live mempool data
         version: Show version information
     """
-    if len(sys.argv) < 2:
+    if len(sys.argv) < MIN_ARGV_LENGTH:
         print("Usage: gapless-network-data <command> [options]")
         print()
         print("Commands:")

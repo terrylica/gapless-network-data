@@ -3,6 +3,7 @@ Mempool data collector using mempool.space REST API.
 """
 
 from datetime import datetime, timedelta, timezone
+from http import HTTPStatus
 from pathlib import Path
 
 import httpx
@@ -82,7 +83,7 @@ class MempoolCollector:
                             mempool_resp.raise_for_status()
                             mempool = mempool_resp.json()
                         except httpx.HTTPStatusError as e:
-                            if e.response.status_code == 429:
+                            if e.response.status_code == HTTPStatus.TOO_MANY_REQUESTS:
                                 retry_after = e.response.headers.get("Retry-After")
                                 raise MempoolRateLimitException(
                                     endpoint=endpoint_mempool,
@@ -102,7 +103,7 @@ class MempoolCollector:
                             fees_resp.raise_for_status()
                             fees = fees_resp.json()
                         except httpx.HTTPStatusError as e:
-                            if e.response.status_code == 429:
+                            if e.response.status_code == HTTPStatus.TOO_MANY_REQUESTS:
                                 retry_after = e.response.headers.get("Retry-After")
                                 raise MempoolRateLimitException(
                                     endpoint=endpoint_fees,
