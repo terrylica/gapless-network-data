@@ -83,6 +83,9 @@ GAP_TRACKING_TABLE = 'gap_tracking'
 # Healthchecks.io ping URL (from environment)
 HEALTHCHECKS_PING_URL = os.environ.get('HEALTHCHECKS_PING_URL', '')
 
+# Pushover priority levels (https://pushover.net/api#priority)
+PUSHOVER_PRIORITY_EMERGENCY = 2  # Requires acknowledgment, retry/expire params
+
 
 # ================================================================================
 # Secret Management (GCP Secret Manager)
@@ -493,7 +496,7 @@ def send_pushover_notification(
     }
 
     # Emergency priority requires retry/expire
-    if priority == 2:
+    if priority == PUSHOVER_PRIORITY_EMERGENCY:
         data["retry"] = 60      # Retry every 60 seconds
         data["expire"] = 3600   # Give up after 1 hour
 
@@ -651,12 +654,20 @@ def monitor(request):
             notifications_sent += 1
 
         # If healthy, send normal status (only if no other notifications)
+        # ADR: 2025-12-02-pushover-notification-enhancement - comprehensive dashboard format
         if is_healthy and notifications_sent == 0:
+            # Compute additional metrics for operational visibility
+            staleness_pct = int((age_seconds / STALENESS_THRESHOLD_SECONDS) * 100)
+            time_to_stale = STALENESS_THRESHOLD_SECONDS - age_seconds
+            latest_ts_str = latest_timestamp.strftime("%Y-%m-%d %H:%M:%S UTC")
+
             message = (
                 f"Blocks: {total_blocks:,}\n"
                 f"Range: {min_block:,} to {max_block:,}\n"
-                f"Age: {age_seconds}s\n"
-                f"New gaps tracked: {len(new_gaps)}\n"
+                f"Latest: #{latest_block:,} @ {latest_ts_str}\n"
+                f"Age: {age_seconds}s / {STALENESS_THRESHOLD_SECONDS}s threshold ({staleness_pct}%)\n"
+                f"Margin: {time_to_stale}s until stale\n"
+                f"Gaps: {len(new_gaps)} new | {len(persistent_gaps)} tracked | {len(resolved_gaps)} resolved\n"
                 f"Sequence: Complete"
             )
             send_pushover_notification(
