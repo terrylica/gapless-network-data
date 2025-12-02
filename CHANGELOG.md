@@ -1,3 +1,10 @@
+## [4.5.1](https://github.com/terrylica/gapless-network-data/compare/v4.5.0...v4.5.1) (2025-12-02)
+
+
+### Bug Fixes
+
+* update get_setup_workflow return type annotation ([0e813fa](https://github.com/terrylica/gapless-network-data/commit/0e813faf235b117892ed1dc30d897864e4e5446f))
+
 # [4.5.0](https://github.com/terrylica/gapless-network-data/compare/v4.4.0...v4.5.0) (2025-12-02)
 
 
