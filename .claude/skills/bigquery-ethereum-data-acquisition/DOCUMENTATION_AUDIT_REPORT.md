@@ -1,4 +1,5 @@
 # BigQuery Ethereum Column Selection Documentation Survey
+
 **Date**: 2025-11-08
 **Status**: Comprehensive audit complete
 
@@ -15,9 +16,11 @@ The gapless-network-data repository has **EXCELLENT** documentation of the BigQu
 ## DOCUMENTATION INVENTORY
 
 ### PRIMARY DOCUMENTATION (Skill-based)
+
 Location: `/.claude/skills/bigquery-ethereum-data-acquisition/`
 
 #### 1. **SKILL.md** (Overview & Workflow)
+
 - **Status**: ✅ Excellent
 - **Coverage**: High-level workflow, cost findings, prerequisites
 - **Key Content**:
@@ -27,6 +30,7 @@ Location: `/.claude/skills/bigquery-ethereum-data-acquisition/`
   - Free tier utilization: 0.1% (well within limits)
 
 #### 2. **README.md** (Status & Architecture)
+
 - **Status**: ✅ Excellent
 - **Coverage**: Version history, validation status, key findings
 - **Key Content**:
@@ -37,6 +41,7 @@ Location: `/.claude/skills/bigquery-ethereum-data-acquisition/`
   - Clear separation of tested vs untested work
 
 #### 3. **VALIDATION_STATUS.md** (Empirical Testing)
+
 - **Status**: ✅ Excellent
 - **Coverage**: Detailed validation methodology and results
 - **Key Content**:
@@ -48,14 +53,17 @@ Location: `/.claude/skills/bigquery-ethereum-data-acquisition/`
   - Testing methodology documented (platform, Python version, authentication)
 
 ### RESEARCH DOCUMENTS (references/)
+
 Location: `/.claude/skills/bigquery-ethereum-data-acquisition/references/`
 
 #### 4. **ethereum_columns_ml_evaluation.md** (PRIMARY: Column-by-Column Analysis)
+
 - **Status**: ✅ EXCELLENT - This is the centerpiece document
 - **Coverage**: Comprehensive column-by-column analysis
 - **Content Quality**: 9/10
 
 **What's Documented**:
+
 1. **Evaluation Criteria** (Clear decision framework):
    - ✅ KEEP: Numeric, varies over time, shows patterns/trends, predictive value
    - ⚠️ MAYBE: Limited utility, situational, or sparse
@@ -103,11 +111,13 @@ Location: `/.claude/skills/bigquery-ethereum-data-acquisition/references/`
    - Blob metrics (2024+)
 
 #### 5. **bigquery_cost_comparison.md** (Cost Analysis with Empirical Data)
+
 - **Status**: ✅ Excellent
 - **Coverage**: Empirical cost analysis, 6 vs 11 vs 23 columns
 - **Content Quality**: 9/10
 
 **What's Documented**:
+
 1. **Empirical Test Results Table**:
    | Query Type | Columns | Size (GB) | % Free Tier | Savings | ML Value |
    |------------|---------|-----------|-------------|---------|----------|
@@ -138,11 +148,13 @@ Location: `/.claude/skills/bigquery-ethereum-data-acquisition/references/`
    - 11 columns = Just the pizza, throw away cardboard
 
 #### 6. **cost-analysis.md** (Detailed Cost Analysis with RPC Comparison)
+
 - **Status**: ✅ Excellent
 - **Coverage**: Free tier utilization, BigQuery vs RPC, optimization strategies
 - **Content Quality**: 9/10
 
 **What's Documented**:
+
 1. **Column Selection Rationale** (11 columns = 0.97 GB):
    - Complete list of 11 included fields
    - Complete list of 12 discarded fields
@@ -185,11 +197,13 @@ Location: `/.claude/skills/bigquery-ethereum-data-acquisition/references/`
    - Conclusion: 624x faster with lower operational risk
 
 #### 7. **workflow-steps.md** (Complete 5-Step Workflow)
+
 - **Status**: ✅ Excellent
 - **Coverage**: Step-by-step workflow with SQL queries
 - **Content Quality**: 9/10
 
 **What's Documented**:
+
 1. **Step 2: Select Columns for ML/Time-Series**
    - Recommended columns (11 total)
    - Discarded columns (12 total) with categories
@@ -208,39 +222,47 @@ Location: `/.claude/skills/bigquery-ethereum-data-acquisition/references/`
    - sha3_uncles, mix_hash
 
 #### 8. **setup-guide.md** (Authentication & Dependencies)
+
 - **Status**: ✅ Good
 - **Coverage**: Setup instructions
 - **Mentions column selection**: References workflow-steps.md
 
 #### 9. **bigquery_cost_estimate.md** (Free Tier Methodology)
+
 - **Status**: ✅ Good
 - **Coverage**: Free tier limits, calculation methodology
 - **Content**: 1 TB query / 10 GB storage explanation
 
 #### 10. **bigquery_complete_ethereum_data.md** (Dataset Catalog)
+
 - **Status**: ✅ Good
 - **Coverage**: 11 tables in crypto_ethereum dataset
 - **Utility**: Context for other data sources
 
 #### 11. **littleblack-hardware-report.md** (Local vs Cloud Comparison)
+
 - **Status**: ✅ Good
 - **Coverage**: Hardware requirements for Erigon node
 - **Justifies**: Why BigQuery > local node
 
 ### SCRIPTS WITH INLINE DOCUMENTATION
+
 Location: `/.claude/skills/bigquery-ethereum-data-acquisition/scripts/`
 
 #### 12. **test_bigquery_cost.py**
+
 - **Status**: ✅ Code + documentation
 - **Column Selection**: Visible in SQL_QUERY variable
 - **11 columns hardcoded**: timestamp, number, gas_limit, gas_used, base_fee_per_gas, transaction_count, difficulty, total_difficulty, size, blob_gas_used, excess_blob_gas
 
 #### 13. **download_bigquery_to_parquet.py**
+
 - **Status**: ✅ Code + documentation
 - **Column Selection**: Same 11 columns in SQL_QUERY
 - **Comment**: "Warning: Adding hash fields increases cost by 34x"
 
 #### 14. **scripts/README.md**
+
 - **Status**: ✅ Excellent
 - **Coverage**: Script usage, validated results, performance benchmarks
 - **Content**:
@@ -255,35 +277,42 @@ Location: `/.claude/skills/bigquery-ethereum-data-acquisition/scripts/`
 ## GAP ANALYSIS
 
 ### WHAT'S DOCUMENTED (Complete)
+
 ✅ **Research Process**
+
 - 5 parallel agent investigation (2025-11-06)
 - Methodology clearly stated
 - Research output: 52 files consolidated to 5 reference documents
 
 ✅ **Selection Criteria**
+
 - Explicit decision framework (KEEP / MAYBE / DISCARD)
 - Evaluation criteria stated upfront
 - Applied systematically to all 23 columns
 
 ✅ **Exclusion Rationale**
+
 - 12 discarded columns explicitly listed
 - Per-column category (hashes, merkle roots, categorical)
 - ML value analysis provided
 - Storage waste quantified (30.3 GB / 88.1%)
 
 ✅ **ML/Time-Series Justification**
+
 - 6 feature engineering examples provided
 - Per-column use cases documented
 - Primary target (base_fee_per_gas for forecasting) identified
 - Blob metrics future-proofing explained
 
 ✅ **Decision Flow**
+
 - Logical progression: 23 cols → evaluate → 11 selected
 - 6 evaluation criteria applied per column
 - Clear categories (critical, useful, marginal, discard)
 - SQL query shows final selection
 
 ✅ **Cost-Benefit Analysis**
+
 - Multiple tables comparing 6, 9, 11, 23 columns
 - Storage: 0.97 GB vs 34.4 GB (97% savings)
 - Query runs: 1,061/month vs 29/month
@@ -291,12 +320,14 @@ Location: `/.claude/skills/bigquery-ethereum-data-acquisition/scripts/`
 - Real-world analogy provided
 
 ✅ **Empirical Validation**
+
 - Cost estimation: 0.97 GB (tested 2025-11-07)
 - Download test: 1,000 blocks (62 KB, verified)
 - DuckDB integration: <100ms (tested)
 - Dependencies: All versions documented
 
 ✅ **Decision Traceability**
+
 - Can follow logic from research → evaluation → selection
 - References between documents (links to ethereum_columns_ml_evaluation.md)
 - Version history in README.md and VALIDATION_STATUS.md
@@ -305,6 +336,7 @@ Location: `/.claude/skills/bigquery-ethereum-data-acquisition/scripts/`
 ### WHAT'S MISSING (Minor)
 
 ⚠️ **MINOR GAP 1**: Historical Context
+
 - When was this decision made? (Answer: 2025-11-06 research, 2025-11-07 validation)
 - Was this part of Phase 1 planning? (Not documented in CLAUDE.md linkage)
 - How was 97% savings calculated? (Shown in tables, not derivation)
@@ -312,6 +344,7 @@ Location: `/.claude/skills/bigquery-ethereum-data-acquisition/scripts/`
 **Impact**: Low - Decision appears recent and central to skill, clear rationale provided
 
 ⚠️ **MINOR GAP 2**: Alternative Selection Strategies
+
 - Why 11 instead of 9? (Documented: future-proofing for blob_gas fields)
 - Could you use even fewer columns? (Not explored: 6 vs 9 vs 11 comparison shown, but not systematic exploration)
 - Trade-offs at each selection level? (Cost shown, ML value not compared across levels)
@@ -319,6 +352,7 @@ Location: `/.claude/skills/bigquery-ethereum-data-acquisition/scripts/`
 **Impact**: Low - 11 columns justified as "sweet spot" for current use case
 
 ⚠️ **MINOR GAP 3**: Post-Merge Data Handling
+
 - How are NULL blob_gas fields handled? (Mentioned in schema but not validation)
 - Impact on time-series analysis? (Not discussed)
 - Should they be filled, dropped, or kept as-is? (Not addressed)
@@ -326,6 +360,7 @@ Location: `/.claude/skills/bigquery-ethereum-data-acquisition/scripts/`
 **Impact**: Low - Documented that fields are "mostly NULL before March 2024"
 
 ⚠️ **MINOR GAP 4**: Cross-Reference from CLAUDE.md
+
 - No mention of BigQuery skill in main CLAUDE.md
 - Phase 1 specifications don't link to column selection
 - master-project-roadmap.yaml doesn't reference the 11-column decision
@@ -343,7 +378,7 @@ Can someone follow the logic from research to final selection?
 1. **Starting point**: 23 columns in BigQuery blocks table (documented in VALIDATION_STATUS.md)
 2. **Evaluation framework**: KEEP/MAYBE/DISCARD criteria (documented in ethereum_columns_ml_evaluation.md)
 3. **Analysis per column**: All 23 columns evaluated (ethereum_columns_ml_evaluation.md, rows 14-71)
-4. **Selection rationale**: 
+4. **Selection rationale**:
    - 9 CRITICAL (time-series features) → KEEP
    - 2 USEFUL (blob metrics, post-2024) → KEEP
    - 2 MARGINAL (categorical/complex) → MAYBE/SKIP
@@ -358,20 +393,20 @@ Can someone follow the logic from research to final selection?
 
 ## COMPLETENESS SCORING
 
-| Aspect | Score | Evidence | Notes |
-|--------|-------|----------|-------|
-| **Research Process** | 95/100 | VALIDATION_STATUS.md + README.md | Methodology clear, agents documented, parallel investigation documented |
-| **Selection Criteria** | 95/100 | ethereum_columns_ml_evaluation.md | KEEP/MAYBE/DISCARD framework explicitly stated and applied |
-| **Exclusion Rationale** | 95/100 | ethereum_columns_ml_evaluation.md, cost-analysis.md | All 12 discarded columns listed with categories, reasons given |
-| **ML/Time-Series Justification** | 95/100 | ethereum_columns_ml_evaluation.md | 6 feature engineering examples, per-column use cases, primary targets identified |
-| **Decision Flow** | 90/100 | All documents | Logical progression clear, minor: no schematic/flowchart |
-| **Cost-Benefit Analysis** | 95/100 | cost-analysis.md, bigquery_cost_comparison.md | Multiple cost tables, 97% savings quantified, free tier utilization shown |
-| **Hash Field Analysis** | 95/100 | ethereum_columns_ml_evaluation.md | Cryptographic randomness explained, storage waste quantified (30.3 GB/88.1%), ML value explicitly stated as zero |
-| **Merkle Root Explanation** | 95/100 | ethereum_columns_ml_evaluation.md | Deterministic nature explained, distinction from ML features, redundancy noted |
-| **Empirical Validation** | 95/100 | VALIDATION_STATUS.md | Cost tested (0.97 GB), download tested (1,000 blocks), DuckDB tested (<100ms) |
-| **Decision Traceability** | 95/100 | All documents linked | Can follow from research → selection, references between docs |
-| **Alternative Exploration** | 75/100 | Partial | 6 vs 9 vs 11 vs 23 columns shown, but not systematic comparison of trade-offs |
-| **Cross-Package Linkage** | 50/100 | Limited | CLAUDE.md doesn't reference BigQuery skill, Phase 1 specs don't link to this decision |
+| Aspect                           | Score  | Evidence                                            | Notes                                                                                                            |
+| -------------------------------- | ------ | --------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------- |
+| **Research Process**             | 95/100 | VALIDATION_STATUS.md + README.md                    | Methodology clear, agents documented, parallel investigation documented                                          |
+| **Selection Criteria**           | 95/100 | ethereum_columns_ml_evaluation.md                   | KEEP/MAYBE/DISCARD framework explicitly stated and applied                                                       |
+| **Exclusion Rationale**          | 95/100 | ethereum_columns_ml_evaluation.md, cost-analysis.md | All 12 discarded columns listed with categories, reasons given                                                   |
+| **ML/Time-Series Justification** | 95/100 | ethereum_columns_ml_evaluation.md                   | 6 feature engineering examples, per-column use cases, primary targets identified                                 |
+| **Decision Flow**                | 90/100 | All documents                                       | Logical progression clear, minor: no schematic/flowchart                                                         |
+| **Cost-Benefit Analysis**        | 95/100 | cost-analysis.md, bigquery_cost_comparison.md       | Multiple cost tables, 97% savings quantified, free tier utilization shown                                        |
+| **Hash Field Analysis**          | 95/100 | ethereum_columns_ml_evaluation.md                   | Cryptographic randomness explained, storage waste quantified (30.3 GB/88.1%), ML value explicitly stated as zero |
+| **Merkle Root Explanation**      | 95/100 | ethereum_columns_ml_evaluation.md                   | Deterministic nature explained, distinction from ML features, redundancy noted                                   |
+| **Empirical Validation**         | 95/100 | VALIDATION_STATUS.md                                | Cost tested (0.97 GB), download tested (1,000 blocks), DuckDB tested (<100ms)                                    |
+| **Decision Traceability**        | 95/100 | All documents linked                                | Can follow from research → selection, references between docs                                                    |
+| **Alternative Exploration**      | 75/100 | Partial                                             | 6 vs 9 vs 11 vs 23 columns shown, but not systematic comparison of trade-offs                                    |
+| **Cross-Package Linkage**        | 50/100 | Limited                                             | CLAUDE.md doesn't reference BigQuery skill, Phase 1 specs don't link to this decision                            |
 
 **Overall Completeness: 90/100**
 
@@ -453,6 +488,7 @@ Can someone follow the logic from research to final selection?
 ✅ **YES - ethereum_columns_ml_evaluation.md (rows 14-71)**
 
 Columns listed with categories:
+
 - CRITICAL (9 columns to keep)
 - USEFUL (2 columns to keep)
 - MARGINAL (2 columns to skip)
@@ -465,9 +501,11 @@ Plus additional lists in cost-analysis.md with hash field breakdown.
 ✅ **YES - EXCELLENT in ethereum_columns_ml_evaluation.md**
 
 Example for base_fee_per_gas:
+
 > "base_fee_per_gas | INTEGER | EIP-1559 price signal | **PRIMARY TARGET** for price forecasting"
 
 Each of 23 columns has:
+
 - Type
 - Why Keep/Discard
 - Use Cases/Issues
@@ -481,6 +519,7 @@ Each of 23 columns has:
 - README.md: "Column optimization saves 97%: 11 cols (0.97 GB) vs 23 cols (34.4 GB)"
 
 Note: Different calculations shown:
+
 - 97% of cost is hash fields (30.3 GB / 34.4 GB)
 - 97% smaller with optimization (0.97 GB vs 34.4 GB)
 
@@ -489,6 +528,7 @@ Note: Different calculations shown:
 ✅ **YES - EXTREMELY THOROUGH**
 
 ethereum_columns_ml_evaluation.md "Why Hash Fields Are Worthless for ML" section:
+
 - Cryptographically random by design
 - Zero predictive value
 - Cannot forecast hash[n+1] from hash[n]
@@ -502,12 +542,14 @@ Real example with block 12345678 hash shown.
 ✅ **YES - GOOD EXPLANATION**
 
 Section: "What Hash Fields ARE Good For":
+
 - Used for data integrity/verification, NOT ML
 - Deterministic checksums
 - Redundant with transaction_count
 - Example: verify block[n].parent_hash == block[n-1].hash
 
 Merkle fields identified:
+
 - transactions_root, state_root, receipts_root, withdrawals_root
 
 ### Is there empirical validation of 11-column selection?
@@ -524,6 +566,7 @@ Merkle fields identified:
 ✅ **YES - HIGHLY TRACEABLE**
 
 Follow the logic:
+
 1. Research: 23 columns identified (VALIDATION_STATUS.md)
 2. Evaluation framework: KEEP/MAYBE/DISCARD (ethereum_columns_ml_evaluation.md)
 3. Column analysis: All 23 evaluated (ethereum_columns_ml_evaluation.md)
@@ -596,6 +639,7 @@ Follow the logic:
 ## CONCLUSION
 
 The BigQuery Ethereum column selection decision is **EXCELLENTLY DOCUMENTED** with comprehensive coverage of:
+
 - Research methodology
 - ML/time-series value analysis
 - Cost-benefit analysis
@@ -607,4 +651,3 @@ The BigQuery Ethereum column selection decision is **EXCELLENTLY DOCUMENTED** wi
 The main gap is **discoverability** - the decision is well-documented within the skill directory but not referenced from the main CLAUDE.md or Phase 1 specifications. Adding a reference and a one-page summary would bring this to 95+/100.
 
 **Recommended next step**: Add DECISION_SUMMARY.md to skill directory and link from CLAUDE.md.
-

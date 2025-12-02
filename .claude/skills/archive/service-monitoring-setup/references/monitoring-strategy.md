@@ -22,19 +22,21 @@
 
 **Rationale**: No single service provides all monitoring needs in free tier.
 
-| Service | Provides | Cost |
-|---------|----------|------|
-| **Healthchecks.io** | Heartbeat monitoring (Dead Man's Switch) | $0 |
-| **UptimeRobot** | HTTP endpoint polling | $0 |
-| **BOTH** | Complete monitoring coverage | **$0/month** |
+| Service             | Provides                                 | Cost         |
+| ------------------- | ---------------------------------------- | ------------ |
+| **Healthchecks.io** | Heartbeat monitoring (Dead Man's Switch) | $0           |
+| **UptimeRobot**     | HTTP endpoint polling                    | $0           |
+| **BOTH**            | Complete monitoring coverage             | **$0/month** |
 
 ### Why Not Just One Service?
 
 **UptimeRobot Free Tier**:
+
 - ✅ HTTP endpoint monitoring
 - ❌ Heartbeat monitoring (requires Pro $7/mo)
 
 **Healthchecks.io Free Tier**:
+
 - ✅ Heartbeat monitoring
 - ❌ HTTP endpoint monitoring (not offered)
 
@@ -51,6 +53,7 @@
 - ✅ Running on serverless infrastructure
 
 **Example Use Cases**:
+
 - Daily data backfill jobs
 - Scheduled ETL pipelines
 - Backup scripts
@@ -58,6 +61,7 @@
 - Report generation tasks
 
 **How It Works**:
+
 ```
 1. Job starts
 2. Job executes work
@@ -80,6 +84,7 @@ Catches:
 - ✅ Want external validation of reachability
 
 **Example Use Cases**:
+
 - VM-hosted APIs
 - Web applications
 - Database endpoints (with HTTP health check)
@@ -87,6 +92,7 @@ Catches:
 - WebSocket servers with HTTP fallback
 
 **How It Works**:
+
 ```
 1. UptimeRobot pings endpoint every 5 minutes
 2. Expects 200 OK response
@@ -119,17 +125,20 @@ doppler secrets get HEALTHCHECKS_API_KEY --project claude-config --config dev --
 **CRITICAL**: Both services require manual Telegram setup before production use.
 
 **UptimeRobot**:
+
 1. Visit https://uptimerobot.com/dashboard
 2. My Settings → Alert Contacts → Add Telegram
 3. Message UptimeRobot bot, complete verification
 
 **Healthchecks.io**:
+
 1. Visit https://healthchecks.io/projects
 2. Integrations → Add Telegram
 3. Message @HealthchecksBot, send `/start`
 4. Copy code, complete verification
 
 **Validation**:
+
 ```python
 # Verify Telegram configured
 assert client.get_telegram_contact_id() is not None
@@ -186,12 +195,14 @@ print(f"VM Monitor: {vm_monitor['monitor']['id']}")
 ### Infrastructure Components
 
 **Cloud Run Job** (ephemeral):
+
 - Name: `eth-collector`
 - Schedule: Every 2 hours
 - Duration: 30-90 minutes
 - Monitoring: **Healthchecks.io** (Dead Man's Switch)
 
 **VM Service** (persistent):
+
 - Name: `eth-realtime-collector`
 - HTTP Health: `http://VM_IP:8000/health`
 - Uptime: 24/7
@@ -341,6 +352,7 @@ Root Cause Investigation:
 ### Self-Hosted (Uptime Kuma)
 
 **Infrastructure**:
+
 - VM for Uptime Kuma: $10-20/month
 - Domain/SSL: $12/year
 - Maintenance time: 2-4 hours/month
@@ -348,6 +360,7 @@ Root Cause Investigation:
 **Total**: $120-240/year + maintenance burden
 
 **Risks**:
+
 - Single point of failure
 - Same infrastructure being monitored
 - Maintenance overhead
@@ -356,12 +369,14 @@ Root Cause Investigation:
 ### External SaaS (Dual Service)
 
 **Free Tiers**:
+
 - Healthchecks.io: $0/month (20 checks)
 - UptimeRobot: $0/month (50 monitors)
 
 **Total**: **$0/year**
 
 **Benefits**:
+
 - ✅ External infrastructure (different failure modes)
 - ✅ Zero maintenance
 - ✅ Professional SLA
@@ -369,6 +384,7 @@ Root Cause Investigation:
 - ✅ No infrastructure to manage
 
 **Upgrade Paths** (if needed in future):
+
 - Healthchecks.io Pro: $20/month (100 checks, SMS alerts)
 - UptimeRobot Pro: $7/month (heartbeat monitoring, 1-min intervals)
 
@@ -377,6 +393,7 @@ Root Cause Investigation:
 ### 1. Timeout Configuration
 
 **Healthchecks.io Timeouts**:
+
 - Set timeout = 1.5× typical job duration
 - Add 10-30 minute grace period
 - Example: 1-hour job → 90-minute timeout + 15-minute grace
@@ -386,6 +403,7 @@ Root Cause Investigation:
 ### 2. Alert Fatigue Prevention
 
 **Configure Properly**:
+
 - Use appropriate grace periods
 - Don't monitor too frequently (5-minute minimum)
 - Test alert flow before production
@@ -395,11 +413,13 @@ Root Cause Investigation:
 ### 3. False Positive Handling
 
 **Common Causes**:
+
 - Network blips (transient)
 - Planned maintenance (pause monitoring)
 - Job duration variability (increase timeout)
 
 **Mitigation**:
+
 - Grace periods (buffer before alert)
 - Manual pause before maintenance
 - Monitor metrics to adjust timeouts
@@ -407,6 +427,7 @@ Root Cause Investigation:
 ### 4. Alert Routing
 
 **Production Strategy**:
+
 - Critical services: Telegram + Email
 - Development: Email only
 - Test environments: No alerts (pause monitoring)
@@ -414,6 +435,7 @@ Root Cause Investigation:
 ### 5. Documentation
 
 **Required for Each Monitor**:
+
 - What is being monitored
 - Why this timeout/interval
 - Who to contact on failure
@@ -426,6 +448,7 @@ Root Cause Investigation:
 **Symptom**: Monitors configured but no Telegram messages received.
 
 **Check**:
+
 1. Verify Telegram integration: `client.get_telegram_contact_id()` not None
 2. Check UptimeRobot contact status (must be `status=2`)
 3. Test alert manually in dashboard
@@ -438,6 +461,7 @@ Root Cause Investigation:
 **Symptom**: Check always shows "new" status, never receives pings.
 
 **Check**:
+
 1. Verify `HEALTHCHECK_PING_URL` environment variable set
 2. Check job logs for ping attempts
 3. Test ping URL manually: `curl <ping_url>`
@@ -450,6 +474,7 @@ Root Cause Investigation:
 **Symptom**: VM is up but UptimeRobot reports down.
 
 **Check**:
+
 1. Test health endpoint manually: `curl http://VM_IP:8000/health`
 2. Check firewall rules (allow HTTP from UptimeRobot IPs)
 3. Verify health endpoint returns 200 OK
@@ -460,24 +485,28 @@ Root Cause Investigation:
 ## Future Enhancements
 
 ### Phase 1: Basic Monitoring (Current)
+
 - ✅ API key storage in Doppler
 - ✅ Telegram integration (manual)
 - ✅ Monitor creation scripts
 - ⏳ Production deployment
 
 ### Phase 2: Automation
+
 - Auto-detect Cloud Run Jobs and create checks
 - Auto-detect VMs with health endpoints
 - Bulk monitor creation from config file
 - Terraform/IaC integration
 
 ### Phase 3: Advanced Alerting
+
 - Alert aggregation (multiple failures → single alert)
 - Custom alert messages with context
 - Incident tracking integration (PagerDuty, Opsgenie)
 - Status page generation
 
 ### Phase 4: Analytics
+
 - Uptime percentage tracking
 - Response time monitoring
 - Failure pattern analysis
@@ -488,12 +517,14 @@ Root Cause Investigation:
 All patterns validated through empirical API probing:
 
 **UptimeRobot**:
+
 - 5 probe scripts (`/tmp/probe/uptimerobot/`)
 - Complete API lifecycle validated
 - Rate limiting discovered and documented
 - Probe report: `/tmp/probe/uptimerobot/PROBE_REPORT.md`
 
 **Healthchecks.io**:
+
 - 5 probe scripts (`/tmp/probe/healthchecks-io/`)
 - Core operations validated
 - API format differences documented

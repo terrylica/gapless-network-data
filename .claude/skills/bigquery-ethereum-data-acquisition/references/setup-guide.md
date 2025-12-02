@@ -44,6 +44,7 @@ gcloud auth application-default login
 ```
 
 **What this does**:
+
 - Opens browser for Google account authentication
 - Stores credentials at `~/.config/gcloud/application_default_credentials.json`
 - Python BigQuery client automatically finds credentials
@@ -82,6 +83,7 @@ bq ls bigquery-public-data:crypto_ethereum
 ```
 
 **Expected output**:
+
 ```
          tableId           Type
 -------------------------- -------
@@ -95,6 +97,7 @@ bq ls bigquery-public-data:crypto_ethereum
 ```
 
 **If error occurs**:
+
 - "Permission denied": Re-run `gcloud auth application-default login`
 - "Dataset not found": Check dataset path (should be `bigquery-public-data.crypto_ethereum`)
 
@@ -134,6 +137,7 @@ pip install google-cloud-bigquery==3.38.0 pandas==2.3.3 pyarrow==22.0.0 db-dtype
 ```
 
 **Dependency purposes**:
+
 - `google-cloud-bigquery`: BigQuery client library
 - `pandas`: DataFrame for data manipulation
 - `pyarrow`: Parquet file format support
@@ -152,6 +156,7 @@ python -c "from google.cloud import bigquery; client = bigquery.Client(); print(
 **Expected output**: `✅ Authentication successful`
 
 **If error occurs**:
+
 - `DefaultCredentialsError`: Run `gcloud auth application-default login`
 - `ImportError`: Install `google-cloud-bigquery`
 
@@ -163,6 +168,7 @@ bq query --dry_run --use_legacy_sql=false \
 ```
 
 **Expected output**:
+
 ```
 Query successfully validated.
 ```
@@ -174,6 +180,7 @@ uv run scripts/test_bigquery_cost.py
 ```
 
 **Expected output**:
+
 ```
 Bytes processed: 1,036,281,104 (0.97 GB)
 Free tier usage: 0.1% of 1 TB monthly quota
@@ -187,6 +194,7 @@ uv run scripts/download_bigquery_to_parquet.py 21000000 21001000 test.parquet
 ```
 
 **Expected output**:
+
 ```
 Downloaded 1001 rows to test.parquet (62 KB)
 ```
@@ -198,11 +206,13 @@ Downloaded 1001 rows to test.parquet (62 KB)
 ### Install DuckDB
 
 **macOS**:
+
 ```bash
 brew install duckdb
 ```
 
 **Ubuntu/Debian**:
+
 ```bash
 wget https://github.com/duckdb/duckdb/releases/download/v1.4.1/duckdb_cli-linux-amd64.zip
 unzip duckdb_cli-linux-amd64.zip
@@ -210,6 +220,7 @@ sudo mv duckdb /usr/local/bin/
 ```
 
 **Verify installation**:
+
 ```bash
 duckdb --version
 ```
@@ -227,6 +238,7 @@ EOF
 ```
 
 **Expected output**:
+
 ```
 ┌──────────────┐
 │ count_star() │
@@ -244,11 +256,13 @@ EOF
 **Cause**: Application default credentials not set
 
 **Fix**:
+
 ```bash
 gcloud auth application-default login
 ```
 
 **Verify**:
+
 ```bash
 ls ~/.config/gcloud/application_default_credentials.json
 ```
@@ -258,6 +272,7 @@ ls ~/.config/gcloud/application_default_credentials.json
 **Cause**: Missing dependency for BigQuery timestamp conversion
 
 **Fix**:
+
 ```bash
 pip install db-dtypes==1.4.3
 ```
@@ -269,6 +284,7 @@ pip install db-dtypes==1.4.3
 **Cause**: Selected too many columns or invalid date range
 
 **Fix**: Run cost estimation first:
+
 ```bash
 uv run scripts/test_bigquery_cost.py
 ```
@@ -280,6 +296,7 @@ uv run scripts/test_bigquery_cost.py
 **Cause**: Invalid BigQuery dataset path
 
 **Fix**: Verify dataset exists:
+
 ```bash
 bq ls bigquery-public-data:crypto_ethereum
 ```
@@ -291,6 +308,7 @@ bq ls bigquery-public-data:crypto_ethereum
 **Cause**: Network instability or firewall blocking BigQuery API
 
 **Fix**:
+
 1. Check internet connection
 2. Verify firewall allows HTTPS to `*.googleapis.com`
 3. Try smaller batch (1,000 blocks instead of 1M)
@@ -327,11 +345,13 @@ parallel uv run scripts/download_bigquery_to_parquet.py \
 ### Network Optimization
 
 **Resume interrupted downloads**:
+
 - BigQuery does not support resume
 - Workaround: Split into smaller chunks (100K blocks each)
 - If chunk fails, retry only that chunk
 
 **Bandwidth estimation**:
+
 - 62 bytes/row × 12.44M rows = 771 MB total
 - 100 Mbps connection: ~60 seconds
 - 10 Mbps connection: ~10 minutes
@@ -343,11 +363,13 @@ parallel uv run scripts/download_bigquery_to_parquet.py \
 ### Credentials Management
 
 **DO**:
+
 - Use application default credentials (gcloud auth)
 - Store service account keys in secure location (not in git)
 - Set `GOOGLE_APPLICATION_CREDENTIALS` environment variable
 
 **DO NOT**:
+
 - Commit credentials to version control
 - Share credentials via email or chat
 - Use personal credentials for production services
@@ -355,11 +377,13 @@ parallel uv run scripts/download_bigquery_to_parquet.py \
 ### Data Privacy
 
 **Public dataset**:
+
 - Ethereum blockchain is public data
 - No PII or sensitive information
 - Safe to download and analyze
 
 **Query logs**:
+
 - BigQuery logs all queries
 - Logs stored in Google Cloud (not shared publicly)
 - Queries are not billed in free tier

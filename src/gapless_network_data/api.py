@@ -28,6 +28,7 @@ from datetime import datetime
 from typing import TYPE_CHECKING
 
 import pandas as pd
+from dotenv import load_dotenv
 
 from gapless_network_data.collectors.mempool_collector import MempoolCollector
 from gapless_network_data.exceptions import CredentialException, DatabaseException
@@ -44,12 +45,13 @@ EIP_4844_BLOCK = 19_426_587  # Mar 2024 - blob_gas introduced
 
 def _get_clickhouse_credentials() -> tuple[str, str, str]:
     """
-    Resolve ClickHouse credentials with Doppler-preferred strategy.
+    Resolve ClickHouse credentials from multiple sources.
 
     Resolution order:
-    1. Doppler CLI (if configured) - gapless-network-data/prd
-    2. Environment variables (CLICKHOUSE_HOST_READONLY, etc.)
-    3. Raise CredentialException with setup instructions
+    1. .env file (auto-loaded via python-dotenv)
+    2. Doppler CLI (if configured) - gapless-network-data/prd
+    3. Environment variables (CLICKHOUSE_HOST_READONLY, etc.)
+    4. Raise CredentialException with setup instructions
 
     Returns:
         Tuple of (host, user, password)
@@ -57,6 +59,10 @@ def _get_clickhouse_credentials() -> tuple[str, str, str]:
     Raises:
         CredentialException: If credentials cannot be resolved
     """
+    # Load .env file if present (populates os.environ)
+    # ADR: 2025-12-01-dotenv-credential-loading
+    load_dotenv()
+
     # Try Doppler first
     try:
         result = subprocess.run(
@@ -98,11 +104,16 @@ def _get_clickhouse_credentials() -> tuple[str, str, str]:
     # Clear error with setup instructions
     raise CredentialException(
         "ClickHouse credentials not found.\n\n"
-        "Option 1 (Recommended): Use Doppler service token\n"
+        "Option 1: Use .env file (simplest for small teams)\n"
+        "  Create .env in your project root with:\n"
+        "    CLICKHOUSE_HOST_READONLY=<host>\n"
+        "    CLICKHOUSE_USER_READONLY=<user>\n"
+        "    CLICKHOUSE_PASSWORD_READONLY=<password>\n\n"
+        "Option 2 (Recommended for production): Use Doppler service token\n"
         "  1. Get token from 1Password: Engineering vault → 'gapless-network-data Doppler Service Token'\n"
         "  2. doppler configure set token <token_from_1password>\n"
         "  3. doppler setup --project gapless-network-data --config prd\n\n"
-        "Option 2: Set environment variables\n"
+        "Option 3: Set environment variables directly\n"
         "  export CLICKHOUSE_HOST_READONLY=<host>\n"
         "  export CLICKHOUSE_USER_READONLY=<user>\n"
         "  export CLICKHOUSE_PASSWORD_READONLY=<password>\n\n"

@@ -14,11 +14,13 @@ BigQuery has two separate limits:
 **Key principle**: Query public datasets and stream results directly to avoid storage limits.
 
 **Why this matters**:
+
 - Query limit applies to data scanned, not rows returned
 - Storage limit only applies to tables you create/save in BigQuery
 - Streaming results directly bypasses storage entirely
 
 **Free tier strategy**:
+
 ```
 Query public dataset → Stream to Parquet → Load to DuckDB
                       ↑ No BigQuery storage used
@@ -84,6 +86,7 @@ uv run scripts/test_bigquery_cost.py
 ```
 
 **Validated Results**:
+
 - Bytes processed: 1,036,281,104 (0.97 GB)
 - Free tier usage: 0.1% of 1 TB monthly quota
 - Runs per month: ~1,061 times
@@ -101,12 +104,14 @@ bq query --dry_run --use_legacy_sql=false \
 ```
 
 **Output interpretation**:
+
 ```
 Query successfully validated. Assuming the tables are not modified,
 running this query will process 1036281104 bytes of data.
 ```
 
 **Cost calculation**:
+
 - First 1 TB free per month
 - Beyond 1 TB: $5 per TB
 - 0.97 GB is well within free tier
@@ -126,12 +131,14 @@ uv run scripts/download_bigquery_to_parquet.py 11560000 24000000 ethereum_blocks
 ```
 
 **Validated Results** (1,000 block test):
+
 - Rows: 1,001
 - File size: 62 KB (62 bytes/row)
 - Memory: < 1 MB
 - BigQuery storage: 0 GB (streaming confirmed)
 
 **Why Parquet**:
+
 - Columnar storage format (efficient for time-series)
 - Compression (smaller file size)
 - DuckDB native support (zero-copy reads)
@@ -152,6 +159,7 @@ bq query --format=csv --max_rows=15000000 --use_legacy_sql=false \
 ```
 
 **Limitations**:
+
 - CSV format loses type information
 - Larger file size (no compression)
 - Requires parsing (slower DuckDB import)
@@ -174,6 +182,7 @@ EOF
 ```
 
 **Validated Results**:
+
 - DuckDB version: 1.4.1
 - Query time: < 100ms for 1,001 rows
 - Schema: Correctly inferred from Parquet
@@ -185,6 +194,7 @@ duckdb ethereum.db "SELECT COUNT(*), MIN(number), MAX(number) FROM blocks"
 ```
 
 **Expected output** (1,000 block test):
+
 ```
 ┌──────────────┬─────────────┬─────────────┐
 │ count_star() │ min(number) │ max(number) │
@@ -248,12 +258,14 @@ duckdb ethereum.db "SELECT COUNT(*), MIN(number), MAX(number), MIN(timestamp), M
 ```
 
 **Expected timeline**:
+
 - Cost validation: < 5 seconds
 - Download: < 1 hour (network-bound)
 - DuckDB import: < 1 minute
 - Total: < 1.5 hours
 
 **Comparison to RPC polling**:
+
 - BigQuery: < 1 hour
 - RPC (Alchemy 5.79 RPS): 26 days
 - **Speedup: 624x faster**
@@ -267,6 +279,7 @@ duckdb ethereum.db "SELECT COUNT(*), MIN(number), MAX(number), MIN(timestamp), M
 **Cause**: Application default credentials not set
 
 **Fix**:
+
 ```bash
 gcloud auth application-default login
 ```
@@ -276,6 +289,7 @@ gcloud auth application-default login
 **Cause**: Invalid dataset path
 
 **Fix**: Verify BigQuery dataset exists:
+
 ```bash
 bq ls bigquery-public-data:crypto_ethereum
 ```
@@ -285,6 +299,7 @@ bq ls bigquery-public-data:crypto_ethereum
 **Cause**: Selected too many columns or wrong date range
 
 **Fix**: Run dry-run first to validate cost:
+
 ```bash
 uv run scripts/test_bigquery_cost.py
 ```
@@ -302,6 +317,7 @@ uv run scripts/test_bigquery_cost.py
 **For large downloads** (10M+ blocks):
 
 1. **Batch downloads**: Split into 1M block chunks
+
    ```bash
    for start in 11560000 12560000 13560000 14560000; do
      end=$((start + 1000000))
@@ -310,6 +326,7 @@ uv run scripts/test_bigquery_cost.py
    ```
 
 2. **Parallel imports**: Use DuckDB UNION ALL
+
    ```sql
    CREATE TABLE blocks AS
    SELECT * FROM read_parquet('blocks_11560000.parquet')

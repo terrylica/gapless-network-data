@@ -10,11 +10,13 @@
 ### v0.2.0 (2025-11-07) - Validated
 
 **Tested**:
+
 - Cost estimation script (0.97 GB for 12.44M blocks)
 - Parquet streaming download (1,001 blocks, 62 KB)
 - DuckDB import and query execution
 
 **Fixed**:
+
 - Added db-dtypes dependency to download script
 
 **Status**: Core workflows empirically validated, ready for production use.
@@ -22,6 +24,7 @@
 ### v0.1.0 (2025-11-07) - Research
 
 **Completed**:
+
 - 5 parallel agent investigation
 - Column selection analysis (11 vs 23 columns)
 - Cost comparison (BigQuery vs RPC providers)
@@ -36,6 +39,7 @@
 ### ✅ VALIDATED (v0.2.0)
 
 All core workflows empirically tested:
+
 - Cost estimation: 0.97 GB (0.1% of 1 TB free tier)
 - Parquet streaming: 1,001 blocks downloaded (62 KB, 62 bytes/row)
 - DuckDB integration: Import and query verified (<100ms)
@@ -44,6 +48,7 @@ All core workflows empirically tested:
 ### 📚 RESEARCH (v0.1.0)
 
 Research completed but not re-tested in v0.2.0:
+
 - 23 columns confirmed in blocks table
 - Column cost analysis (6, 9, 11, 23 column selections)
 - Free tier limits verified
@@ -114,6 +119,7 @@ uv run scripts/test_bigquery_cost.py
 ```
 
 **Expected output**:
+
 ```
 Bytes to be processed: 1,036,281,104 bytes (0.97 GB)
 Free tier usage: 0.1% of 1 TB monthly quota
@@ -134,6 +140,7 @@ duckdb :memory: "SELECT COUNT(*), MIN(number), MAX(number) FROM read_parquet('te
 ```
 
 **Expected output**:
+
 ```
 ┌───────────┬───────────┬───────────┐
 │ row_count │ min_block │ max_block │
@@ -174,6 +181,7 @@ EOF
 ### Empirical Validation (2025-11-07)
 
 All core workflows tested:
+
 - Platform: macOS 14.6 (Sequoia), ARM64
 - Python: 3.13.6 (via uv)
 - DuckDB: 1.4.1 (via Homebrew)
@@ -186,7 +194,7 @@ All core workflows tested:
 ## Cost Analysis (Validated)
 
 | Selection    | Columns | Cost (GB) | % Free Tier | Status       |
-|--------------|---------|-----------|-------------|--------------|
+| ------------ | ------- | --------- | ----------- | ------------ |
 | Optimized ML | 11      | 0.97      | 0.1%        | ✅ TESTED    |
 | All columns  | 23      | 34.4      | 3.4%        | ⚠️ ESTIMATED |
 
@@ -207,6 +215,7 @@ dependencies = ["google-cloud-bigquery", "pandas", "pyarrow", "db-dtypes"]
 ```
 
 **Validated versions** (2025-11-07):
+
 - google-cloud-bigquery==3.38.0
 - pandas==2.3.3
 - pyarrow==22.0.0
@@ -263,6 +272,7 @@ These three skills form a complete workflow for blockchain data acquisition.
 **Package**: Available as `/.claude/skills/bigquery-ethereum-data-acquisition.zip ` for distribution
 
 **Contents**:
+
 - SKILL.md - Workflow documentation
 - VALIDATION_STATUS.md - Test results
 - scripts/ - Validated Python scripts

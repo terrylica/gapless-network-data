@@ -13,6 +13,7 @@
 **Validation Scripts**: `/tmp/probe/uptimerobot/` (5 phases completed)
 
 **Core Capabilities Validated**:
+
 - ✅ Authentication (API key valid)
 - ✅ Account details retrieval
 - ✅ List monitors (empty account)
@@ -46,6 +47,7 @@ def _request(endpoint: str, data: dict) -> dict:
 ```
 
 **Key Differences from Healthchecks.io**:
+
 - Uses POST data, not headers, for authentication
 - All endpoints use POST method (no GET)
 - Success indicated by `"stat": "ok"` field
@@ -75,6 +77,7 @@ def get_account_details() -> dict:
 ```
 
 **Free Tier Limits** (empirically validated):
+
 - **Monitors**: 50 total
 - **Interval**: 5 minutes minimum
 - **Monitor Types**: HTTP(S), Keyword, Ping, Port
@@ -134,12 +137,14 @@ def create_monitor(
 ```
 
 **Monitor Types**:
+
 - `1` = HTTP(S) - GET request to URL, expects 200 OK
 - `2` = Keyword - Searches for specific text in response
 - `3` = Ping - ICMP ping check
 - `4` = Port - TCP port connectivity check
 
 **Intervals** (free tier):
+
 - Minimum: 300 seconds (5 minutes)
 - Recommended: 300-900 seconds (5-15 minutes)
 
@@ -188,6 +193,7 @@ def get_alert_contacts() -> list[dict]:
 ```
 
 **Alert Contact Types** (empirically validated):
+
 - `1` = SMS
 - `2` = Email
 - `3` = Twitter
@@ -201,6 +207,7 @@ def get_alert_contacts() -> list[dict]:
 - `12` = Microsoft Teams
 
 **Alert Contact Status**:
+
 - `0` = Inactive (not verified)
 - `1` = Paused
 - `2` = Active (verified and enabled)
@@ -250,6 +257,7 @@ def rate_limited_request(endpoint: str, data: dict, max_retries: int = 3) -> dic
 ```
 
 **Best Practices**:
+
 - Add 1-2 second delays between bulk operations
 - Use exponential backoff for retries
 - Batch operations when possible (use `getMonitors` instead of multiple individual queries)
@@ -279,6 +287,7 @@ def rate_limited_request(endpoint: str, data: dict, max_retries: int = 3) -> dic
    ```
 
 **Status Check**:
+
 ```python
 contacts = client.get_alert_contacts()
 pushover = next((c for c in contacts if c['type'] == '11'), None)
@@ -330,11 +339,13 @@ print("Monitoring active - checks every 5 minutes")
 ## Known Limitations
 
 **Free Tier Constraints**:
+
 - ❌ No heartbeat monitoring (requires Pro $7/mo)
 - ⚠️ Rate limiting (~6 ops before throttle)
 - ⚠️ 5-minute minimum interval (no sub-minute checks)
 
 **Workarounds**:
+
 - **Heartbeat**: Use Healthchecks.io (free, unlimited heartbeats)
 - **Rate Limits**: Add delays, exponential backoff
 - **Interval**: Acceptable for VM monitoring use case
@@ -363,6 +374,7 @@ def safe_request(endpoint: str, data: dict) -> dict | None:
 ## Validation Evidence
 
 **Probe Files**: `/tmp/probe/uptimerobot/`
+
 - `01_test_api_key.py` - ✅ Account validation
 - `02_list_monitors.py` - ✅ Empty account confirmed
 - `03_list_alert_contacts.py` - ✅ Email found, Pushover missing
@@ -372,6 +384,7 @@ def safe_request(endpoint: str, data: dict) -> dict | None:
 **Probe Report**: `/tmp/probe/uptimerobot/PROBE_REPORT.md`
 
 **Key Findings**:
+
 - API key authentication works correctly
 - Monitor creation/deletion validated
 - Rate limiting at ~6 operations

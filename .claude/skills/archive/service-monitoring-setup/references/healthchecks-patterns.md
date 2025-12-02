@@ -13,6 +13,7 @@
 **Validation Scripts**: `/tmp/probe/healthchecks-io/` (5 phases completed)
 
 **Core Capabilities Validated**:
+
 - ✅ Authentication (X-Api-Key header works)
 - ✅ List checks (1 existing check found)
 - ✅ List channels (1 email, Pushover NOT configured)
@@ -56,6 +57,7 @@ def _request(method: str, endpoint: str, data: dict = None) -> dict:
 ```
 
 **Key Differences from UptimeRobot**:
+
 - Uses header authentication, not POST data
 - RESTful design (GET, POST, DELETE methods)
 - No "stat" field - HTTP status code indicates success
@@ -66,6 +68,7 @@ def _request(method: str, endpoint: str, data: dict = None) -> dict:
 ### Free Tier Limits
 
 **Empirically Validated**:
+
 - **Checks**: 20 total
 - **Timeout**: User-defined (any duration)
 - **Grace Period**: User-defined buffer before alert
@@ -126,6 +129,7 @@ def get_checks() -> list[dict]:
 ```
 
 **Check Status Values**:
+
 - `"new"` = Never pinged
 - `"up"` = Last ping successful, within timeout
 - `"grace"` = Timeout expired, within grace period
@@ -168,12 +172,14 @@ def create_check(
 ```
 
 **Timeout Values** (recommendations):
+
 - Short jobs: 300-1800 seconds (5-30 minutes)
 - Medium jobs: 3600-7200 seconds (1-2 hours)
 - Daily jobs: 86400 seconds (24 hours)
 - Weekly jobs: 604800 seconds (7 days)
 
 **Grace Period** (buffer before alert):
+
 - Critical jobs: 300-600 seconds (5-10 minutes)
 - Normal jobs: 600-1800 seconds (10-30 minutes)
 - Flexible jobs: 3600+ seconds (1+ hours)
@@ -252,6 +258,7 @@ def get_channels() -> list[dict]:
 ```
 
 **Channel Kinds**:
+
 - `email` - Email notifications
 - `pushover` - Pushover bot messages ← **Target**
 - `slack` - Slack webhook
@@ -338,6 +345,7 @@ if __name__ == "__main__":
 ```
 
 **Cloud Run Job Integration**:
+
 ```bash
 # Set environment variable in Cloud Run Job
 gcloud run jobs update eth-collector \
@@ -374,6 +382,7 @@ gcloud run jobs update eth-collector \
    ```
 
 **Status Check**:
+
 ```python
 channels = client.get_channels()
 pushover = next((c for c in channels if c['kind'] == 'pushover'), None)
@@ -414,11 +423,13 @@ if not check_id:
 **Symptom**: `400 Client Error: Bad Request for url: https://healthchecks.io/api/v3/checks/`
 
 **Possible Causes**:
+
 - Missing required fields (`name`, `timeout`)
-- Invalid `channels` value (must be UUID or "*")
+- Invalid `channels` value (must be UUID or "\*")
 - Invalid JSON payload format
 
 **Debugging**:
+
 ```python
 import json
 
@@ -488,6 +499,7 @@ print(f"  HEALTHCHECK_PING_URL={ping_url}")
 **API Documentation**: Free tier has "reasonable use" policy, no explicit limits published.
 
 **Best Practices**:
+
 - Ping frequency: Match job schedule (hourly, daily, etc.)
 - Avoid ping loops (only ping once per job execution)
 - No need for exponential backoff (unlike UptimeRobot)
@@ -517,6 +529,7 @@ def safe_ping(ping_url: str) -> bool:
 ## Validation Evidence
 
 **Probe Files**: `/tmp/probe/healthchecks-io/`
+
 - `01_test_api_key.py` - ✅ Authentication validated
 - `02_list_channels.py` - ✅ Email found, Pushover missing
 - `03_create_test_check.py` - ⚠️ API field mismatch
@@ -526,6 +539,7 @@ def safe_ping(ping_url: str) -> bool:
 **Probe Report**: `/tmp/probe/healthchecks-io/PROBE_REPORT.md`
 
 **Key Findings**:
+
 - API key authentication works correctly
 - List operations validated
 - Check creation needs payload refinement

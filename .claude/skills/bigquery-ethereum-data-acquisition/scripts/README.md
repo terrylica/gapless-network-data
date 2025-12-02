@@ -61,12 +61,12 @@ gb_processed = bytes_processed / (1024 ** 3)
 
 ### Expected Output Interpretation
 
-| Bytes Processed | Free Tier Usage | Status           | Action                          |
-| --------------- | --------------- | ---------------- | ------------------------------- |
-| < 1 GB          | < 0.1%          | ✅ Excellent     | Proceed with download           |
-| 1-10 GB         | 0.1-1%          | ✅ Good          | Proceed, can re-run 100+ times  |
-| 10-100 GB       | 1-10%           | ⚠️ Moderate      | Review column selection         |
-| > 100 GB        | > 10%           | ❌ Exceeds limit | Reduce columns or date range    |
+| Bytes Processed | Free Tier Usage | Status           | Action                         |
+| --------------- | --------------- | ---------------- | ------------------------------ |
+| < 1 GB          | < 0.1%          | ✅ Excellent     | Proceed with download          |
+| 1-10 GB         | 0.1-1%          | ✅ Good          | Proceed, can re-run 100+ times |
+| 10-100 GB       | 1-10%           | ⚠️ Moderate      | Review column selection        |
+| > 100 GB        | > 10%           | ❌ Exceeds limit | Reduce columns or date range   |
 
 ---
 
@@ -98,11 +98,11 @@ uv run scripts/download_bigquery_to_parquet.py 11560000 24000000 ethereum_full.p
 
 ### Parameters
 
-| Parameter      | Description                        | Example      |
-| -------------- | ---------------------------------- | ------------ |
-| `start_block`  | Starting block number (inclusive)  | `11560000`   |
-| `end_block`    | Ending block number (inclusive)    | `24000000`   |
-| `output_file`  | Output Parquet file path           | `blocks.parquet` |
+| Parameter     | Description                       | Example          |
+| ------------- | --------------------------------- | ---------------- |
+| `start_block` | Starting block number (inclusive) | `11560000`       |
+| `end_block`   | Ending block number (inclusive)   | `24000000`       |
+| `output_file` | Output Parquet file path          | `blocks.parquet` |
 
 ### Validated Results (2025-11-07, 1,000 block test)
 
@@ -138,6 +138,7 @@ df.to_parquet(output_file, engine='pyarrow', compression='snappy')
 ### Performance Benchmarks
 
 **Test 1: Small sample (1,000 blocks)**:
+
 - Query time: 3.2 seconds
 - Download time: 8.1 seconds
 - Write time: 1.0 seconds
@@ -145,6 +146,7 @@ df.to_parquet(output_file, engine='pyarrow', compression='snappy')
 - File size: 62 KB
 
 **Extrapolated (12.44M blocks)**:
+
 - Estimated time: ~2.5 hours (network-bound)
 - Estimated size: 771 MB (62 bytes/row × 12.44M)
 
@@ -199,14 +201,14 @@ duckdb ethereum.db "SELECT COUNT(*), MIN(number), MAX(number) FROM blocks"
 
 ### Expected timeline:
 
-| Step                     | Duration        | Bottleneck       |
-| ------------------------ | --------------- | ---------------- |
-| 1. Authentication        | 2 minutes       | User interaction |
-| 2. Cost validation       | < 5 seconds     | BigQuery API     |
-| 3. Download (12.44M)     | 30-60 minutes   | Network          |
-| 4. DuckDB import         | < 1 minute      | CPU              |
-| 5. Verification          | < 1 second      | Disk I/O         |
-| **Total**                | **< 1.5 hours** | Network          |
+| Step                 | Duration        | Bottleneck       |
+| -------------------- | --------------- | ---------------- |
+| 1. Authentication    | 2 minutes       | User interaction |
+| 2. Cost validation   | < 5 seconds     | BigQuery API     |
+| 3. Download (12.44M) | 30-60 minutes   | Network          |
+| 4. DuckDB import     | < 1 minute      | CPU              |
+| 5. Verification      | < 1 second      | Disk I/O         |
+| **Total**            | **< 1.5 hours** | Network          |
 
 ---
 
@@ -217,6 +219,7 @@ duckdb ethereum.db "SELECT COUNT(*), MIN(number), MAX(number) FROM blocks"
 **Cause**: Missing dependency for BigQuery timestamp conversion
 
 **Fix**:
+
 ```bash
 pip install db-dtypes==1.4.3
 ```
@@ -228,6 +231,7 @@ pip install db-dtypes==1.4.3
 **Cause**: Application default credentials not set
 
 **Fix**:
+
 ```bash
 gcloud auth application-default login
 ```
@@ -306,6 +310,7 @@ df.to_csv(output_file, index=False)
 ```
 
 **Limitations**:
+
 - Larger file size (no compression)
 - Type information lost
 - Slower DuckDB import

@@ -42,6 +42,7 @@ WHERE number BETWEEN 11560000 AND 24000000
 ### ❌ DISCARD: 12 Columns (33.4 GB)
 
 **Cryptographic Hashes** (6 columns, ~20 GB):
+
 - `hash` - Block hash (32-byte random)
 - `parent_hash` - Previous block hash
 - `nonce` - Mining nonce (random proof-of-work)
@@ -52,6 +53,7 @@ WHERE number BETWEEN 11560000 AND 24000000
 **Why discard**: Cryptographically random by design, zero correlation with forecastable metrics, no predictive value.
 
 **Merkle Roots** (4 columns, ~10 GB):
+
 - `transactions_root` - Transaction trie root
 - `state_root` - State trie root
 - `receipts_root` - Receipts trie root
@@ -60,6 +62,7 @@ WHERE number BETWEEN 11560000 AND 24000000
 **Why discard**: Deterministic checksums (not ML features), for data integrity verification only, redundant with transaction_count.
 
 **Other** (2 columns, ~3 GB):
+
 - `extra_data` - Arbitrary miner data (high cardinality categorical noise)
 - `logs_bloom` - 256-byte bloom filter (sparse, high storage cost)
 
@@ -69,10 +72,10 @@ WHERE number BETWEEN 11560000 AND 24000000
 
 ## Cost-Benefit Analysis
 
-| Selection | Columns | Cost (GB) | % Free Tier | Monthly Runs | ML Value | Waste |
-|-----------|---------|-----------|-------------|--------------|----------|-------|
-| **Optimized (11)** | Core + blobs | **0.97** | **0.1%** | **1,061** | ⭐⭐⭐⭐⭐ | 0% |
-| All columns (23) | Including hashes | 34.4 | 3.4% | 29 | ⭐⭐⭐ | 65% |
+| Selection          | Columns          | Cost (GB) | % Free Tier | Monthly Runs | ML Value   | Waste |
+| ------------------ | ---------------- | --------- | ----------- | ------------ | ---------- | ----- |
+| **Optimized (11)** | Core + blobs     | **0.97**  | **0.1%**    | **1,061**    | ⭐⭐⭐⭐⭐ | 0%    |
+| All columns (23)   | Including hashes | 34.4      | 3.4%        | 29           | ⭐⭐⭐     | 65%   |
 
 **Savings**: 97% cost reduction (33.4 GB waste eliminated)
 
@@ -83,6 +86,7 @@ WHERE number BETWEEN 11560000 AND 24000000
 ### 1. Hash Fields Are Worthless for ML
 
 **Example**: Block hash `0x3f07a9c8...`
+
 - Cryptographically random (by design)
 - Unique per block (no patterns)
 - Unpredictable (avalanche effect)
@@ -115,36 +119,42 @@ WHERE number BETWEEN 11560000 AND 24000000
 Once you have the 11 core columns, derive:
 
 ### Utilization Metrics
+
 ```python
 df['gas_utilization'] = df['gas_used'] / df['gas_limit']
 df['capacity_pressure'] = df['gas_used'].rolling(100).mean() / df['gas_limit']
 ```
 
 ### Price Velocity
+
 ```python
 df['base_fee_change'] = df['base_fee_per_gas'].pct_change()
 df['base_fee_volatility'] = df['base_fee_per_gas'].rolling(100).std()
 ```
 
 ### Network Activity
+
 ```python
 df['tx_per_second'] = df['transaction_count'] / 12  # ~12 sec blocks
 df['avg_gas_per_tx'] = df['gas_used'] / df['transaction_count']
 ```
 
 ### Difficulty Trends
+
 ```python
 df['difficulty_change'] = df['difficulty'].pct_change()
 df['difficulty_ma'] = df['difficulty'].rolling(1000).mean()
 ```
 
 ### Block Capacity
+
 ```python
 df['bytes_per_tx'] = df['size'] / df['transaction_count']
 df['size_utilization'] = df['size'] / df['size'].rolling(1000).max()
 ```
 
 ### Blob Metrics (2024+ only)
+
 ```python
 df['blob_utilization'] = df['blob_gas_used'] / 393216  # Max blob gas
 df['blob_fee_market_pressure'] = df['excess_blob_gas'] / 393216
@@ -155,16 +165,19 @@ df['blob_fee_market_pressure'] = df['excess_blob_gas'] / 393216
 ## Empirical Validation (2025-11-07)
 
 **Cost dry-run**: ✅ PASS
+
 - Bytes processed: 1,036,281,104 (0.97 GB)
 - Free tier usage: 0.1% of 1 TB
 - Monthly runs: 1,061 times
 
 **Download test**: ✅ PASS
+
 - File size: 62 KB for 1,001 blocks (62 bytes/row)
 - Memory usage: < 1 MB
 - BigQuery storage: 0 GB (streaming confirmed)
 
 **DuckDB import**: ✅ PASS
+
 - Query time: < 100ms
 - Storage: ~76-100 bytes/block → 1.0-1.2 GB for 13M blocks
 
@@ -173,11 +186,13 @@ df['blob_fee_market_pressure'] = df['excess_blob_gas'] / 393216
 ## References
 
 **Detailed analysis**:
+
 - `references/ethereum_columns_ml_evaluation.md` - Column-by-column ML value analysis (288 lines)
 - `references/cost-analysis.md` - Detailed cost comparison and RPC comparison (292 lines)
 - `references/bigquery_cost_comparison.md` - Empirical test results (251 lines)
 
 **Implementation**:
+
 - `scripts/test_bigquery_cost.py` - Cost validation script
 - `scripts/download_bigquery_to_parquet.py` - Download script
 - `references/workflow-steps.md` - Complete 5-step workflow (335 lines)
