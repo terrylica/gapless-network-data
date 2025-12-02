@@ -21,28 +21,231 @@ df = gmd.fetch_blocks(start='2024-01-01', end='2024-01-31')
 
 AI agents should prioritize these features for ML pipelines:
 
-| Rank | Feature | Importance | Formula |
-|------|---------|------------|---------|
-| 1 | base_fee_per_gas | critical | raw |
-| 2 | block_utilization | critical | gas_used / gas_limit |
-| 3 | transaction_count | high | raw |
-| 4 | timestamp | high | raw |
-| 5 | number | high | raw |
-| 6 | size | medium | raw |
-| 7 | blob_gas_used | medium | raw (post-EIP4844) |
-| 8 | excess_blob_gas | low | raw (post-EIP4844) |
+| Rank | Feature           | Importance | Formula              |
+| ---- | ----------------- | ---------- | -------------------- |
+| 1    | base_fee_per_gas  | critical   | raw                  |
+| 2    | block_utilization | critical   | gas_used / gas_limit |
+| 3    | transaction_count | high       | raw                  |
+| 4    | timestamp         | high       | raw                  |
+| 5    | number            | high       | raw                  |
+| 6    | size              | medium     | raw                  |
+| 7    | blob_gas_used     | medium     | raw (post-EIP4844)   |
+| 8    | excess_blob_gas   | low        | raw (post-EIP4844)   |
+| 9    | gas_limit         | low        | raw                  |
+| 10   | gas_used          | low        | raw                  |
 
 Get rankings programmatically: `gmd.probe.get_alpha_features()`
+
+## Feature Reference (Detailed)
+
+### #1 base_fee_per_gas (CRITICAL)
+
+**Use Case**: Gas price prediction, fee optimization, transaction timing
+**Description**: EIP-1559 algorithmic base fee - the most predictive feature for gas optimization models
+**Availability**: Block 12,965,000+ (Aug 2021). NULL before EIP-1559.
+**Unit**: Wei (divide by 1e9 for Gwei)
+**Caveats**:
+
+- Exclude pre-EIP-1559 data for fee models (filter: `number >= 12965000`)
+- High autocorrelation - use pct_change() or differencing for stationarity
+- Spikes during network congestion (NFT mints, market crashes)
+
+**Feature Engineering**:
+
+```python
+df['base_fee_gwei'] = df['base_fee_per_gas'] / 1e9
+df['fee_pct_change'] = df['base_fee_per_gas'].pct_change()
+df['fee_ma_12'] = df['base_fee_per_gas'].rolling(12).mean()  # ~2.4 min MA
+df['fee_volatility'] = df['base_fee_per_gas'].rolling(50).std()
+```
+
+### #2 block_utilization (CRITICAL)
+
+**Use Case**: Congestion prediction, capacity analysis, fee forecasting (leading indicator)
+**Description**: Gas used / gas limit ratio - leading indicator of base fee changes
+**Availability**: All blocks (genesis to present)
+**Range**: 0.0 to 1.0 (express as percentage: multiply by 100)
+**Caveats**:
+
+- Values > 0.5 indicate congestion (base fee will increase)
+- Values < 0.5 indicate spare capacity (base fee will decrease)
+- More predictive than raw gas_used due to normalization
+
+**Feature Engineering**:
+
+```python
+df['utilization'] = df['gas_used'] / df['gas_limit']
+df['utilization_pct'] = df['utilization'] * 100
+df['high_congestion'] = (df['utilization'] > 0.5).astype(int)
+df['utilization_ma'] = df['utilization'].rolling(25).mean()  # ~5 min MA
+```
+
+### #3 transaction_count (HIGH)
+
+**Use Case**: Network activity proxy, volume analysis, demand forecasting
+**Description**: Number of transactions per block
+**Availability**: All blocks (genesis to present)
+**Caveats**:
+
+- Does not account for transaction complexity (a swap vs simple transfer)
+- Correlates with but lags congestion (effect, not cause)
+- Useful for cross-domain features with OHLCV trading volume
+
+**Feature Engineering**:
+
+```python
+df['tx_density'] = df['transaction_count'] / df['size']  # txs per byte
+df['tx_ma'] = df['transaction_count'].rolling(25).mean()
+df['tx_zscore'] = (df['transaction_count'] - df['tx_ma']) / df['transaction_count'].rolling(25).std()
+```
+
+### #4 timestamp (HIGH)
+
+**Use Case**: Temporal alignment, time-based features, OHLCV joins
+**Description**: Block timestamp (UTC)
+**Availability**: All blocks (genesis to present)
+**Caveats**:
+
+- Use for ASOF JOIN with price data (forward-fill to prevent leakage)
+- Block times vary (~12s average post-Merge, historically 13-15s)
+- Extract hour/day-of-week for seasonality features
+
+**Feature Engineering**:
+
+```python
+df['hour'] = df['timestamp'].dt.hour
+df['day_of_week'] = df['timestamp'].dt.dayofweek
+df['is_weekend'] = df['day_of_week'].isin([5, 6]).astype(int)
+df['block_time'] = df['timestamp'].diff().dt.total_seconds()
+```
+
+### #5 number (HIGH)
+
+**Use Case**: Unique identifier, deduplication, ordering, era filtering
+**Description**: Block number (monotonically increasing)
+**Availability**: All blocks (genesis = block 1)
+**Caveats**:
+
+- Use for protocol era filtering (see Protocol Era Boundaries)
+- Primary key for deduplication
+- NOT a feature for ML models directly (use as filter/index only)
+
+### #6 size (MEDIUM)
+
+**Use Case**: Data throughput analysis, transaction complexity proxy
+**Description**: Block size in bytes
+**Availability**: All blocks (genesis to present)
+**Caveats**:
+
+- Larger blocks = more complex transactions (smart contracts, calldata)
+- Correlates with gas_used but captures data dimension
+- Useful for L2 batch detection (large calldata)
+
+**Feature Engineering**:
+
+```python
+df['bytes_per_tx'] = df['size'] / df['transaction_count']
+df['size_ma'] = df['size'].rolling(25).mean()
+```
+
+### #7 blob_gas_used (MEDIUM)
+
+**Use Case**: L2/rollup activity analysis, blob fee market analysis
+**Description**: Gas consumed by blob-carrying transactions (EIP-4844)
+**Availability**: Block 19,426,587+ (Mar 2024). NULL before EIP-4844.
+**Caveats**:
+
+- Non-zero indicates L2 batch submissions (Optimism, Arbitrum, Base, etc.)
+- Separate fee market from regular gas
+- Filter: `number >= 19426587` for blob analysis
+
+**Feature Engineering**:
+
+```python
+df['has_blobs'] = (df['blob_gas_used'] > 0).astype(int)
+df['blob_utilization'] = df['blob_gas_used'] / 786432  # max blob gas per block
+```
+
+### #8 excess_blob_gas (LOW)
+
+**Use Case**: Blob fee market state, blob base fee computation
+**Description**: Excess blob gas for fee pricing mechanism
+**Availability**: Block 19,426,587+ (Mar 2024). NULL before EIP-4844.
+**Caveats**:
+
+- Used to compute blob base fee (similar to EIP-1559 for blobs)
+- Low direct predictive value - use blob_gas_used instead
+- Advanced: compute blob_base_fee from excess_blob_gas
+
+### #9 gas_limit (LOW)
+
+**Use Case**: Network capacity ceiling, denominator for utilization
+**Description**: Block gas limit (target capacity)
+**Availability**: All blocks (genesis to present)
+**Caveats**:
+
+- Rarely changes (miners/validators adjust slowly)
+- Use as denominator for block_utilization (rank #2)
+- Not useful as standalone feature (low variance)
+
+### #10 gas_used (LOW)
+
+**Use Case**: Raw congestion measure, absolute demand
+**Description**: Total gas consumed in block
+**Availability**: All blocks (genesis to present)
+**Caveats**:
+
+- Prefer block_utilization (rank #2) for relative measure
+- Absolute value less meaningful without gas_limit context
+- Use for total network gas consumption trends
 
 ## Protocol Era Boundaries
 
 Filter data appropriately based on protocol changes:
 
-- **EIP-1559** (block 12,965,000, Aug 2021): base_fee_per_gas introduced
-- **The Merge** (block 15,537,394, Sep 2022): difficulty=0 forever
-- **EIP-4844** (block 19,426,587, Mar 2024): blob_gas fields introduced
+| Era           | Block      | Date     | Impact                      | Filter Requirement                     |
+| ------------- | ---------- | -------- | --------------------------- | -------------------------------------- |
+| **EIP-1559**  | 12,965,000 | Aug 2021 | base_fee_per_gas introduced | `number >= 12965000` for fee analysis  |
+| **The Merge** | 15,537,394 | Sep 2022 | PoW→PoS, difficulty=0       | Exclude difficulty post-Merge          |
+| **EIP-4844**  | 19,426,587 | Mar 2024 | blob_gas fields introduced  | `number >= 19426587` for blob analysis |
 
 Get eras programmatically: `gmd.probe.get_protocol_eras()`
+
+## Common ML Tasks & Recommended Features
+
+### Gas Price Prediction
+
+```python
+# Primary features (filter: number >= 12965000)
+features = ['base_fee_per_gas', 'utilization', 'transaction_count']
+# Derived
+df['fee_lag_1'] = df['base_fee_per_gas'].shift(1)
+df['utilization_lag_1'] = df['utilization'].shift(1)
+```
+
+### Congestion Forecasting
+
+```python
+# Primary features
+features = ['utilization', 'transaction_count', 'size']
+# Target: utilization in N blocks
+df['target'] = df['utilization'].shift(-5)  # 5 blocks ahead (~1 min)
+```
+
+### L2 Activity Analysis (post-EIP-4844 only)
+
+```python
+df_blobs = df[df['number'] >= 19426587]
+features = ['blob_gas_used', 'blob_utilization', 'has_blobs']
+```
+
+### Cross-Domain Features (with OHLCV)
+
+```python
+# After joining with price data
+df['gas_per_volume'] = df['gas_used'] / df['volume']
+df['fee_to_price'] = df['base_fee_gwei'] / df['close']
+```
 
 ## API Reference
 
@@ -58,6 +261,7 @@ gmd.fetch_blocks(
 ```
 
 Returns pandas DataFrame with columns:
+
 - timestamp (datetime64[ns, UTC])
 - number (uint64)
 - gas_limit, gas_used, base_fee_per_gas, transaction_count, size (uint64)
@@ -66,7 +270,7 @@ Returns pandas DataFrame with columns:
 ### probe module
 
 ```python
-gmd.probe.get_alpha_features()   # Ranked feature list
+gmd.probe.get_alpha_features()   # Ranked feature list with full metadata
 gmd.probe.get_protocol_eras()    # Protocol boundaries
 gmd.probe.get_setup_workflow()   # Credential setup
 gmd.probe.get_quick_start()      # Example code

@@ -1,8 +1,8 @@
 # Production Data Sources
 
-**Version**: 1.0.0
-**Last Updated**: 2025-11-13
-**Status**: Production operational (Ethereum), Bitcoin deferred to Phase 2+
+**Version**: 1.1.0
+**Last Updated**: 2025-11-30
+**Status**: Production operational (Ethereum v4.3.1), Bitcoin deferred to Phase 2+
 
 ## Overview
 
@@ -30,17 +30,17 @@ This document describes **production data sources** for gapless-network-data. Fo
 
 ### Ethereum (PRIMARY) - OPERATIONAL
 
-**Status**: Production operational (v3.0.0, 23.8M blocks 2015-2025)
+**Status**: Production operational (v4.3.1, 23.87M blocks 2015-2025)
 
 #### Ethereum Historical Data
 
 **Source**: BigQuery public dataset `bigquery-public-data.crypto_ethereum.blocks`
 
-- **Coverage**: 2015-2025 (23.8M blocks from genesis)
+- **Coverage**: 2015-2025 (23.87M blocks from genesis)
 - **Granularity**: Block-level (~12 second intervals)
 - **Cost**: $0/month (within 1 TB/month free tier, ~10 MB/query)
 - **Access**: No authentication required (public dataset)
-- **Integration**: PyArrow zero-copy transfer → MotherDuck
+- **Integration**: PyArrow zero-copy transfer → ClickHouse Cloud
 
 **Why Chosen**: 624x faster than RPC polling (<1 hour vs 26 days for 5 years). Empirically validated 11-column selection (97% cost savings vs full 23-column schema).
 
@@ -53,21 +53,23 @@ This document describes **production data sources** for gapless-network-data. Fo
 - **Coverage**: Real-time blocks (~12 second intervals)
 - **Cost**: $0/month (300M compute units/month free tier)
 - **Latency**: <1 second from block creation
-- **Integration**: WebSocket `eth_subscribe` → MotherDuck
+- **Integration**: WebSocket `eth_subscribe` → ClickHouse Cloud
 
 **Why Chosen**: Low latency for real-time monitoring, generous free tier, reliable WebSocket stream.
 
-**Documentation**: See `docs/architecture/_archive/motherduck-dual-pipeline.md` for former dual-pipeline architecture (DEPRECATED - see MADR-0013 for ClickHouse migration).
+**Documentation**: See `docs/architecture/README.md` for current dual-pipeline architecture with ClickHouse Cloud.
 
 ### Storage
 
-**Database**: MotherDuck cloud (`md:ethereum_mainnet.blocks`)
+**Database**: ClickHouse Cloud (AWS us-west-2) `ethereum_mainnet.blocks`
 
-- **Deduplication**: Automatic via `INSERT OR REPLACE` on block number PRIMARY KEY
-- **Cost**: $0/month (<10 GB queries, ~1.5 GB storage within free tier)
-- **Access**: SDK queries MotherDuck directly (no local setup required)
+- **Deduplication**: Automatic via ReplacingMergeTree ORDER BY `number`
+- **Cost**: $0/month (within 10 GB storage, 100 GB egress free tier)
+- **Access**: SDK queries ClickHouse Cloud directly (credentials via Doppler)
 
-**Architecture**: Dual-pipeline (BigQuery hourly + Alchemy real-time) with automatic deduplication ensures no gaps, no duplicates, and <1s latency for recent blocks.
+**Architecture**: Dual-pipeline (BigQuery hourly + Alchemy real-time) with ReplacingMergeTree deduplication ensures no gaps, no duplicates, and <1s latency for recent blocks.
+
+**Migration Note**: Migrated from MotherDuck to ClickHouse Cloud 2025-11-25 (trial expiration). See ADR-0013.
 
 ## Researched Sources (Not Used in Production)
 
@@ -158,13 +160,15 @@ This document describes **production data sources** for gapless-network-data. Fo
 
 **Score**: 12s vs 5min granularity (16x higher frequency)
 
-### Decision 3: MotherDuck Cloud Storage (2025-11-09)
+### Decision 3: ClickHouse Cloud Storage (2025-11-25)
 
-**Chosen**: MotherDuck cloud database (vs local DuckDB)
+**Chosen**: ClickHouse Cloud (AWS us-west-2) - migrated from MotherDuck 2025-11-25
 
-**Rationale**: Dual-pipeline automatic deduplication, no local storage setup, $0/month cost, always up-to-date production data.
+**Rationale**: Dual-pipeline automatic deduplication via ReplacingMergeTree, no local storage setup, $0/month cost (10GB free tier), always up-to-date production data, cloud-native monitoring.
 
-**Architecture**: Both pipelines write to same cloud table with PRIMARY KEY deduplication (idempotent, no coordination required).
+**Architecture**: Both pipelines write to same cloud table with ReplacingMergeTree ORDER BY deduplication (idempotent, no coordination required).
+
+**Migration Note**: Migrated from MotherDuck due to trial expiration. See ADR-0013 for complete rationale.
 
 ### Decision 4: Dual-Pipeline Architecture (2025-11-09)
 
@@ -181,8 +185,8 @@ This document describes **production data sources** for gapless-network-data. Fo
 
 ## Related Documentation
 
-- [Architecture Overview](/docs/architecture/README.md) - Core components, data flow, SLOs
-- [MotherDuck Dual Pipeline](/docs/architecture/_archive/motherduck-dual-pipeline.md) - Former architecture (DEPRECATED - see MADR-0013)
-- [BigQuery Integration](/docs/architecture/_archive/bigquery-motherduck-integration.md) - PyArrow zero-copy (DEPRECATED - see MADR-0013)
+- [Architecture Overview](/docs/architecture/README.md) - Core components, data flow, SLOs with ClickHouse Cloud
+- [ClickHouse Migration ADR](/docs/architecture/decisions/2025-11-25-clickhouse-cloud-migration.md) - Migration rationale
 - [Research Index](/docs/research/INDEX.md) - Comprehensive data source research (35+ sources)
 - [LlamaRPC Research Archive](/docs/archive/llamarpc-research/INDEX.md) - Ethereum RPC deep dive (archived)
+- [Archived: MotherDuck Pipeline](/docs/architecture/_archive/motherduck-dual-pipeline.md) - Historical reference (DEPRECATED)
