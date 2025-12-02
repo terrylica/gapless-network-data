@@ -9,6 +9,7 @@ This document provides a complete case study of validating Alchemy RPC provider 
 "Validate Alchemy for Ethereum data collection before implementation"
 
 **Context**:
+
 - Need to collect 13M Ethereum blocks (5 years historical data)
 - Evaluating Alchemy free tier (300M compute units/month)
 - Need empirical validation before committing to implementation
@@ -310,12 +311,12 @@ Performance metrics:
 
 ### Test Results Summary
 
-| Step                | Result      | Key Finding                                |
-| ------------------- | ----------- | ------------------------------------------ |
-| 1. Connectivity     | ✅ PASS     | 243ms response time                        |
-| 2. Schema           | ✅ PASS     | All fields present, constraints satisfied  |
-| 3. Rate Limits      | ✅ PASS     | 5.79 RPS sustainable (empirical)           |
-| 4. Complete Pipeline| ✅ PASS     | Full fetch→DuckDB flow working             |
+| Step                 | Result  | Key Finding                               |
+| -------------------- | ------- | ----------------------------------------- |
+| 1. Connectivity      | ✅ PASS | 243ms response time                       |
+| 2. Schema            | ✅ PASS | All fields present, constraints satisfied |
+| 3. Rate Limits       | ✅ PASS | 5.79 RPS sustainable (empirical)          |
+| 4. Complete Pipeline | ✅ PASS | Full fetch→DuckDB flow working            |
 
 ### Performance Metrics
 
@@ -333,6 +334,7 @@ python scripts/calculate_timeline.py --blocks 13000000 --rps 5.79
 ```
 
 **Output**:
+
 ```
 Timeline: 26.0 days
 Blocks per day: 500,000
@@ -344,17 +346,20 @@ Sustainable RPS: 5.79
 ✅ **GO** - Implement with Alchemy
 
 **Recommendation**:
+
 - **Provider**: Alchemy free tier (300M compute units/month)
 - **Conservative rate**: 5.0 RPS production (86% of empirical 5.79 RPS max)
 - **Timeline**: 26 days for 13M blocks
 - **Confidence**: **HIGH** (100% success over 100 blocks, all validation steps passed)
 
 **Fallback strategy**:
+
 - Monitor compute unit usage daily
 - If approaching limit, fallback to LlamaRPC at 1.37 RPS (110-day timeline)
 - Consider paid tier if faster collection needed
 
 **Next steps**:
+
 1. Implement production collector using validated patterns
 2. Add checkpoint/resume capability (store last_block_number)
 3. Implement monitoring (blocks/sec, compute units used)
@@ -365,16 +370,19 @@ Sustainable RPS: 5.79
 ## Lessons Learned
 
 ### What Worked Well
+
 1. Empirical validation caught 3x discrepancy between attempted (10 RPS) and sustainable (5 RPS) rates
 2. Complete pipeline test revealed no issues (CHECKPOINT worked, constraints passed)
 3. Testing progression (parallel → aggressive → conservative) found optimal rate efficiently
 
 ### Mistakes Avoided
+
 1. Trusting documented limits without validation (could have led to production failures)
 2. Testing with <50 blocks (would have missed sliding window rate limiting)
 3. Forgetting CHECKPOINT (validated it works correctly)
 
 ### Recommendations for Future Validation
+
 1. Always test 100+ blocks minimum (not 50)
 2. Test crash recovery explicitly (kill process during collection, verify CHECKPOINT)
 3. Monitor response times (degradation may indicate approaching rate limits)
@@ -386,5 +394,6 @@ Sustainable RPS: 5.79
 **Complete POC scripts**: `/scratch/ethereum-collector-poc/`
 
 **Validation reports**:
+
 - `/scratch/ethereum-collector-poc/ETHEREUM_COLLECTOR_POC_REPORT.md `
 - `/scratch/duckdb-batch-validation/DUCKDB_BATCH_VALIDATION_REPORT.md `

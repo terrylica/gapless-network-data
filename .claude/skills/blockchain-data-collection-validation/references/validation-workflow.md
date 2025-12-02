@@ -11,17 +11,20 @@ This document provides the complete 5-step empirical validation workflow for blo
 **Create**: `01_single_block_fetch.py`
 
 **What to validate**:
+
 - RPC endpoint connectivity (no authentication errors)
 - Response time (< 500ms acceptable)
 - Block retrieval works (eth_getBlockByNumber or equivalent)
 - Basic data structure returned
 
 **Success criteria**:
+
 - ✅ Successful block fetch
 - ✅ Response time reasonable
 - ✅ No connection errors
 
 **Example output**:
+
 ```
 ✅ Connected to RPC endpoint
 ✅ Response time: 243ms
@@ -39,12 +42,14 @@ This document provides the complete 5-step empirical validation workflow for blo
 **Extend**: Same script as Step 1
 
 **What to validate**:
+
 - All required fields present in response
 - Data types match expectations (int, string, timestamp)
 - Field values are reasonable (non-negative, within ranges)
 - Calculated fields work (e.g., transactions_count = len(transactions))
 
 **For Ethereum blocks, validate**:
+
 ```python
 required_fields = {
     'number': int,           # block_number
@@ -57,12 +62,14 @@ required_fields = {
 ```
 
 **Constraints to check**:
+
 - `gasUsed <= gasLimit` (CHECK constraint)
 - `block_number >= 0`
 - `timestamp > 0`
 - `transactions_count >= 0`
 
 **Success criteria**:
+
 - ✅ All required fields present
 - ✅ Data types correct
 - ✅ Values pass sanity checks
@@ -105,12 +112,14 @@ for block_num in range(start, end):
 ```
 
 **Rate testing pattern**:
+
 - Start at documented limit (e.g., 10 RPS)
 - If fails → reduce by 50% and retry
 - If succeeds → try slightly higher to find limit
 - Goal: 100% success rate over 50-100 blocks
 
 **Success criteria**:
+
 - ✅ 100% success rate (no 429 errors)
 - ✅ Tested over minimum 50 blocks
 - ✅ Sustainable rate documented
@@ -130,15 +139,18 @@ for block_num in range(start, end):
 **What to validate**:
 
 ### 4.1 Fetch Blocks
+
 Using validated rate limit from Step 3
 
 ### 4.2 Transform to DataFrame
+
 ```python
 import pandas as pd
 df = pd.DataFrame(blocks)
 ```
 
 ### 4.3 Insert into DuckDB
+
 ```python
 from gapless_network_data.db import Database
 db = Database(db_path="./test.duckdb")
@@ -147,6 +159,7 @@ db.insert_ethereum_blocks(df)
 ```
 
 ### 4.4 Verify Persistence
+
 ```python
 conn = db.connect()
 count = conn.execute("SELECT COUNT(*) FROM ethereum_blocks").fetchone()[0]
@@ -170,6 +183,7 @@ assert invalid == 0
 ```
 
 **Success criteria**:
+
 - ✅ Fetch works at validated rate
 - ✅ DataFrame conversion successful
 - ✅ DuckDB INSERT works
@@ -178,6 +192,7 @@ assert invalid == 0
 - ✅ Data verifiable in database
 
 **Performance benchmarks** (from empirical validation):
+
 - Fetch: Network-bound (1-10 blocks/sec depending on RPC)
 - Insert: CPU-bound (124K+ blocks/sec, far exceeds fetch rate)
 - Storage: 76-100 bytes/block
@@ -195,34 +210,40 @@ assert invalid == 0
 **Document**:
 
 ### 5.1 Executive Summary
+
 - Provider tested
 - Sustainable rate found
 - Timeline estimate
 - Go/No-Go recommendation
 
 ### 5.2 Test Results
+
 - Each step's outcome (Pass/Fail)
 - Rate limit findings (documented vs empirical)
 - Performance metrics
 
 ### 5.3 Pipeline Validation
+
 - Fetch throughput
 - Insert performance
 - Storage estimates
 
 ### 5.4 Decision
+
 - Primary RPC provider choice
 - Conservative rate limit for production
 - Fallback strategy
 - Next steps
 
 **Success criteria**:
+
 - ✅ All 4 validation steps passed
 - ✅ Sustainable rate documented
 - ✅ Timeline calculated
 - ✅ Go decision with confidence level
 
 **Example decision**:
+
 ```
 ✅ GO: Alchemy validated at 5.79 RPS sustained
    Timeline: 26 days for 13M blocks

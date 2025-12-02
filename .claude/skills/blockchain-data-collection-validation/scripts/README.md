@@ -9,6 +9,7 @@ POC template scripts for empirical validation of blockchain data collection pipe
 These scripts follow the 5-step validation workflow. Each builds on the previous step.
 
 **Testing progression**:
+
 1. `poc_single_block.py` - Connectivity and schema validation (Steps 1-2)
 2. `poc_batch_parallel_fetch.py` - Parallel fetch testing (Step 3, expect failures)
 3. `poc_rate_limited_fetch.py` - Rate-limited sequential fetch (Step 3, find sustainable rate)
@@ -21,6 +22,7 @@ These scripts follow the 5-step validation workflow. Each builds on the previous
 **Purpose**: Test connectivity and schema validation (Steps 1-2)
 
 **What it validates**:
+
 - RPC endpoint connectivity
 - Response time (<500ms acceptable)
 - All required fields present
@@ -122,6 +124,7 @@ Sample data:
 **Purpose**: Test parallel fetching (Step 3.1, expect failures)
 
 **What it validates**:
+
 - Burst limit behavior
 - Whether parallel fetching is viable
 - Rate limiting response (429 errors)
@@ -220,6 +223,7 @@ Total time: 14.3s
 **Purpose**: Find sustainable request rate (Step 3.2)
 
 **What it validates**:
+
 - Sustainable RPS without 429 errors
 - 100% success rate over 50+ blocks
 - Empirical rate limit discovery
@@ -333,6 +337,7 @@ Total time: 20.1s
 **Purpose**: Test complete fetch→DuckDB pipeline (Step 4)
 
 **What it validates**:
+
 - End-to-end data flow (fetch → transform → insert → verify)
 - DuckDB integration (INSERT, CHECKPOINT, constraints)
 - Data persistence and integrity
@@ -493,6 +498,7 @@ Step 5: Verifying CHECK constraints...
 ### Rate Testing Tips
 
 **Finding the optimal rate**:
+
 ```
 10 RPS → 72% success → Too high
 5 RPS → 100% success → Good
@@ -501,6 +507,7 @@ Step 5: Verifying CHECK constraints...
 ```
 
 **Conservative production rate**:
+
 - Use 80-90% of empirical max
 - Example: 5.79 RPS max → 5.0 RPS production
 - Safety margin for network variability
@@ -508,18 +515,22 @@ Step 5: Verifying CHECK constraints...
 ### Common Issues
 
 **Issue**: "Connection refused" or "Name or service not known"
+
 - **Cause**: Invalid RPC endpoint or network issue
 - **Fix**: Check endpoint URL, test with curl first
 
 **Issue**: "Unauthorized" or "Invalid API key"
+
 - **Cause**: Missing or incorrect API key
 - **Fix**: Check RPC_ENDPOINT includes valid API key
 
 **Issue**: 429 errors even at 1 RPS
+
 - **Cause**: API key rate limit exhausted or IP banned
 - **Fix**: Wait for rate limit reset, try different provider
 
 **Issue**: Pipeline test fails with "Table not found"
+
 - **Cause**: Database not initialized
 - **Fix**: Ensure `db.initialize()` is called before INSERT
 

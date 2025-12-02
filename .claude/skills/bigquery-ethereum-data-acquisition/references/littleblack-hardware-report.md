@@ -10,6 +10,7 @@
 ## Hardware Specifications
 
 ### CPU ✅ EXCELLENT
+
 ```
 Model: Intel Core i9-9900K @ 3.60GHz
 Cores: 8 physical (16 logical with hyperthreading)
@@ -18,6 +19,7 @@ Status: ✅ PASS (meets requirement)
 ```
 
 ### RAM ⚠️ BORDERLINE
+
 ```
 Total: 62GB
 Available: 56GB
@@ -26,6 +28,7 @@ Status: ⚠️ MARGINAL (2GB below minimum, but might work)
 ```
 
 ### Storage ❌ INSUFFICIENT
+
 ```
 NVMe (nvme0n1): 953.9GB total, 549GB available
 SATA SSD (sda): 915GB total, 173GB available
@@ -38,6 +41,7 @@ Status: ❌ INSUFFICIENT (1.3TB short of requirement)
 **Critical Issue**: Erigon requires NVMe for main datadir, but your NVMe only has 549GB free. The SATA SSD is too slow for Erigon's intensive I/O operations.
 
 ### GPU (Informational)
+
 ```
 Model: NVIDIA GeForce RTX 2080 Ti
 Status: ℹ️ Not used (Ethereum sync is CPU+disk intensive)
@@ -52,12 +56,14 @@ Status: ℹ️ Not used (Ethereum sync is CPU+disk intensive)
 **What it does**: Fetch historical blocks via RPC and store locally
 
 **Why it works**:
+
 - Minimal storage (13M blocks = ~100GB compressed)
 - Works with your current 549GB NVMe
 - Can use 1RPC (77 RPS) or dRPC (100 RPS)
 - No need for full 2TB archive
 
 **Timeline**:
+
 ```bash
 # Using Cryo + 1RPC
 cryo blocks --blocks 11560000:24000000 \
@@ -76,11 +82,13 @@ cryo blocks --blocks 11560000:24000000 \
 **Storage requirement**: ~1TB (vs 2TB full)
 
 **Limitations**:
+
 - May not have all historical state
 - Some queries might fail
 - Not officially recommended
 
 **Command**:
+
 ```bash
 erigon --datadir=/path/to/nvme \
        --prune=htc \
@@ -94,6 +102,7 @@ erigon --datadir=/path/to/nvme \
 **Cost**: ~$150-250 for 2TB NVMe
 
 **Benefit**: Run full Erigon archive node
+
 - 18-hour sync (one-time)
 - Unlimited queries (no rate limits)
 - Complete control
@@ -115,6 +124,7 @@ erigon --datadir=/path/to/nvme \
 **BEST Strategy**: Hybrid approach
 
 ### Phase 1: Immediate (Today) - Use Your Mac + Cloud RPC
+
 ```bash
 # On your MacBook M3 Max
 mkdir ~/ethereum_data
@@ -134,6 +144,7 @@ cryo blocks --blocks 11560000:24000000 \
 ```
 
 ### Phase 2: Transfer to LittleBlack (After Download)
+
 ```bash
 # Copy data from Mac to LittleBlack
 rsync -avz --progress ~/ethereum_data/ \
@@ -143,6 +154,7 @@ rsync -avz --progress ~/ethereum_data/ \
 ```
 
 ### Phase 3: Long-term (Optional) - Upgrade LittleBlack
+
 ```
 Buy: 2TB NVMe SSD (~$200)
 Install: Replace or add to littleblack
@@ -186,17 +198,20 @@ df.to_parquet('ethereum_blocks.parquet')
 ## Summary
 
 ### Your LittleBlack Machine:
+
 - ✅ **CPU**: Excellent (i9-9900K, 16 threads)
 - ⚠️ **RAM**: Borderline (62GB vs 64GB required)
 - ❌ **Storage**: Insufficient (722GB vs 2TB required)
 
 ### What You Should Do:
+
 1. **TODAY**: Use Cryo + 1RPC on your Mac to download blocks (1.9 days)
 2. **OR**: Use Google BigQuery for <1 hour download
 3. **TRANSFER**: Move data to LittleBlack for processing
 4. **LATER**: Consider 2TB NVMe upgrade (~$200) for full node capability
 
 ### Do NOT Try:
+
 - Running full Erigon archive node (need 2TB NVMe)
 - Syncing directly on LittleBlack (will run out of space)
 
@@ -207,6 +222,7 @@ df.to_parquet('ethereum_blocks.parquet')
 These tools will work on BOTH your Mac and LittleBlack:
 
 ### 1. Cryo (Recommended - Fastest)
+
 ```bash
 # Rust-based, parallel fetching
 https://github.com/paradigmxyz/cryo
@@ -218,6 +234,7 @@ cryo blocks --blocks 11560000:24000000 \
 ```
 
 ### 2. Ethereum ETL (Most Mature)
+
 ```bash
 # Python-based, battle-tested
 https://github.com/blockchain-etl/ethereum-etl
@@ -231,6 +248,7 @@ ethereumetl export_blocks_and_transactions \
 ```
 
 ### 3. TrueBlocks (Decentralized)
+
 ```bash
 # Local indexing + caching
 https://github.com/TrueBlocks/trueblocks-core
@@ -241,12 +259,12 @@ chifra blocks 11560000-24000000
 
 ## Cost Analysis
 
-| Approach | Timeline | Cost | Pros | Cons |
-|----------|----------|------|------|------|
-| **Cryo + 1RPC (Mac)** | 1.9 days | FREE | Start now, no hardware | 1.9 days wait |
-| **Google BigQuery** | <1 hour | FREE | Fastest | Needs GCP access |
-| **Upgrade LittleBlack** | 18h sync | $200 | Unlimited future use | Upfront cost |
-| **Alchemy Free Tier** | 26 days | FREE | Zero setup | Slowest |
+| Approach                | Timeline | Cost | Pros                   | Cons             |
+| ----------------------- | -------- | ---- | ---------------------- | ---------------- |
+| **Cryo + 1RPC (Mac)**   | 1.9 days | FREE | Start now, no hardware | 1.9 days wait    |
+| **Google BigQuery**     | <1 hour  | FREE | Fastest                | Needs GCP access |
+| **Upgrade LittleBlack** | 18h sync | $200 | Unlimited future use   | Upfront cost     |
+| **Alchemy Free Tier**   | 26 days  | FREE | Zero setup             | Slowest          |
 
 ---
 
@@ -268,6 +286,7 @@ cryo blocks --blocks 11560000:24000000 \
 ```
 
 Then in 2 days:
+
 ```bash
 # Transfer to LittleBlack
 rsync -avz --progress ~/ethereum_historical_data/ \

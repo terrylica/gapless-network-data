@@ -19,6 +19,7 @@ This skill provides validated patterns for setting up external service monitorin
 ## When to Use This Skill
 
 Use this skill when:
+
 - Setting up monitoring for Cloud Run Jobs (heartbeat monitoring)
 - Configuring HTTP endpoint monitoring for VM services
 - Investigating why monitoring alerts aren't working
@@ -43,6 +44,7 @@ Is the workload ephemeral (runs and exits)?
 ```
 
 **Recommended Architecture**: Use BOTH services for dual-pipeline monitoring
+
 - Healthchecks.io: Cloud Run Jobs (data collection jobs)
 - UptimeRobot: VM HTTP endpoints (persistent services)
 
@@ -143,6 +145,7 @@ def _request(self, endpoint: str, data: Dict) -> Dict:
 ### Common Operations
 
 **List Monitors**:
+
 ```python
 monitors = client.get_monitors()
 for monitor in monitors:
@@ -150,6 +153,7 @@ for monitor in monitors:
 ```
 
 **Create Monitor**:
+
 ```python
 result = client.create_monitor(
     friendly_name="API Health Check",
@@ -161,11 +165,13 @@ result = client.create_monitor(
 ```
 
 **Delete Monitor**:
+
 ```python
 client.delete_monitor(monitor_id="801762241")
 ```
 
 **Get Pushover Contact ID**:
+
 ```python
 pushover_id = client.get_pushover_contact_id()
 if not pushover_id:
@@ -204,6 +210,7 @@ response = requests.get(f"{base_url}/checks/", headers=headers)
 ### Common Operations
 
 **List Checks**:
+
 ```python
 checks = client.get_checks()
 for check in checks:
@@ -211,6 +218,7 @@ for check in checks:
 ```
 
 **Create Check**:
+
 ```python
 result = client.create_check(
     name="Daily Backup Job",
@@ -223,6 +231,7 @@ ping_url = result["ping_url"]
 ```
 
 **Ping Check (Success)**:
+
 ```python
 # From your job/script
 import requests
@@ -230,11 +239,13 @@ requests.get(ping_url)
 ```
 
 **Ping Check (Failure)**:
+
 ```python
 requests.get(f"{ping_url}/fail")
 ```
 
 **Delete Check**:
+
 ```python
 client.delete_check(check_uuid="6a991157-552d-4c2c-b972-d43de0a96bff")
 ```
@@ -297,6 +308,7 @@ Advantages:
 ### UptimeRobot Issues
 
 **429 Too Many Requests**:
+
 - Free tier has rate limits (10 req/min empirically validated)
 - Response includes `Retry-After` header (observed: 47 seconds)
 - Response includes `X-RateLimit-Remaining` header (counts down from 9 to 0)
@@ -304,6 +316,7 @@ Advantages:
 - Use bulk operations where available
 
 **Rate Limit Example**:
+
 ```python
 import time
 from requests.exceptions import HTTPError
@@ -319,10 +332,12 @@ except HTTPError as e:
 ```
 
 **Heartbeat Monitoring Not Available**:
+
 - Free tier only supports HTTP polling
 - Use Healthchecks.io for heartbeat monitoring (free)
 
 **Pushover Alerts Not Working**:
+
 - Verify: `client.get_pushover_contact_id()` returns a value
 - If `None`, complete Pushover setup steps via web UI
 - Check alert contact is enabled (status=2)
@@ -331,8 +346,10 @@ except HTTPError as e:
 ### Healthchecks.io Issues
 
 **400 Bad Request on Check Creation**:
+
 - **Root Cause**: All fields are optional per official docs. Use minimal payload.
 - **Solution**: Only provide `name`, `timeout`, and `grace`:
+
 ```python
 result = client.create_check(
     name="My Check",
@@ -341,15 +358,18 @@ result = client.create_check(
 )
 # All other fields are optional
 ```
+
 - Avoid complex payloads with undocumented fields
 - Official docs: https://healthchecks.io/docs/api/
 
 **Ping Not Recording**:
+
 - Verify ping URL is correct (from `create_check` response)
 - Check HTTP GET succeeds (200 OK)
 - View check details in dashboard to see ping history
 
 **API Field Mismatches**:
+
 - API v3 response format may differ from documentation
 - Use empirical validation (create test check, inspect response)
 - Key fields: `ping_url`, `uuid`, `update_url`
@@ -421,6 +441,7 @@ print("Monitoring active - will check every 5 minutes")
 - **scripts/uptimerobot_client.py** - Production-ready UptimeRobot API client
 
 Both scripts include:
+
 - Type hints for all methods
 - Error handling with descriptive exceptions
 - Retry logic recommendations
@@ -429,6 +450,7 @@ Both scripts include:
 ### Validation Evidence
 
 All patterns in this skill have been empirically validated:
+
 - `/tmp/probe/uptimerobot/PROBE_REPORT.md` - UptimeRobot API validation results
 - `/tmp/probe/healthchecks-io/PROBE_REPORT.md` - Healthchecks.io API validation results
 - 10 total probe scripts (5 per service)
@@ -441,13 +463,13 @@ All patterns in this skill have been empirically validated:
 
 ### Service Comparison
 
-| Feature | Healthchecks.io | UptimeRobot |
-|---------|----------------|-------------|
-| **Free tier checks** | 20 | 50 HTTP monitors |
-| **Heartbeat monitoring** | ✅ Free | ❌ Pro only ($7/mo) |
-| **HTTP monitoring** | ❌ | ✅ Free |
-| **Pushover alerts** | ✅ Free | ✅ Free |
-| **API** | v3, modern | v2, established |
-| **Best for** | Dead Man's Switch | HTTP endpoint polling |
+| Feature                  | Healthchecks.io   | UptimeRobot           |
+| ------------------------ | ----------------- | --------------------- |
+| **Free tier checks**     | 20                | 50 HTTP monitors      |
+| **Heartbeat monitoring** | ✅ Free           | ❌ Pro only ($7/mo)   |
+| **HTTP monitoring**      | ❌                | ✅ Free               |
+| **Pushover alerts**      | ✅ Free           | ✅ Free               |
+| **API**                  | v3, modern        | v2, established       |
+| **Best for**             | Dead Man's Switch | HTTP endpoint polling |
 
 **Recommendation**: Use BOTH for dual-pipeline architecture ($0/month total cost).

@@ -105,14 +105,20 @@ Excluded by default (use `include_deprecated=True` for pre-Merge analysis):
 
 ## Setup
 
-Credentials via Doppler (recommended) or environment variables.
+Credentials via .env file (simplest), Doppler (recommended for teams), or environment variables.
 
 ```bash
-# Option 1: Doppler (team setup)
+# Option 1: .env file (simplest for small teams)
+# Create .env in your project root:
+CLICKHOUSE_HOST_READONLY=<host>
+CLICKHOUSE_USER_READONLY=<user>
+CLICKHOUSE_PASSWORD_READONLY=<password>
+
+# Option 2: Doppler (recommended for production)
 doppler configure set token <token_from_1password>
 doppler setup --project gapless-network-data --config prd
 
-# Option 2: Environment variables
+# Option 3: Environment variables
 export CLICKHOUSE_HOST_READONLY=<host>
 export CLICKHOUSE_USER_READONLY=<user>
 export CLICKHOUSE_PASSWORD_READONLY=<password>

@@ -11,16 +11,19 @@
 ### v0.2.0 (2025-11-07)
 
 **Added**:
+
 - db-dtypes dependency to download script
 - Empirical validation of all core workflows
 - DuckDB 1.4.1 verification
 
 **Tested**:
+
 - Cost estimation (test_bigquery_cost.py)
 - CSV/Parquet streaming download
 - DuckDB import and query execution
 
 **Fixed**:
+
 - Missing db-dtypes dependency in download_bigquery_to_parquet.py
 
 ---
@@ -32,6 +35,7 @@
 **Script**: `test_bigquery_cost.py`
 **Status**: ✅ TESTED (2025-11-07)
 **Results**:
+
 - Bytes processed: 1,036,281,104 bytes (0.97 GB)
 - Free tier usage: 0.1% of 1 TB monthly quota
 - Query runs per month: ~1,061 times
@@ -42,11 +46,13 @@
 **Script**: `download_bigquery_to_parquet.py`
 **Status**: ✅ TESTED (2025-11-07)
 **Test Parameters**:
+
 - Block range: 11,560,000 to 11,561,000 (1,001 blocks)
 - Columns: 11 (timestamp, number, gas_limit, gas_used, base_fee_per_gas, transaction_count, difficulty, total_difficulty, size, blob_gas_used, excess_blob_gas)
 - Output: test_1000_blocks.parquet (62 KB)
 
 **Results**:
+
 - Rows downloaded: 1,001
 - Memory usage: < 1 MB
 - File size: 62 KB (62 bytes/row)
@@ -54,6 +60,7 @@
 - BigQuery storage used: 0 GB (streaming confirmed)
 
 **Dependencies Validated**:
+
 - google-cloud-bigquery==3.38.0
 - pandas==2.3.3
 - pyarrow==22.0.0
@@ -64,12 +71,14 @@
 **Tool**: DuckDB 1.4.1
 **Status**: ✅ TESTED (2025-11-07)
 **Test Query**:
+
 ```sql
 SELECT COUNT(*), MIN(number), MAX(number), MIN(timestamp), MAX(timestamp)
 FROM read_parquet('test_1000_blocks.parquet')
 ```
 
 **Results**:
+
 - Row count: 1,001
 - Block range: 11,560,000 to 11,561,000
 - Timestamp range: 2020-12-31 05:28:20+00:00 to 2020-12-31 09:08:01+00:00
@@ -80,6 +89,7 @@ FROM read_parquet('test_1000_blocks.parquet')
 **Method**: `bq show --schema`
 **Status**: ✅ TESTED (2025-11-07)
 **Results**:
+
 - Total columns: 23 in bigquery-public-data.crypto_ethereum.blocks
 - Selected columns: 11 (optimized for ML/time-series)
 - Discarded columns: 12 (hashes, merkle roots, low-cardinality categorical)
@@ -89,6 +99,7 @@ FROM read_parquet('test_1000_blocks.parquet')
 **Method**: Web search + documentation review
 **Status**: ✅ TESTED (2025-11-07)
 **Results**:
+
 - Query processing: 1 TB/month
 - Storage: 10 GB
 - Public dataset access: No storage charge for queries
@@ -132,6 +143,7 @@ FROM read_parquet('test_1000_blocks.parquet')
 ## Validation Methodology
 
 All testing conducted with:
+
 - **Platform**: macOS 14.6 (Sequoia), ARM64
 - **Python**: 3.13.6 (via uv)
 - **DuckDB**: 1.4.1 (via Homebrew)
@@ -142,10 +154,10 @@ All testing conducted with:
 
 ## Cost Analysis (Empirically Validated)
 
-| Selection     | Columns | Cost (GB) | % Free Tier | Status     |
-|---------------|---------|-----------|-------------|------------|
-| Optimized ML  | 11      | 0.97      | 0.1%        | ✅ TESTED  |
-| All columns   | 23      | 34.4      | 3.4%        | ⚠️ ESTIMATED |
+| Selection    | Columns | Cost (GB) | % Free Tier | Status       |
+| ------------ | ------- | --------- | ----------- | ------------ |
+| Optimized ML | 11      | 0.97      | 0.1%        | ✅ TESTED    |
+| All columns  | 23      | 34.4      | 3.4%        | ⚠️ ESTIMATED |
 
 **Recommendation**: Use 11-column optimized selection (0.97 GB) for 12.44M blocks.
 

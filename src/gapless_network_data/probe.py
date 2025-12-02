@@ -204,19 +204,38 @@ def get_setup_workflow() -> dict[str, str | list[str]]:
         >>> import gapless_network_data as gmd
         >>> workflow = gmd.probe.get_setup_workflow()
         >>> print(workflow['summary'])
-        Doppler service token provides read-only ClickHouse access
+        Three credential options: .env file, Doppler, or environment variables
     """
     return {
-        "summary": "Doppler service token provides read-only ClickHouse access",
-        "credential_source": "1Password: Engineering vault → 'gapless-network-data Doppler Service Token'",
-        "steps": [
-            "1. Get service token from 1Password Engineering vault",
-            "2. Configure Doppler: doppler configure set token <token>",
-            "3. Set project: doppler setup --project gapless-network-data --config prd",
-            "4. Verify: doppler secrets get CLICKHOUSE_HOST_READONLY --plain",
-        ],
-        "alternative": "Set env vars: CLICKHOUSE_HOST_READONLY, CLICKHOUSE_USER_READONLY, "
-        "CLICKHOUSE_PASSWORD_READONLY",
+        "summary": "Three credential options: .env file, Doppler, or environment variables",
+        "options": {
+            "dotenv": {
+                "description": ".env file (simplest for small teams)",
+                "steps": [
+                    "1. Copy .env.example to .env in project root",
+                    "2. Fill in CLICKHOUSE_HOST_READONLY, CLICKHOUSE_USER_READONLY, CLICKHOUSE_PASSWORD_READONLY",
+                    "3. Credentials auto-load on import",
+                ],
+            },
+            "doppler": {
+                "description": "Doppler service token (recommended for production)",
+                "credential_source": "1Password: Engineering vault → 'gapless-network-data Doppler Service Token'",
+                "steps": [
+                    "1. Get service token from 1Password Engineering vault",
+                    "2. Configure Doppler: doppler configure set token <token>",
+                    "3. Set project: doppler setup --project gapless-network-data --config prd",
+                    "4. Verify: doppler secrets get CLICKHOUSE_HOST_READONLY --plain",
+                ],
+            },
+            "env_vars": {
+                "description": "Environment variables (direct export)",
+                "steps": [
+                    "export CLICKHOUSE_HOST_READONLY=<host>",
+                    "export CLICKHOUSE_USER_READONLY=<user>",
+                    "export CLICKHOUSE_PASSWORD_READONLY=<password>",
+                ],
+            },
+        },
         "data_available": "23.87M Ethereum blocks (2015-2025)",
         "update_frequency": "Real-time (~12 second block intervals)",
     }

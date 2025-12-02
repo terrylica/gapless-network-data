@@ -1348,7 +1348,7 @@ wheels = [
 
 [[package]]
 name = "gapless-network-data"
-version = "3.0.0"
+version = "4.4.0"
 source = { editable = "." }
 dependencies = [
     { name = "clickhouse-connect" },
@@ -1357,6 +1357,7 @@ dependencies = [
     { name = "polars" },
     { name = "pydantic" },
     { name = "pydantic-settings" },
+    { name = "python-dotenv" },
     { name = "tenacity" },
     { name = "web3" },
 ]
@@ -1384,6 +1385,7 @@ requires-dist = [
     { name = "pytest", marker = "extra == 'dev'", specifier = ">=8.0.0" },
     { name = "pytest-asyncio", marker = "extra == 'dev'", specifier = ">=0.23.0" },
     { name = "pytest-cov", marker = "extra == 'dev'", specifier = ">=4.1.0" },
+    { name = "python-dotenv", specifier = ">=1.0.0" },
     { name = "ruff", marker = "extra == 'dev'", specifier = ">=0.3.0" },
     { name = "tenacity", specifier = ">=9.0.0" },
     { name = "web3", specifier = ">=7.0.0" },
