@@ -186,8 +186,8 @@ def fetch_blocks(
         - base_fee_per_gas (uint64)
         - transaction_count (uint64)
         - size (uint64)
-        - blob_gas_used (uint64, nullable) - Post-EIP4844
-        - excess_blob_gas (uint64, nullable) - Post-EIP4844
+        - blob_gas_used (Int64, nullable) - Post-EIP4844 (pd.NA for pre-Dencun)
+        - excess_blob_gas (Int64, nullable) - Post-EIP4844 (pd.NA for pre-Dencun)
         - [difficulty, total_difficulty if include_deprecated=True]
 
     Note:
@@ -251,6 +251,13 @@ def fetch_blocks(
         # Convert timestamp to datetime
         if "timestamp" in df.columns:
             df["timestamp"] = pd.to_datetime(df["timestamp"], utc=True)
+
+        # ADR: 2025-12-02-sdk-user-feedback-v451 - Convert blob gas to nullable Int64
+        # Pre-Dencun blocks have NULL (semantically correct: didn't exist, not "zero")
+        if "blob_gas_used" in df.columns:
+            df["blob_gas_used"] = df["blob_gas_used"].astype("Int64")
+        if "excess_blob_gas" in df.columns:
+            df["excess_blob_gas"] = df["excess_blob_gas"].astype("Int64")
 
         return df.sort_values("number").reset_index(drop=True)
 
