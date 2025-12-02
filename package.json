@@ -4,7 +4,7 @@
   "description": "Multi-chain blockchain network metrics collection with zero-gap guarantee",
   "repository": {
     "type": "git",
-    "url": "https://github.com/terrylica/gapless-network-data.git"
+    "url": "git@github.com:terrylica/gapless-network-data.git"
   },
   "engines": {
     "node": ">=22.14.0"
