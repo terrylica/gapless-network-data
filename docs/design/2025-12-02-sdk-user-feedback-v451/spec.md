@@ -1,8 +1,8 @@
 ---
 adr: 2025-12-02-sdk-user-feedback-v451
 source: ~/.claude/plans/luminous-moseying-tarjan.md
-implementation-status: in_progress
-phase: phase-1
+implementation-status: completed
+phase: released
 last-updated: 2025-12-02
 ---
 
