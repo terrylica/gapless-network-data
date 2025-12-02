@@ -1,6 +1,21 @@
 # Gapless Network Data
 
-Ethereum blockchain network metrics collection infrastructure with dual-pipeline architecture.
+Ethereum blockchain network metrics for financial time series forecasting.
+
+## Quick Start
+
+```python
+import gapless_network_data as gmd
+
+# Fetch latest blocks (recommended for live trading)
+df = gmd.fetch_blocks(limit=1000)
+
+# Compute block utilization (alpha feature #2)
+df['utilization'] = df['gas_used'] / df['gas_limit']
+
+# Date range query
+df = gmd.fetch_blocks(start='2024-01-01', end='2024-01-31')
+```
 
 ## Installation
 
@@ -8,103 +23,144 @@ Ethereum blockchain network metrics collection infrastructure with dual-pipeline
 pip install gapless-network-data
 ```
 
-## Overview
+## AI Agent Discoverability
 
-Collects Ethereum block-level network metrics with real-time updates at block intervals (approximately 12 seconds). Data stored in ClickHouse Cloud with automatic deduplication.
+This package is optimized for Claude Code CLI and AI coding agents.
 
-**Architecture**: BigQuery hourly batch + Alchemy real-time WebSocket
-
-**Data Range**: Genesis block (2015) to present
-
-**Cost**: All components operate within free tier limits
-
-## Data Access
+### Probe Module
 
 ```python
-import clickhouse_connect
+import gapless_network_data as gmd
 
-client = clickhouse_connect.get_client(
-    host='your-host.aws.clickhouse.cloud',
-    port=8443,
-    username='default',
-    password=password,
-    secure=True
-)
+# Get ranked features for ML pipelines
+features = gmd.probe.get_alpha_features()
+for f in features[:5]:
+    print(f"{f.rank}. {f.name} ({f.importance})")
 
-# Query latest blocks
-result = client.query_df("""
-    SELECT
-        timestamp,
-        number,
-        base_fee_per_gas,
-        gas_used,
-        gas_limit,
-        transaction_count
-    FROM ethereum_mainnet.blocks FINAL
-    ORDER BY number DESC
-    LIMIT 10
-""")
+# Get protocol era boundaries
+eras = gmd.probe.get_protocol_eras()
+
+# Get setup workflow
+workflow = gmd.probe.get_setup_workflow()
+
+# Get example code
+print(gmd.probe.get_quick_start())
 ```
 
-## Schema
+## Alpha Feature Rankings
 
-11 columns for ML feature engineering:
+AI agents should prioritize these features for ML pipelines:
 
-| Column              | Type      | Description                |
-| ------------------- | --------- | -------------------------- |
-| `timestamp`         | TIMESTAMP | UTC timestamp              |
-| `number`            | BIGINT    | Block number (PRIMARY KEY) |
-| `gas_limit`         | BIGINT    | Block gas limit            |
-| `gas_used`          | BIGINT    | Total gas used             |
-| `base_fee_per_gas`  | BIGINT    | EIP-1559 base fee (wei)    |
-| `transaction_count` | BIGINT    | Number of transactions     |
-| `difficulty`        | HUGEINT   | Mining/staking difficulty  |
-| `total_difficulty`  | HUGEINT   | Cumulative chain work      |
-| `size`              | BIGINT    | Block size (bytes)         |
-| `blob_gas_used`     | BIGINT    | EIP-4844 blob gas used     |
-| `excess_blob_gas`   | BIGINT    | EIP-4844 excess blob gas   |
+| Rank | Feature           | Importance | Formula              |
+| ---- | ----------------- | ---------- | -------------------- |
+| 1    | base_fee_per_gas  | critical   | raw                  |
+| 2    | block_utilization | critical   | gas_used / gas_limit |
+| 3    | transaction_count | high       | raw                  |
+| 4    | timestamp         | high       | raw                  |
+| 5    | number            | high       | raw                  |
+| 6    | size              | medium     | raw                  |
+| 7    | blob_gas_used     | medium     | raw (post-EIP4844)   |
+| 8    | excess_blob_gas   | low        | raw (post-EIP4844)   |
+| 9    | gas_limit         | low        | raw                  |
+| 10   | gas_used          | low        | raw                  |
 
-Schema excludes cryptographic hashes and Merkle roots (non-predictive fields).
+Get rankings programmatically: `gmd.probe.get_alpha_features()`
 
-## Feature Engineering
+## Protocol Era Boundaries
 
-Combine with OHLCV price data for cross-domain features:
+Filter data appropriately based on protocol changes:
+
+- **EIP-1559** (block 12,965,000, Aug 2021): base_fee_per_gas introduced
+- **The Merge** (block 15,537,394, Sep 2022): difficulty=0 forever
+- **EIP-4844** (block 19,426,587, Mar 2024): blob_gas fields introduced
+
+Get eras programmatically: `gmd.probe.get_protocol_eras()`
+
+## API Reference
+
+### fetch_blocks()
 
 ```python
-import clickhouse_connect
+gmd.fetch_blocks(
+    start: str | None = None,     # ISO 8601 date
+    end: str | None = None,       # ISO 8601 date
+    limit: int | None = None,     # Max blocks
+    include_deprecated: bool = False  # Include difficulty fields
+) -> pd.DataFrame
+```
+
+Returns pandas DataFrame with columns:
+
+- timestamp (datetime64[ns, UTC])
+- number (uint64)
+- gas_limit, gas_used, base_fee_per_gas, transaction_count, size (uint64)
+- blob_gas_used, excess_blob_gas (uint64, nullable)
+
+### Deprecated Fields
+
+Excluded by default (use `include_deprecated=True` for pre-Merge analysis):
+
+- `difficulty`: Always 0 post-Merge (Sep 2022)
+- `total_difficulty`: Frozen post-Merge
+
+## Setup
+
+Credentials via Doppler (recommended) or environment variables.
+
+```bash
+# Option 1: Doppler (team setup)
+doppler configure set token <token_from_1password>
+doppler setup --project gapless-network-data --config prd
+
+# Option 2: Environment variables
+export CLICKHOUSE_HOST_READONLY=<host>
+export CLICKHOUSE_USER_READONLY=<user>
+export CLICKHOUSE_PASSWORD_READONLY=<password>
+```
+
+Get setup instructions: `gmd.probe.get_setup_workflow()`
+
+## Data Coverage
+
+- **Blocks**: 23.87M Ethereum blocks (2015-2025)
+- **Update frequency**: Real-time (~12 second intervals)
+- **Storage**: ClickHouse Cloud (AWS)
+- **Deduplication**: Automatic via ReplacingMergeTree
+
+## Exceptions
+
+All exceptions include structured context (timestamp, endpoint, HTTP status):
+
+- `CredentialException`: Credential resolution failed
+- `DatabaseException`: ClickHouse query failed
+- `MempoolException`: Base exception class
+
+## Feature Engineering Integration
+
+Combine with OHLCV price data:
+
+```python
 import gapless_crypto_data as gcd
-import pandas as pd
+import gapless_network_data as gmd
 
-# Fetch OHLCV data
-df_ohlcv = gcd.get_data(
-    symbol="ETHUSDT",
-    timeframe="1m",
-    start_date="2024-01-01",
-    end_date="2024-01-02"
-)
-
-# Query Ethereum blocks
-client = clickhouse_connect.get_client(...)
-df_eth = client.query_df("""
-    SELECT timestamp, base_fee_per_gas, gas_used, gas_limit, transaction_count
-    FROM ethereum_mainnet.blocks FINAL
-    WHERE timestamp BETWEEN '2024-01-01' AND '2024-01-02'
-""")
+# Fetch both data sources
+df_ohlcv = gcd.get_data(symbol="ETHUSDT", timeframe="1m", start_date="2024-01-01")
+df_blocks = gmd.fetch_blocks(start="2024-01-01", end="2024-01-02")
 
 # Temporal alignment (forward-fill prevents data leakage)
-df_eth['timestamp'] = pd.to_datetime(df_eth['timestamp'])
-df_eth.set_index('timestamp', inplace=True)
-df_eth_aligned = df_eth.reindex(df_ohlcv.index, method='ffill')
+df_blocks_aligned = df_blocks.set_index('timestamp').reindex(
+    df_ohlcv.index, method='ffill'
+)
 
 # Join and engineer features
-df = df_ohlcv.join(df_eth_aligned)
+df = df_ohlcv.join(df_blocks_aligned)
 df['gas_pressure'] = df['base_fee_per_gas'] / df['base_fee_per_gas'].rolling(60).median()
-df['block_utilization'] = (df['gas_used'] / df['gas_limit']) * 100
+df['block_utilization'] = df['gas_used'] / df['gas_limit']
 ```
 
-## Infrastructure
+## Infrastructure (Reference)
 
-### Pipeline Components
+Dual-pipeline architecture for production reliability:
 
 | Component           | Purpose                          | Technology       |
 | ------------------- | -------------------------------- | ---------------- |
@@ -113,48 +169,15 @@ df['block_utilization'] = (df['gas_used'] / df['gas_limit']) * 100
 | Database            | Storage with deduplication       | ClickHouse Cloud |
 | Monitoring          | Dead Man's Switch                | Healthchecks.io  |
 
-### Deployment Structure
-
-```
-deployment/
-├── cloud-run/       # BigQuery sync job
-├── vm/              # Real-time collector
-└── backfill/        # Historical data loading
-```
-
-## Operations
-
-```bash
-# Verify pipeline health
-gcloud run jobs executions list --job eth-md-updater --region us-central1
-
-# View real-time collector logs
-gcloud compute ssh eth-realtime-collector --zone=us-east1-b \
-  --command='sudo journalctl -u eth-collector -f'
-
-# Verify database state
-uv run scripts/clickhouse/verify_blocks.py
-```
-
-## Data Sources
-
-| Source   | Purpose           | Method      |
-| -------- | ----------------- | ----------- |
-| BigQuery | Historical blocks | Hourly sync |
-| Alchemy  | Real-time blocks  | WebSocket   |
-
 ## Related Projects
 
 - [gapless-crypto-data](https://github.com/terrylica/gapless-crypto-data) - OHLCV data collection
 - [BigQuery Ethereum Dataset](https://console.cloud.google.com/bigquery?p=bigquery-public-data&d=crypto_ethereum)
-- [Alchemy](https://www.alchemy.com/) - Real-time WebSocket API
-- [ClickHouse Cloud](https://clickhouse.cloud/) - Cloud-hosted ClickHouse
 
 ## Documentation
 
 - [Architecture Overview](https://github.com/terrylica/gapless-network-data/blob/main/docs/architecture/README.md)
 - [Data Format Specification](https://github.com/terrylica/gapless-network-data/blob/main/docs/architecture/DATA_FORMAT.md)
-- [ADR Index](https://github.com/terrylica/gapless-network-data/blob/main/docs/architecture/decisions/README.md)
 
 ## License
 

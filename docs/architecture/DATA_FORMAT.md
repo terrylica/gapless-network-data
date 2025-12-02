@@ -1,7 +1,7 @@
 ---
-version: "1.0.0"
-last_updated: "2025-11-12"
-supersedes: ["0.1.0"]
+version: "1.1.0"
+last_updated: "2025-11-30"
+supersedes: ["1.0.0", "0.1.0"]
 status: "operational"
 ---
 
@@ -13,7 +13,7 @@ Multi-chain blockchain network metrics data format specification.
 
 ## Ethereum Block Data (11 fields)
 
-**Storage**: MotherDuck cloud database `ethereum_mainnet.blocks`
+**Storage**: ClickHouse Cloud (AWS us-west-2) `ethereum_mainnet.blocks`
 **Granularity**: ~12-second block intervals
 **Data Range**: Block #1 (2015-07-30) to present (23.8M blocks)
 
@@ -121,33 +121,22 @@ CREATE TABLE ethereum_mainnet.blocks (
 
 ## Storage Architecture
 
-### MotherDuck Cloud Database
+### ClickHouse Cloud (AWS us-west-2)
 
-**Connection**: `md:ethereum_mainnet`
-**Provider**: MotherDuck (cloud-hosted DuckDB)
-**Tier**: Free (10 GB storage, 10 CU hours/month)
+**Host**: `CLICKHOUSE_HOST` (via Doppler `gapless-network-data/prd`)
+**Engine**: ReplacingMergeTree with ORDER BY `number`
+**Tier**: Free (10 GB storage, 100 GB egress/month)
 
 **Advantages**:
 
-- Automatic deduplication via PRIMARY KEY
-- SQL query interface
-- Column-oriented storage
-- Built-in compression
+- Automatic deduplication via ReplacingMergeTree ORDER BY
+- SQL query interface (ClickHouse SQL dialect)
+- Column-oriented storage with LZ4 compression
+- Cloud-native with built-in monitoring
 - No local storage required
+- Dual-pipeline safe (BigQuery + Alchemy can write concurrently)
 
-**Limitations**:
-
-- 10 GB storage limit (sufficient for ~100M blocks)
-- 10 CU hours/month (batch writes stay within limit)
-- Single database instance
-
-### Alternative Storage (Future)
-
-**Local DuckDB** (optional caching):
-
-- Location: `~/.cache/gapless-network-data/data.duckdb`
-- Purpose: Offline analysis
-- Status: Not implemented
+**Migration Note**: Migrated from MotherDuck 2025-11-25 (trial expiration). See ADR-0013.
 
 ---
 
@@ -164,9 +153,15 @@ CREATE TABLE ethereum_mainnet.blocks (
 
 ## Schema Evolution
 
+### Version 1.1.0 (2025-11-30)
+
+- Migrated from MotherDuck to ClickHouse Cloud (AWS us-west-2)
+- ReplacingMergeTree engine with ORDER BY `number` for deduplication
+- 23.87M blocks operational
+
 ### Version 1.0.0 (2025-11-12)
 
-- Ethereum schema deployed to MotherDuck
+- Ethereum schema deployed to MotherDuck (superseded 2025-11-25)
 - 11 fields including EIP-4844 blob gas fields
 - PRIMARY KEY on `number` for deduplication
 - BigQuery + Alchemy dual-pipeline sources
@@ -174,13 +169,13 @@ CREATE TABLE ethereum_mainnet.blocks (
 ### Version 0.1.0 (2025-11-04)
 
 - Initial schema design
-- Parquet storage planned (superseded by MotherDuck)
+- Parquet storage planned (superseded by cloud database)
 - LlamaRPC source planned (superseded by BigQuery + Alchemy)
 
 ---
 
 ## Related Documentation
 
-- [MotherDuck Dual Pipeline](/docs/architecture/_archive/motherduck-dual-pipeline.md) - Complete schema DDL (DEPRECATED - see MADR-0013)
-- [BigQuery Integration](/docs/architecture/_archive/bigquery-motherduck-integration.md) - Field mapping (DEPRECATED - see MADR-0013)
-- [Architecture Overview](/docs/architecture/README.md) - System design
+- [Architecture Overview](/docs/architecture/README.md) - System design with ClickHouse Cloud
+- [ClickHouse Migration ADR](/docs/architecture/decisions/2025-11-25-clickhouse-cloud-migration.md) - Migration rationale
+- [Archived: MotherDuck Pipeline](/docs/architecture/_archive/motherduck-dual-pipeline.md) - Historical reference (DEPRECATED)

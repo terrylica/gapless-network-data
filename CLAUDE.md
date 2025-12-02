@@ -12,7 +12,7 @@ Gapless Network Data is a multi-chain blockchain network metrics collection tool
 - **Bitcoin**: Mempool snapshots via mempool.space (5-minute intervals, future work)
 - **Multi-chain**: Extensible to Solana, Avalanche, Polygon, etc.
 
-**Version**: v3.0.0 (production operational)
+**Version**: v4.3.1 (production operational)
 
 ## Data Scope
 
@@ -47,7 +47,7 @@ Gapless Network Data is a multi-chain blockchain network metrics collection tool
 - **gapless-crypto-data**: OHLCV 11-column format, interval-based time series, price/volume metrics
 - **gapless-network-data**: Variable schema, point-in-time snapshots, network congestion metrics
 
-See `/Users/terryli/eon/gapless-crypto-data/docs/audit/mempool-probe-adversarial-audit.yaml` for complete analysis (22 violations identified if integrated).
+These packages are kept separate to avoid data model conflicts (different schemas, different time semantics).
 
 ## Single Source of Truth (SSoT)
 
@@ -57,17 +57,15 @@ Coordinates all project phases, specifications, and implementation work.
 
 **Architecture**: OpenAPI 3.1.1 machine-readable format with logical dependencies
 
-**Sub-Specifications**:
+**Archived Specifications** (in `archive/` folder):
 
-- `clickhouse-migration.yaml` - ClickHouse AWS migration (operational 2025-11-25)
-- `documentation-audit-phase.yaml` - Documentation audit (completed 2025-11-03, 6 findings resolved)
 - `archive/motherduck-integration.yaml` - MotherDuck dual pipeline (deprecated 2025-11-25, migrated to ClickHouse)
 - `archive/core-collection-phase1.yaml` - Bitcoin-only Phase 1 (superseded 2025-11-04, archived)
 
 **Current Status**:
 
-- **Phase**: Phase 1 (Historical Data Collection: Complete History) - **COMPLETED** (2025-11-11)
-- **Version**: v3.0.0 (production operational)
+- **Phase**: Phase 1 (Historical Data Collection: Complete History) - **COMPLETED** (2025-11-25)
+- **Version**: v4.3.1 (production operational)
 - **Data Loaded**: 23.87M Ethereum blocks (2015-2025) in ClickHouse Cloud <!-- Verified 2025-11-25: 23,877,845 blocks -->
 - **Architecture**: Dual-pipeline (Alchemy WebSocket VM + BigQuery hourly Cloud Run Job) → ClickHouse
 - **Monitoring**: Healthchecks.io + Pushover (cloud-based, UptimeRobot removed)
@@ -90,7 +88,6 @@ Coordinates all project phases, specifications, and implementation work.
 
 - [Architecture Overview](/docs/architecture/README.md) - Core components, data flow, SLOs
 - [Data Format Specification](/docs/architecture/DATA_FORMAT.md) - Mempool snapshot schema
-- [Cross-Package Integration](/Users/terryli/eon/gapless-crypto-data/docs/architecture/cross-package-feature-integration.yaml) - How to use with gapless-crypto-data
 
 ### Usage Guides
 
@@ -145,7 +142,7 @@ result = client.query('SELECT COUNT(*) FROM ethereum_mainnet.blocks FINAL')
 
 ## Project Skills
 
-**Skills**: 5 project skills + 2 managed skills (blockchain RPC research, data collection validation, BigQuery acquisition, ClickHouse operations, pipeline monitoring)
+**Skills**: 6 project skills + 2 managed skills (blockchain RPC research, data collection validation, BigQuery acquisition, ClickHouse operations, pipeline monitoring, VM infrastructure ops)
 
 **Complete Catalog**: See [Skills Catalog](/.claude/skills/CATALOG.md) for descriptions, when-to-use guidance, and validated patterns from scratch investigations.
 
@@ -221,6 +218,11 @@ AI agents should prioritize these features for ML pipelines:
 | 3    | transaction_count | high       | raw                  |
 | 4    | timestamp         | high       | raw                  |
 | 5    | number            | high       | raw                  |
+| 6    | size              | medium     | raw                  |
+| 7    | blob_gas_used     | medium     | raw (post-EIP4844)   |
+| 8    | excess_blob_gas   | low        | raw (post-EIP4844)   |
+| 9    | gas_limit         | low        | raw                  |
+| 10   | gas_used          | low        | raw                  |
 
 Get rankings programmatically: `gmd.probe.get_alpha_features()`
 
@@ -281,7 +283,7 @@ Get setup instructions: `gmd.probe.get_setup_workflow()`
 
 ## Current Architecture
 
-**Version**: v3.0.0 (production operational)
+**Version**: v4.3.1 (production operational)
 
 **Status**: Production operational - dual-pipeline collection with 23.87M blocks
 
@@ -302,7 +304,7 @@ Get setup instructions: `gmd.probe.get_setup_workflow()`
 **SDK Package** (implemented):
 
 - Package structure (src/gapless_network_data/)
-- API interface (fetch_snapshots, get_latest_snapshot) - implemented (src/gapless_network_data/api.py)
+- API interface (fetch_blocks, fetch_snapshots, get_latest_snapshot) - implemented (src/gapless_network_data/api.py)
 - Bitcoin mempool.space collector - deferred to Phase 2+
 
 ## Data Format
@@ -386,10 +388,6 @@ df['congestion_z'] = (
 )
 df['volume_per_tx'] = df['volume'] / (df['number_of_trades'] + 1e-10)
 ```
-
-**Example**: `/tmp/feature_integration_example.py` - Complete workflow generating 43 features from OHLCV + mempool
-
-**Design Specification**: `/Users/terryli/eon/gapless-crypto-data/docs/architecture/cross-package-feature-integration.yaml`
 
 ## Error Handling
 
@@ -496,137 +494,6 @@ supersedes: []
 
 **File Paths**: Absolute paths with space after extension for iTerm2 Cmd+click
 
-## Feature Roadmap (Feature-Driven Planning)
-
-**Context**: Roadmap refocused (2025-11-04) to emphasize user-facing features (WHAT users get) rather than implementation architecture (HOW we build it).
-
-**Master Plan**: `./specifications/master-project-roadmap.yaml` (Single Source of Truth)
-
-**Key Insight**: Database optimizations are implementation details supporting features, not features themselves.
-
-### Phase 1: Core Data Collection Features (3-4 weeks)
-
-**Goal**: Bitcoin + Ethereum network data collection with zero-gap guarantee
-
-**Features**:
-
-1. **Bitcoin Mempool Data Collection** (8-12 hours)
-   - Complete 5-layer validation pipeline (HTTP, schema, sanity, gaps, anomalies)
-   - Zero-gap guarantee (automatic gap detection + backfill)
-   - ETag caching for bandwidth optimization
-   - Validation reporting with queryable history
-   - **User Value**: Reliable 1-minute Bitcoin mempool data for trading models
-
-2. **Ethereum Network Data Collection** (10-15 hours)
-   - LlamaRPC integration (web3.py)
-   - Block-level gas prices (baseFeePerGas, gasUsed, gasLimit)
-   - Network health metrics (TPS, block utilization)
-   - Historical data from 2015+ (archive node access)
-   - Multi-chain API: `fetch_snapshots(chain='bitcoin'|'ethereum')`
-   - **User Value**: Complete Ethereum network metrics for gas optimization
-
-3. **Feature Engineering Integration** (6-8 hours)
-   - Temporal alignment with OHLCV data (prevents data leakage)
-   - Cross-domain features (mempool + price data)
-   - Production-ready examples (Bitcoin + Ethereum)
-   - **User Value**: Ready-to-use features for ML pipelines
-
-**Deliverables**:
-
-- Bitcoin + Ethereum data collection operational
-- Multi-chain support (chain parameter)
-- Feature engineering examples (43 features)
-- Documentation for both chains
-
-**Version**: v0.2.0
-
-### Phase 2: Advanced Features & Analytics (2-3 weeks)
-
-**Goal**: Multi-chain expansion + network insights + production CLI
-
-**Features**:
-
-1. **Multi-Chain Expansion** (8-12 hours)
-   - Solana network metrics (TPS, block times, fee rates)
-   - Avalanche C-Chain gas data
-   - Bitcoin L2 metrics (Lightning Network)
-   - **User Value**: 5+ blockchain support for portfolio-wide insights
-
-2. **Network Insights & Analytics** (6-8 hours)
-   - Congestion forecasting (short-term predictions)
-   - Fee optimization recommendations (best timing)
-   - Transaction success probability estimation
-   - Historical trend analysis
-   - **User Value**: Actionable insights for transaction timing
-
-3. **Production CLI** (4-6 hours)
-   - `stream` command (real-time continuous collection)
-   - `backfill` command (historical data with progress tracking)
-   - `validate` command (view validation reports)
-   - `export` command (CSV, JSON, Parquet, Arrow)
-   - **User Value**: Production-ready tooling for data operations
-
-**Deliverables**:
-
-- 5+ blockchain support
-- Network insights API
-- Full-featured CLI
-- Multi-format export
-
-**Version**: v0.3.0
-
-### Phase 3: Production Optimization (2-3 weeks)
-
-**Goal**: Real-time monitoring + large dataset performance + advanced validation
-
-**Features**:
-
-1. **Network Monitoring & Alerts** (6-8 hours)
-   - Real-time anomaly detection (fee spikes, congestion events)
-   - Custom alerting rules (user-defined thresholds)
-   - Alert delivery (email, webhook, Telegram)
-   - Health monitoring dashboard
-   - **User Value**: Proactive alerts for trading opportunities/risks
-
-2. **Large Dataset Performance** (8-10 hours)
-   - Query optimization for multi-year datasets (ClickHouse)
-   - Remote Parquet access (S3, CDN) without local storage
-   - Parallel query execution
-   - 10x+ speedup for aggregations
-   - **User Value**: Efficient analysis of historical data (2015-2025)
-
-3. **Enhanced Data Quality** (4-6 hours)
-   - Cross-chain validation (detect chain-split events)
-   - Data provenance tracking
-   - Quality scoring system
-   - Automatic correction recommendations
-   - **User Value**: Trustworthy data for critical trading decisions
-
-**Deliverables**:
-
-- Real-time alerting system
-- Optimized large dataset queries
-- Remote data access
-- Quality scoring system
-
-**Version**: v0.4.0
-
-### Phase 4: Production Readiness (2-3 weeks)
-
-**Goal**: Complete documentation, testing, CI/CD, PyPI publishing
-
-**Scope**:
-
-- All 9 pending documentation files
-- 70%+ test coverage
-- GitHub Actions CI/CD
-- PyPI publishing
-- Community resources
-
-**Version**: v1.0.0
-
-**Total Timeline**: 8-12 weeks from Phase 1 start
-
 ## Feature Implementation Status
 
 **Phase 0: Foundation** (completed 2025-11-03)
@@ -640,7 +507,7 @@ supersedes: []
 - [x] Database architecture investigation (ClickHouse selected)
 - [x] Documentation audit (6 findings resolved)
 
-**Phase 1: Historical Data Collection (Complete History)** - **COMPLETED** (2025-11-12)
+**Phase 1: Historical Data Collection (Complete History)** - **COMPLETED** (2025-11-25)
 
 **Goal**: Collect complete historical blockchain data (2015-2025) for Ethereum ✅
 
@@ -671,13 +538,14 @@ Data Quality - **PARTIALLY IMPLEMENTED**:
 - [ ] ClickHouse CHECK constraints (fee ordering, non-negative values) - pending
 - [ ] Complete 5-layer validation pipeline - deferred to Phase 2+
 
-**Phase 2: Real-Time Collection & Data Quality** (future)
+**Phase 2: Real-Time Collection & Data Quality** (in progress)
 
-- [ ] Forward-only collection (real-time block/mempool streaming)
-- [ ] Complete 5-layer validation pipeline (Layers 3-5: sanity, gaps, anomalies)
-- [ ] Gap detection and automatic backfill (for real-time mode)
-- [ ] ValidationStorage for audit trail (Parquet-backed validation reports)
-- [ ] Production CLI (stream, validate, export commands)
+- [x] Forward-only collection (Alchemy WebSocket real-time streaming) - OPERATIONAL
+- [x] Gap detection (Cloud Function every 3 hours with Pushover alerts) - OPERATIONAL
+- [ ] Complete 5-layer validation pipeline (Layers 3-5: sanity, gaps, anomalies) - pending
+- [ ] Automatic backfill (currently manual via BigQuery sync) - pending
+- [ ] ValidationStorage for audit trail (Parquet-backed validation reports) - pending
+- [ ] Production CLI (stream, validate, export commands) - STUBS ONLY (not implemented)
 
 **Phase 3: Production Optimization** (future)
 

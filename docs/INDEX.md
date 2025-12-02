@@ -1,6 +1,6 @@
 ---
-version: "1.0.0"
-last_updated: "2025-11-04"
+version: "4.3.1"
+last_updated: "2025-11-30"
 supersedes: []
 ---
 
@@ -10,9 +10,9 @@ Hub-and-spoke documentation architecture for multi-chain blockchain network metr
 
 **Architecture**: Link Farm + Hub-and-Spoke with Progressive Disclosure
 
-**Current Version**: v0.1.0 (alpha - foundation complete, Phase 1 planned)
+**Current Version**: v4.3.1 (production operational - Phase 1 complete)
 
-**Next Milestone**: v0.2.0 (Ethereum PRIMARY + Bitcoin SECONDARY collection operational)
+**Status**: Ethereum PRIMARY collection operational (23.87M blocks, 2015-2025). Bitcoin SECONDARY deferred.
 
 ---
 
