@@ -1,3 +1,10 @@
+# [4.4.0](https://github.com/terrylica/gapless-network-data/compare/v4.3.1...v4.4.0) (2025-12-02)
+
+
+### Features
+
+* add comprehensive AI agent discoverability for Claude Code CLI ([6d83d63](https://github.com/terrylica/gapless-network-data/commit/6d83d63f3f852a780204819bc5d211f2ef935406))
+
 ## [4.3.1](https://github.com/terrylica/gapless-network-data/compare/v4.3.0...v4.3.1) (2025-11-29)
 
 ### Bug Fixes
