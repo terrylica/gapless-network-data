@@ -118,4 +118,4 @@ message = (
 - [x] Time-to-stale margin displayed
 - [x] Gap breakdown shows all three categories
 - [x] Code audit passed (PLR2004: 0 findings)
-- [ ] Cloud Function deployed and operational (pending manual deployment)
+- [x] Cloud Function deployed and operational (deployed 2025-12-02, revision 00024-luq)
