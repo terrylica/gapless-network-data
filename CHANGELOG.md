@@ -1,3 +1,10 @@
+# [4.5.0](https://github.com/terrylica/gapless-network-data/compare/v4.4.0...v4.5.0) (2025-12-02)
+
+
+### Features
+
+* add auto .env file loading for credential resolution ([1a031dd](https://github.com/terrylica/gapless-network-data/commit/1a031dd2ba14c50623bab7d97a271d42357803ab))
+
 # [4.4.0](https://github.com/terrylica/gapless-network-data/compare/v4.3.1...v4.4.0) (2025-12-02)
 
 ### Features
