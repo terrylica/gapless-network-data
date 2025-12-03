@@ -13,9 +13,9 @@ df = gmd.fetch_blocks(limit=1000)
 # Compute block utilization (alpha feature #2)
 df['utilization'] = df['gas_used'] / df['gas_limit']
 
-# Date range query (half-open interval [start, end))
-# Returns all blocks from Jan 1 00:00:00 to Jan 31 23:59:59
-df = gmd.fetch_blocks(start='2024-01-01', end='2024-02-01')
+# Date range query (inclusive [start, end])
+# Returns all blocks from Jan 1 through Jan 31 (both dates included)
+df = gmd.fetch_blocks(start='2024-01-01', end='2024-01-31')
 
 # Same-day query (returns all blocks on March 13)
 df = gmd.fetch_blocks(start='2024-03-13', end='2024-03-13')
@@ -156,25 +156,30 @@ df['size_ma'] = df['size'].rolling(25).mean()
 
 **Use Case**: L2/rollup activity analysis, blob fee market analysis
 **Description**: Gas consumed by blob-carrying transactions (EIP-4844)
-**Availability**: Block 19,426,587+ (Mar 2024). NULL before EIP-4844.
+**Availability**: Block 19,426,587+ (Mar 2024). `<NA>` (pandas NA) before EIP-4844.
+**Dtype**: `Int64` (pandas nullable integer). Pre-Dencun values are `<NA>`, not NaN.
 **Caveats**:
 
 - Non-zero indicates L2 batch submissions (Optimism, Arbitrum, Base, etc.)
 - Separate fee market from regular gas
 - Filter: `number >= 19426587` for blob analysis
+- Convert to standard int64: `df['blob_gas_used'].fillna(0).astype('int64')`
 
 **Feature Engineering**:
 
 ```python
-df['has_blobs'] = (df['blob_gas_used'] > 0).astype(int)
-df['blob_utilization'] = df['blob_gas_used'] / 786432  # max blob gas per block
+# Handle nullable Int64 (convert <NA> to 0 for calculations)
+df['blob_gas'] = df['blob_gas_used'].fillna(0).astype('int64')
+df['has_blobs'] = (df['blob_gas'] > 0).astype(int)
+df['blob_utilization'] = df['blob_gas'] / 786432  # max blob gas per block
 ```
 
 ### #8 excess_blob_gas (LOW)
 
 **Use Case**: Blob fee market state, blob base fee computation
 **Description**: Excess blob gas for fee pricing mechanism
-**Availability**: Block 19,426,587+ (Mar 2024). NULL before EIP-4844.
+**Availability**: Block 19,426,587+ (Mar 2024). `<NA>` (pandas NA) before EIP-4844.
+**Dtype**: `Int64` (pandas nullable integer). Pre-Dencun values are `<NA>`, not NaN.
 **Caveats**:
 
 - Used to compute blob base fee (similar to EIP-1559 for blobs)
@@ -258,14 +263,14 @@ df['fee_to_price'] = df['base_fee_gwei'] / df['close']
 ```python
 gmd.fetch_blocks(
     start: str | None = None,     # ISO 8601 date (inclusive)
-    end: str | None = None,       # ISO 8601 date (exclusive, half-open interval)
+    end: str | None = None,       # ISO 8601 date (inclusive for date-only)
     limit: int | None = None,     # Max blocks
     include_deprecated: bool = False  # Include difficulty fields
 ) -> pd.DataFrame
 ```
 
-**Boundary Semantics**: Half-open interval `[start, end)` following PostgreSQL, BigQuery, yfinance standards.
-Date-only strings expand to full day boundaries (e.g., `end='2024-03-13'` means `< 2024-03-14 00:00:00`).
+**Boundary Semantics**: Inclusive interval `[start, end]` for date-only inputs.
+Date-only strings include the full end day (e.g., `end='2024-03-13'` includes all blocks on March 13).
 
 Returns pandas DataFrame with columns:
 
