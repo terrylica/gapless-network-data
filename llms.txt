@@ -13,8 +13,12 @@ df = gmd.fetch_blocks(limit=1000)
 # Compute block utilization (alpha feature #2)
 df['utilization'] = df['gas_used'] / df['gas_limit']
 
-# Date range query
-df = gmd.fetch_blocks(start='2024-01-01', end='2024-01-31')
+# Date range query (half-open interval [start, end))
+# Returns all blocks from Jan 1 00:00:00 to Jan 31 23:59:59
+df = gmd.fetch_blocks(start='2024-01-01', end='2024-02-01')
+
+# Same-day query (returns all blocks on March 13)
+df = gmd.fetch_blocks(start='2024-03-13', end='2024-03-13')
 ```
 
 ## Alpha Feature Rankings
@@ -253,12 +257,15 @@ df['fee_to_price'] = df['base_fee_gwei'] / df['close']
 
 ```python
 gmd.fetch_blocks(
-    start: str | None = None,     # ISO 8601 date
-    end: str | None = None,       # ISO 8601 date
+    start: str | None = None,     # ISO 8601 date (inclusive)
+    end: str | None = None,       # ISO 8601 date (exclusive, half-open interval)
     limit: int | None = None,     # Max blocks
     include_deprecated: bool = False  # Include difficulty fields
 ) -> pd.DataFrame
 ```
+
+**Boundary Semantics**: Half-open interval `[start, end)` following PostgreSQL, BigQuery, yfinance standards.
+Date-only strings expand to full day boundaries (e.g., `end='2024-03-13'` means `< 2024-03-14 00:00:00`).
 
 Returns pandas DataFrame with columns:
 

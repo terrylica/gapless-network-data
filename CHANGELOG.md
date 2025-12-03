@@ -1,23 +1,34 @@
-# [4.6.0](https://github.com/terrylica/gapless-network-data/compare/v4.5.1...v4.6.0) (2025-12-02)
-
-
-### Features
-
-* fix blob gas dtype and add dynamic version discovery ([b4fb6dc](https://github.com/terrylica/gapless-network-data/commit/b4fb6dcfe03f0ad92dd06f3861b331701365edc4))
-
-## [4.5.1](https://github.com/terrylica/gapless-network-data/compare/v4.5.0...v4.5.1) (2025-12-02)
-
+## [4.7.1](https://github.com/terrylica/gapless-network-data/compare/v4.7.0...v4.7.1) (2025-12-02)
 
 ### Bug Fixes
 
-* update get_setup_workflow return type annotation ([0e813fa](https://github.com/terrylica/gapless-network-data/commit/0e813faf235b117892ed1dc30d897864e4e5446f))
+- adopt half-open interval [start, end) for date range queries (industry standard) ([ADR](/docs/adr/2025-12-02-half-open-interval-timestamps.md))
+- handle empty column_names edge case when ClickHouse returns 0 rows
+- correct CLAUDE.md schema from DateTime to DateTime64(3)
 
-# [4.5.0](https://github.com/terrylica/gapless-network-data/compare/v4.4.0...v4.5.0) (2025-12-02)
-
+# [4.7.0](https://github.com/terrylica/gapless-network-data/compare/v4.6.0...v4.7.0) (2025-12-02)
 
 ### Features
 
-* add auto .env file loading for credential resolution ([1a031dd](https://github.com/terrylica/gapless-network-data/commit/1a031dd2ba14c50623bab7d97a271d42357803ab))
+- add comprehensive documentation updates for v4.6.0 SDK feedback ([ffbd996](https://github.com/terrylica/gapless-network-data/commit/ffbd996))
+
+# [4.6.0](https://github.com/terrylica/gapless-network-data/compare/v4.5.1...v4.6.0) (2025-12-02)
+
+### Features
+
+- fix blob gas dtype and add dynamic version discovery ([b4fb6dc](https://github.com/terrylica/gapless-network-data/commit/b4fb6dcfe03f0ad92dd06f3861b331701365edc4))
+
+## [4.5.1](https://github.com/terrylica/gapless-network-data/compare/v4.5.0...v4.5.1) (2025-12-02)
+
+### Bug Fixes
+
+- update get_setup_workflow return type annotation ([0e813fa](https://github.com/terrylica/gapless-network-data/commit/0e813faf235b117892ed1dc30d897864e4e5446f))
+
+# [4.5.0](https://github.com/terrylica/gapless-network-data/compare/v4.4.0...v4.5.0) (2025-12-02)
+
+### Features
+
+- add auto .env file loading for credential resolution ([1a031dd](https://github.com/terrylica/gapless-network-data/commit/1a031dd2ba14c50623bab7d97a271d42357803ab))
 
 # [4.4.0](https://github.com/terrylica/gapless-network-data/compare/v4.3.1...v4.4.0) (2025-12-02)
 

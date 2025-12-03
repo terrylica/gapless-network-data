@@ -43,6 +43,51 @@ MERGE_BLOCK = 15_537_394  # Sep 2022 - PoW→PoS, difficulty=0 forever
 EIP_4844_BLOCK = 19_426_587  # Mar 2024 - blob_gas introduced
 
 
+def _normalize_timestamp(ts_str: str, is_end: bool = False) -> str:
+    """
+    Normalize timestamp string for half-open interval queries.
+
+    Following industry standard [start, end):
+    - Date-only strings expand to day boundaries
+    - Explicit times are preserved with millisecond precision
+    - End timestamps: date-only → next day start (exclusive)
+
+    Args:
+        ts_str: Timestamp string (various formats)
+        is_end: If True, expand date-only to next day start
+
+    Returns:
+        Formatted timestamp string with millisecond precision
+
+    Examples:
+        >>> _normalize_timestamp('2024-03-13', is_end=False)
+        '2024-03-13 00:00:00.000'
+        >>> _normalize_timestamp('2024-03-13', is_end=True)
+        '2024-03-14 00:00:00.000'
+        >>> _normalize_timestamp('2024-03-13 12:30:45', is_end=True)
+        '2024-03-13 12:30:45.000'
+    """
+    ts = pd.to_datetime(ts_str)
+
+    # Detect date-only input (no time component specified)
+    # Check both the parsed result and the original string format
+    is_date_only = (
+        ts.hour == 0
+        and ts.minute == 0
+        and ts.second == 0
+        and ts.microsecond == 0
+        and "T" not in str(ts_str)
+        and ":" not in str(ts_str)
+    )
+
+    if is_date_only and is_end:
+        # Expand to next day start for exclusive end
+        ts = ts + pd.Timedelta(days=1)
+
+    # Format with milliseconds to match DateTime64(3) schema
+    return ts.strftime("%Y-%m-%d %H:%M:%S.%f")[:-3]
+
+
 def _get_clickhouse_credentials() -> tuple[str, str, str]:
     """
     Resolve ClickHouse credentials from multiple sources.
@@ -160,6 +205,14 @@ def fetch_blocks(
     """
     Fetch Ethereum block data optimized for alpha feature engineering.
 
+    Date Range Semantics (half-open interval [start, end)):
+        - start: Inclusive (blocks >= start)
+        - end: Exclusive (blocks < end)
+        - Date-only strings expand to full day boundaries
+        - Example: start='2024-03-13', end='2024-03-13' returns all blocks on March 13
+
+    This follows industry standards used by PostgreSQL, BigQuery, and yfinance.
+
     Alpha Feature Rankings (for AI agents):
         #1 base_fee_per_gas - Fee prediction (most valuable)
         #2 gas_used/gas_limit - Congestion leading indicator
@@ -172,8 +225,9 @@ def fetch_blocks(
         - total_difficulty: Frozen post-Merge
 
     Args:
-        start: Start date (ISO 8601 or 'YYYY-MM-DD'), defaults to all data
-        end: End date (ISO 8601 or 'YYYY-MM-DD'), defaults to latest
+        start: Start date (ISO 8601 or 'YYYY-MM-DD'), inclusive. Defaults to all data.
+        end: End date (ISO 8601 or 'YYYY-MM-DD'), exclusive. Defaults to latest.
+            Date-only values expand to include the full day.
         limit: Max blocks to return (default: None = all matching)
         include_deprecated: Include difficulty/total_difficulty (default: False)
 
@@ -201,11 +255,14 @@ def fetch_blocks(
         # Fetch last 1000 blocks (recommended for live trading)
         >>> df = fetch_blocks(limit=1000)
 
+        # Same-day query (returns all blocks on March 13)
+        >>> df = fetch_blocks(start='2024-03-13', end='2024-03-13')
+
+        # Date range query (March 1-31, exclusive of April 1)
+        >>> df = fetch_blocks(start='2024-03-01', end='2024-04-01')
+
         # Compute block utilization (#2 alpha feature)
         >>> df['utilization'] = df['gas_used'] / df['gas_limit']
-
-        # Date range query
-        >>> df = fetch_blocks(start='2024-01-01', end='2024-01-31')
     """
     client = _get_clickhouse_client()
 
@@ -226,12 +283,16 @@ def fetch_blocks(
 
     columns_str = ", ".join(columns)
 
-    # Build query with conditions
+    # Build query with half-open interval [start, end)
+    # Industry standard: PostgreSQL, BigQuery, yfinance
+    # ADR: 2025-12-02-half-open-interval-timestamps
     conditions = []
     if start:
-        conditions.append(f"timestamp >= '{start}'")
+        start_ts = _normalize_timestamp(start, is_end=False)
+        conditions.append(f"timestamp >= '{start_ts}'")
     if end:
-        conditions.append(f"timestamp <= '{end}'")
+        end_ts = _normalize_timestamp(end, is_end=True)
+        conditions.append(f"timestamp < '{end_ts}'")  # Exclusive end
 
     where_clause = f"WHERE {' AND '.join(conditions)}" if conditions else ""
     limit_clause = f"LIMIT {limit}" if limit else ""
@@ -246,6 +307,12 @@ def fetch_blocks(
 
     try:
         result = client.query(query)
+
+        # Handle clickhouse-connect returning empty column_names when 0 rows
+        # This prevents KeyError on sort_values("number")
+        if not result.column_names:
+            return pd.DataFrame(columns=columns)
+
         df = pd.DataFrame(result.result_rows, columns=result.column_names)
 
         # Convert timestamp to datetime
