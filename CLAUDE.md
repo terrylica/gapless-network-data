@@ -12,7 +12,7 @@ Gapless Network Data is a multi-chain blockchain network metrics collection tool
 - **Bitcoin**: Mempool snapshots via mempool.space (5-minute intervals, future work)
 - **Multi-chain**: Extensible to Solana, Avalanche, Polygon, etc.
 
-**Version**: v4.6.0 (production operational)
+**Version**: v4.8.0 (production operational)
 
 ## Data Scope
 
@@ -287,7 +287,7 @@ Get setup instructions: `gmd.probe.get_setup_workflow()`
 
 ## Current Architecture
 
-**Version**: v4.6.0 (production operational)
+**Version**: v4.8.0 (production operational)
 
 **Status**: Production operational - dual-pipeline collection with 23.87M blocks
 
@@ -337,16 +337,16 @@ Get setup instructions: `gmd.probe.get_setup_workflow()`
 ```sql
 CREATE TABLE ethereum_mainnet.blocks (
     timestamp DateTime64(3) NOT NULL,  -- Millisecond precision
-    number UInt64,
-    gas_limit UInt64,
-    gas_used UInt64,
-    base_fee_per_gas UInt64,
-    transaction_count UInt64,
+    number Int64,
+    gas_limit Int64,
+    gas_used Int64,
+    base_fee_per_gas Int64,
+    transaction_count Int64,
     difficulty UInt256,
     total_difficulty UInt256,
-    size UInt64,
-    blob_gas_used Nullable(UInt64),
-    excess_blob_gas Nullable(UInt64)
+    size Int64,
+    blob_gas_used Nullable(Int64),
+    excess_blob_gas Nullable(Int64)
 ) ENGINE = ReplacingMergeTree()
 ORDER BY number
 PARTITION BY toYYYYMM(timestamp)

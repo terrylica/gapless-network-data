@@ -1,3 +1,10 @@
+# [4.8.0](https://github.com/terrylica/gapless-network-data/compare/v4.7.1...v4.8.0) (2025-12-03)
+
+
+### Features
+
+* add Earthly E2E validation for schema-first data contracts ([4205061](https://github.com/terrylica/gapless-network-data/commit/420506141f2ea3ccd1ab6e5b90fcf9ae47e815ad))
+
 ## [4.7.1](https://github.com/terrylica/gapless-network-data/compare/v4.7.0...v4.7.1) (2025-12-02)
 
 ### Bug Fixes
