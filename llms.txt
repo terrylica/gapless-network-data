@@ -270,9 +270,9 @@ Date-only strings expand to full day boundaries (e.g., `end='2024-03-13'` means 
 Returns pandas DataFrame with columns:
 
 - timestamp (datetime64[ns, UTC])
-- number (uint64)
-- gas_limit, gas_used, base_fee_per_gas, transaction_count, size (uint64)
-- blob_gas_used, excess_blob_gas (uint64, nullable)
+- number (int64)
+- gas_limit, gas_used, base_fee_per_gas, transaction_count, size (int64)
+- blob_gas_used, excess_blob_gas (Int64, nullable)
 
 ### probe module
 

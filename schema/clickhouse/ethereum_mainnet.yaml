@@ -1,0 +1,189 @@
+# JSON Schema (Draft 2020-12) as YAML
+# This is the SINGLE SOURCE OF TRUTH for ethereum_mainnet.blocks
+# All Python types, DDL, and documentation are generated from this file.
+#
+# Usage:
+#   uv run gapless-network-data schema generate-types  # Generate Python types
+#   uv run gapless-network-data schema generate-ddl    # Generate ClickHouse DDL
+#   uv run gapless-network-data schema validate        # Validate against live DB
+#   uv run gapless-network-data schema doc             # Generate documentation
+
+$schema: "https://json-schema.org/draft/2020-12/schema"
+$id: "https://gapless-network-data/schema/ethereum_mainnet/blocks"
+
+title: "Ethereum Mainnet Blocks"
+description: |
+  Block-level data for ML feature engineering.
+  Contains gas metrics, transaction counts, and EIP-4844 blob data.
+  Used by Alpha Features API for financial time series forecasting.
+
+# ClickHouse-specific metadata (custom extension)
+x-clickhouse:
+  database: ethereum_mainnet
+  table: blocks
+  engine: ReplacingMergeTree()
+  order_by: [number]
+  partition_by: "toYYYYMM(timestamp)"
+  settings:
+    index_granularity: 8192
+
+type: object
+
+required:
+  - timestamp
+  - number
+  - gas_limit
+  - gas_used
+  - base_fee_per_gas
+  - transaction_count
+  - difficulty
+  - total_difficulty
+  - size
+
+properties:
+  timestamp:
+    type: string
+    format: date-time
+    description: "Block timestamp with millisecond precision"
+    x-clickhouse:
+      type: "DateTime64(3)"
+      not_null: true
+    x-pandas:
+      dtype: "datetime64[ns, UTC]"
+    x-alpha-feature:
+      rank: 4
+      importance: high
+
+  number:
+    type: integer
+    minimum: 0
+    description: "Block number - used as deduplication key"
+    x-clickhouse:
+      type: "Int64"
+      not_null: true
+    x-pandas:
+      dtype: "int64"
+    x-alpha-feature:
+      rank: 5
+      importance: high
+
+  gas_limit:
+    type: integer
+    minimum: 0
+    description: "Maximum gas allowed in block"
+    x-clickhouse:
+      type: "Int64"
+      not_null: true
+    x-pandas:
+      dtype: "int64"
+    x-alpha-feature:
+      rank: 9
+      importance: low
+
+  gas_used:
+    type: integer
+    minimum: 0
+    description: "Total gas consumed by transactions"
+    x-clickhouse:
+      type: "Int64"
+      not_null: true
+    x-pandas:
+      dtype: "int64"
+    x-alpha-feature:
+      rank: 10
+      importance: low
+
+  base_fee_per_gas:
+    type: integer
+    minimum: 0
+    description: "EIP-1559 base fee per gas unit (wei)"
+    x-clickhouse:
+      type: "Int64"
+      not_null: true
+    x-pandas:
+      dtype: "int64"
+    x-alpha-feature:
+      rank: 1
+      importance: critical
+
+  transaction_count:
+    type: integer
+    minimum: 0
+    description: "Number of transactions in block"
+    x-clickhouse:
+      type: "Int64"
+      not_null: true
+    x-pandas:
+      dtype: "int64"
+    x-alpha-feature:
+      rank: 3
+      importance: high
+
+  difficulty:
+    type: integer
+    minimum: 0
+    description: "Mining difficulty (0 post-Merge, Sep 2022)"
+    x-clickhouse:
+      type: "UInt256"
+      not_null: true
+    x-pandas:
+      dtype: "object"  # Python int for arbitrary precision
+    x-deprecated:
+      since: "2022-09-15"
+      reason: "Always 0 after The Merge"
+
+  total_difficulty:
+    type: integer
+    minimum: 0
+    description: "Cumulative difficulty (frozen post-Merge)"
+    x-clickhouse:
+      type: "UInt256"
+      not_null: true
+    x-pandas:
+      dtype: "object"
+    x-deprecated:
+      since: "2022-09-15"
+      reason: "Frozen after The Merge"
+
+  size:
+    type: integer
+    minimum: 0
+    description: "Block size in bytes"
+    x-clickhouse:
+      type: "Int64"
+      not_null: true
+    x-pandas:
+      dtype: "int64"
+    x-alpha-feature:
+      rank: 6
+      importance: medium
+
+  blob_gas_used:
+    type: ["integer", "null"]
+    minimum: 0
+    description: "EIP-4844 blob gas used (null pre-Dencun, Mar 2024)"
+    x-clickhouse:
+      type: "Nullable(Int64)"
+    x-pandas:
+      dtype: "Int64"  # pandas nullable integer
+    x-alpha-feature:
+      rank: 7
+      importance: medium
+    x-available-since:
+      block: 19426587
+      date: "2024-03-13"
+
+  excess_blob_gas:
+    type: ["integer", "null"]
+    minimum: 0
+    description: "EIP-4844 excess blob gas (null pre-Dencun)"
+    x-clickhouse:
+      type: "Nullable(Int64)"
+    x-pandas:
+      dtype: "Int64"
+    x-alpha-feature:
+      rank: 8
+      importance: low
+    x-available-since:
+      block: 19426587
+      date: "2024-03-13"

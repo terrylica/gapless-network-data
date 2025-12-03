@@ -3,7 +3,6 @@ Command-line interface for gapless-network-data.
 """
 
 import sys
-from datetime import datetime
 
 # Minimum argv length: sys.argv[0] (program name) + sys.argv[1] (command)
 MIN_ARGV_LENGTH = 2
@@ -16,6 +15,7 @@ def main() -> None:
     Commands:
         collect: Collect mempool data for a time range
         stream: Stream live mempool data
+        schema: Schema management commands
         version: Show version information
     """
     if len(sys.argv) < MIN_ARGV_LENGTH:
@@ -24,6 +24,7 @@ def main() -> None:
         print("Commands:")
         print("  collect  Collect mempool data for a time range")
         print("  stream   Stream live mempool data")
+        print("  schema   Schema management (generate-types, generate-ddl, validate, apply, doc)")
         print("  version  Show version information")
         sys.exit(1)
 
@@ -33,6 +34,11 @@ def main() -> None:
         from gapless_network_data import __version__
 
         print(f"gapless-network-data v{__version__}")
+    elif command == "schema":
+        from gapless_network_data.cli.schema import schema_command
+
+        exit_code = schema_command(sys.argv[2:])
+        sys.exit(exit_code)
     elif command == "collect":
         print("collect command: Implementation pending")
         print("Use Python API for now:")
