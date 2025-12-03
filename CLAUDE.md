@@ -200,8 +200,12 @@ df = gmd.fetch_blocks(limit=1000)
 # Compute block utilization (alpha feature #2)
 df['utilization'] = df['gas_used'] / df['gas_limit']
 
-# Date range query
-df = gmd.fetch_blocks(start='2024-01-01', end='2024-01-31')
+# Date range query (half-open interval [start, end))
+# Returns all blocks from Jan 1 00:00:00 to Jan 31 23:59:59
+df = gmd.fetch_blocks(start='2024-01-01', end='2024-02-01')
+
+# Same-day query (returns all blocks on March 13)
+df = gmd.fetch_blocks(start='2024-03-13', end='2024-03-13')
 
 # Include deprecated fields (pre-Merge analysis only)
 df = gmd.fetch_blocks(include_deprecated=True)
@@ -332,7 +336,7 @@ Get setup instructions: `gmd.probe.get_setup_workflow()`
 
 ```sql
 CREATE TABLE ethereum_mainnet.blocks (
-    timestamp DateTime,
+    timestamp DateTime64(3) NOT NULL,  -- Millisecond precision
     number UInt64,
     gas_limit UInt64,
     gas_used UInt64,
