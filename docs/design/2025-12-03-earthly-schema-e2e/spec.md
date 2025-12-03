@@ -1,5 +1,6 @@
 ---
 version: "1.0.0"
+status: completed
 last_updated: "2025-12-03"
 supersedes: []
 ---
