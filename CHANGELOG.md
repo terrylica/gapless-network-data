@@ -1,3 +1,10 @@
+# [4.9.0](https://github.com/terrylica/gapless-network-data/compare/v4.8.0...v4.9.0) (2025-12-03)
+
+
+### Features
+
+* **schema:** implement schema-first data contracts ([ea13e17](https://github.com/terrylica/gapless-network-data/commit/ea13e17b59e936da3e9802e0118d218df1ef18da))
+
 # [4.8.0](https://github.com/terrylica/gapless-network-data/compare/v4.7.1...v4.8.0) (2025-12-03)
 
 
