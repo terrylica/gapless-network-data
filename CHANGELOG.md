@@ -1,3 +1,10 @@
+## [4.9.1](https://github.com/terrylica/gapless-network-data/compare/v4.9.0...v4.9.1) (2025-12-03)
+
+
+### Bug Fixes
+
+* **docs:** clarify interval semantics and blob gas dtype ([d190158](https://github.com/terrylica/gapless-network-data/commit/d1901581c1f0f847fb218fef7fdd866e324e9606))
+
 # [4.9.0](https://github.com/terrylica/gapless-network-data/compare/v4.8.0...v4.9.0) (2025-12-03)
 
 
