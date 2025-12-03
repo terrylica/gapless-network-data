@@ -45,16 +45,19 @@ EIP_4844_BLOCK = 19_426_587  # Mar 2024 - blob_gas introduced
 
 def _normalize_timestamp(ts_str: str, is_end: bool = False) -> str:
     """
-    Normalize timestamp string for half-open interval queries.
+    Normalize timestamp string for inclusive date range queries.
 
-    Following industry standard [start, end):
-    - Date-only strings expand to day boundaries
+    Expands date-only strings to include the full day:
+    - Start dates: midnight of that day
+    - End dates: midnight of the NEXT day (for exclusive < comparison)
     - Explicit times are preserved with millisecond precision
-    - End timestamps: date-only → next day start (exclusive)
+
+    This enables inclusive [start, end] semantics for date-only inputs
+    while using efficient < comparison internally.
 
     Args:
         ts_str: Timestamp string (various formats)
-        is_end: If True, expand date-only to next day start
+        is_end: If True, expand date-only to next day start for < comparison
 
     Returns:
         Formatted timestamp string with millisecond precision
@@ -63,9 +66,9 @@ def _normalize_timestamp(ts_str: str, is_end: bool = False) -> str:
         >>> _normalize_timestamp('2024-03-13', is_end=False)
         '2024-03-13 00:00:00.000'
         >>> _normalize_timestamp('2024-03-13', is_end=True)
-        '2024-03-14 00:00:00.000'
+        '2024-03-14 00:00:00.000'  # For < comparison, includes all of Mar 13
         >>> _normalize_timestamp('2024-03-13 12:30:45', is_end=True)
-        '2024-03-13 12:30:45.000'
+        '2024-03-13 12:30:45.000'  # Explicit time preserved
     """
     ts = pd.to_datetime(ts_str)
 
@@ -205,13 +208,15 @@ def fetch_blocks(
     """
     Fetch Ethereum block data optimized for alpha feature engineering.
 
-    Date Range Semantics (half-open interval [start, end)):
-        - start: Inclusive (blocks >= start)
-        - end: Exclusive (blocks < end)
-        - Date-only strings expand to full day boundaries
+    Date Range Semantics (inclusive [start, end]):
+        - start: Inclusive (blocks on or after start date)
+        - end: Inclusive (blocks on or before end date)
+        - Date-only strings include the entire day
         - Example: start='2024-03-13', end='2024-03-13' returns all blocks on March 13
+        - Example: start='2024-01-01', end='2024-01-31' returns all January blocks
 
-    This follows industry standards used by PostgreSQL, BigQuery, and yfinance.
+    Implementation: Date-only end values expand to include the full day
+    (e.g., end='2024-03-13' internally becomes < '2024-03-14 00:00:00').
 
     Alpha Feature Rankings (for AI agents):
         #1 base_fee_per_gas - Fee prediction (most valuable)
@@ -226,8 +231,8 @@ def fetch_blocks(
 
     Args:
         start: Start date (ISO 8601 or 'YYYY-MM-DD'), inclusive. Defaults to all data.
-        end: End date (ISO 8601 or 'YYYY-MM-DD'), exclusive. Defaults to latest.
-            Date-only values expand to include the full day.
+        end: End date (ISO 8601 or 'YYYY-MM-DD'), inclusive. Defaults to latest.
+            Date-only values include the full end day.
         limit: Max blocks to return (default: None = all matching)
         include_deprecated: Include difficulty/total_difficulty (default: False)
 
@@ -244,6 +249,11 @@ def fetch_blocks(
         - excess_blob_gas (Int64, nullable) - Post-EIP4844 (pd.NA for pre-Dencun)
         - [difficulty, total_difficulty if include_deprecated=True]
 
+    Nullable Int64 Handling:
+        blob_gas_used and excess_blob_gas use pandas nullable Int64 dtype.
+        Pre-Dencun blocks (before block 19,426,587) have <NA> values (not NaN).
+        To convert to standard int64: df['blob_gas_used'].fillna(0).astype('int64')
+
     Note:
         For alpha feature rankings, call probe.get_alpha_features() first.
 
@@ -258,11 +268,14 @@ def fetch_blocks(
         # Same-day query (returns all blocks on March 13)
         >>> df = fetch_blocks(start='2024-03-13', end='2024-03-13')
 
-        # Date range query (March 1-31, exclusive of April 1)
-        >>> df = fetch_blocks(start='2024-03-01', end='2024-04-01')
+        # Date range query (all January blocks, inclusive)
+        >>> df = fetch_blocks(start='2024-01-01', end='2024-01-31')
 
         # Compute block utilization (#2 alpha feature)
         >>> df['utilization'] = df['gas_used'] / df['gas_limit']
+
+        # Handle nullable blob gas (convert <NA> to 0)
+        >>> df['blob_gas'] = df['blob_gas_used'].fillna(0).astype('int64')
     """
     client = _get_clickhouse_client()
 

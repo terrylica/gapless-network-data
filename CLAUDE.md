@@ -200,9 +200,9 @@ df = gmd.fetch_blocks(limit=1000)
 # Compute block utilization (alpha feature #2)
 df['utilization'] = df['gas_used'] / df['gas_limit']
 
-# Date range query (half-open interval [start, end))
-# Returns all blocks from Jan 1 00:00:00 to Jan 31 23:59:59
-df = gmd.fetch_blocks(start='2024-01-01', end='2024-02-01')
+# Date range query (inclusive [start, end])
+# Returns all blocks from Jan 1 through Jan 31 (both dates included)
+df = gmd.fetch_blocks(start='2024-01-01', end='2024-01-31')
 
 # Same-day query (returns all blocks on March 13)
 df = gmd.fetch_blocks(start='2024-03-13', end='2024-03-13')
