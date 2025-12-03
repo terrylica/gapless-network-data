@@ -114,7 +114,7 @@ With **date expansion** for date-only inputs:
 
 ### Primary (Bug Fix + Standard Alignment)
 
-1. **`src/gapless_network_data/api.py`** (lines 229-262)
+1. **`src/gapless_network_data/api.py`** (lines 286-318)
 
 ### Secondary (Documentation)
 
@@ -163,7 +163,7 @@ def _normalize_timestamp(ts_str: str, is_end: bool = False) -> str:
     return ts.strftime('%Y-%m-%d %H:%M:%S.%f')[:-3]  # Milliseconds (DateTime64(3))
 ```
 
-### Step 2: Update query building (api.py lines 229-235)
+### Step 2: Update query building (api.py lines 286-295)
 
 ```python
 # Build query with half-open interval [start, end)
@@ -178,7 +178,7 @@ if end:
     conditions.append(f"timestamp < '{end_ts}'")  # Exclusive end
 ```
 
-### Step 3: Handle empty column_names (api.py lines 247-250)
+### Step 3: Handle empty column_names (api.py lines 311-314)
 
 ```python
 try:
