@@ -27,41 +27,46 @@ The primary friction is the blob gas dtype issue, which violates the API contrac
 ### Before/After
 
 ```
-     ⏮️ Before / ⏭️ After: Blob Gas Column Dtypes
+ ⏮️ Before / ⏭️ After: Blob Gas Column Dtypes
 
-┌−−−−−−−−−−−−−−−−−−−−−┐        ┌−−−−−−−−−−−−−−−−−−−−−−┐
-╎ Before v4.5.1:      ╎        ╎ After v4.6.0:        ╎
-╎                     ╎        ╎                      ╎
-╎ ┌─────────────────┐ ╎        ╎ ┌──────────────────┐ ╎
-╎ │  blob_gas_used  │ ╎  fix   ╎ │  blob_gas_used   │ ╎
-╎ │  object dtype   │ ╎ ─────> ╎ │ Int64 (nullable) │ ╎
-╎ └─────────────────┘ ╎        ╎ └──────────────────┘ ╎
-╎ ┌─────────────────┐ ╎        ╎ ┌──────────────────┐ ╎
-╎ │ excess_blob_gas │ ╎  fix   ╎ │ excess_blob_gas  │ ╎
-╎ │  object dtype   │ ╎ ─────> ╎ │ Int64 (nullable) │ ╎
-╎ └─────────────────┘ ╎        ╎ └──────────────────┘ ╎
-╎                     ╎        ╎                      ╎
-└−−−−−−−−−−−−−−−−−−−−−┘        └−−−−−−−−−−−−−−−−−−−−−−┘
+             ┌──────────────────┐
+             │  blob_gas_used   │
+             │   object dtype   │
+             └──────────────────┘
+               │
+               │ fix
+               ∨
+             ┌──────────────────┐
+             │  blob_gas_used   │
+             │ Int64 (nullable) │
+             └──────────────────┘
+             ┌──────────────────┐
+             │ excess_blob_gas  │
+             │   object dtype   │
+             └──────────────────┘
+               │
+               │ fix
+               ∨
+             ┌──────────────────┐
+             │ excess_blob_gas  │
+             │ Int64 (nullable) │
+             └──────────────────┘
 ```
 
 <details>
 <summary>graph-easy source</summary>
 
 ```
-graph { label: "⏮️ Before / ⏭️ After: Blob Gas Column Dtypes"; flow: east; }
+graph { label: "⏮️ Before / ⏭️ After: Blob Gas Column Dtypes"; flow: south; }
 
-( Before v4.5.1:
-  [blob_gas_used] { label: "blob_gas_used\nobject dtype"; }
-  [excess_blob_gas] { label: "excess_blob_gas\nobject dtype"; }
-)
+[before_blob] { label: "blob_gas_used\nobject dtype"; }
+[before_excess] { label: "excess_blob_gas\nobject dtype"; }
 
-( After v4.6.0:
-  [blob_gas_used_new] { label: "blob_gas_used\nInt64 (nullable)"; }
-  [excess_blob_gas_new] { label: "excess_blob_gas\nInt64 (nullable)"; }
-)
+[after_blob] { label: "blob_gas_used\nInt64 (nullable)"; }
+[after_excess] { label: "excess_blob_gas\nInt64 (nullable)"; }
 
-[blob_gas_used] -- fix --> [blob_gas_used_new]
-[excess_blob_gas] -- fix --> [excess_blob_gas_new]
+[before_blob] -- fix --> [after_blob]
+[before_excess] -- fix --> [after_excess]
 ```
 
 </details>
