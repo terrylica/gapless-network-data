@@ -1,7 +1,7 @@
 ---
 adr: 2025-12-03-adr-graph-easy-standardization
 source: ~/.claude/plans/tranquil-questing-quiche.md
-implementation-status: in_progress
+implementation-status: completed
 phase: phase-1
 last-updated: 2025-12-03
 ---
