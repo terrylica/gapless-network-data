@@ -1,8 +1,8 @@
 ---
 adr: 2025-12-03-fetch-blocks-input-validation
 source: ~/.claude/plans/tranquil-questing-quiche.md
-implementation-status: in_progress
-phase: phase-1
+implementation-status: completed
+phase: released
 last-updated: 2025-12-03
 ---
 
