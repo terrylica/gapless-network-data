@@ -91,6 +91,59 @@ def _normalize_timestamp(ts_str: str, is_end: bool = False) -> str:
     return ts.strftime("%Y-%m-%d %H:%M:%S.%f")[:-3]
 
 
+def _validate_fetch_blocks_params(
+    start: str | None,
+    end: str | None,
+    limit: int | None,
+) -> None:
+    """
+    Validate fetch_blocks() parameters at function entry.
+
+    Fail-fast validation prevents expensive database operations on invalid inputs.
+
+    ADR: 2025-12-03-fetch-blocks-input-validation
+
+    Args:
+        start: Start date parameter
+        end: End date parameter
+        limit: Limit parameter
+
+    Raises:
+        ValueError: If parameters are invalid
+    """
+    # 1. Empty string detection (must check before truthiness tests)
+    if start == "":
+        raise ValueError(
+            "start date cannot be empty string. "
+            "Use None to omit, or provide a valid date like '2024-01-01'."
+        )
+    if end == "":
+        raise ValueError(
+            "end date cannot be empty string. "
+            "Use None to omit, or provide a valid date like '2024-01-31'."
+        )
+
+    # 2. At least one constraint required
+    if start is None and end is None and limit is None:
+        raise ValueError(
+            "Must specify at least one of: start, end, or limit. "
+            "Examples:\n"
+            "  fetch_blocks(limit=1000)           # Latest 1000 blocks\n"
+            "  fetch_blocks(start='2024-01-01')   # All blocks from Jan 1\n"
+            "  fetch_blocks(start='2024-01-01', end='2024-01-31')  # Date range"
+        )
+
+    # 3. Date ordering validation (only if both dates provided)
+    if start is not None and end is not None:
+        start_ts = pd.to_datetime(start)
+        end_ts = pd.to_datetime(end)
+        if start_ts > end_ts:
+            raise ValueError(
+                f"start date ({start}) must be <= end date ({end}). "
+                "Swap the dates or adjust your query range."
+            )
+
+
 def _get_clickhouse_credentials() -> tuple[str, str, str]:
     """
     Resolve ClickHouse credentials from multiple sources.
@@ -255,9 +308,15 @@ def fetch_blocks(
         To convert to standard int64: df['blob_gas_used'].fillna(0).astype('int64')
 
     Note:
-        For alpha feature rankings, call probe.get_alpha_features() first.
+        - limit=0 explicitly returns 0 rows (empty DataFrame)
+        - limit=None (default) returns all matching rows
+        - For alpha feature rankings, call probe.get_alpha_features() first.
 
     Raises:
+        ValueError: If parameters are invalid:
+            - start or end is empty string (use None to omit)
+            - No parameters specified (must have at least one of: start, end, limit)
+            - start > end (invalid date range)
         CredentialException: If ClickHouse credentials not found
         DatabaseException: If query fails
 
@@ -277,6 +336,10 @@ def fetch_blocks(
         # Handle nullable blob gas (convert <NA> to 0)
         >>> df['blob_gas'] = df['blob_gas_used'].fillna(0).astype('int64')
     """
+    # ADR: 2025-12-03-fetch-blocks-input-validation
+    # Validate parameters (fail-fast before database operations)
+    _validate_fetch_blocks_params(start, end, limit)
+
     client = _get_clickhouse_client()
 
     # Build column list
@@ -308,7 +371,10 @@ def fetch_blocks(
         conditions.append(f"timestamp < '{end_ts}'")  # Exclusive end
 
     where_clause = f"WHERE {' AND '.join(conditions)}" if conditions else ""
-    limit_clause = f"LIMIT {limit}" if limit else ""
+    # ADR: 2025-12-03-fetch-blocks-input-validation
+    # limit=0 means "return 0 rows" (explicit LIMIT 0)
+    # limit=None means "no limit" (return all matching rows)
+    limit_clause = f"LIMIT {limit}" if limit is not None else ""
 
     query = f"""
         SELECT {columns_str}

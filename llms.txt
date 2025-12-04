@@ -264,13 +264,20 @@ df['fee_to_price'] = df['base_fee_gwei'] / df['close']
 gmd.fetch_blocks(
     start: str | None = None,     # ISO 8601 date (inclusive)
     end: str | None = None,       # ISO 8601 date (inclusive for date-only)
-    limit: int | None = None,     # Max blocks
+    limit: int | None = None,     # Max blocks (0 = empty DataFrame)
     include_deprecated: bool = False  # Include difficulty fields
 ) -> pd.DataFrame
 ```
 
 **Boundary Semantics**: Inclusive interval `[start, end]` for date-only inputs.
 Date-only strings include the full end day (e.g., `end='2024-03-13'` includes all blocks on March 13).
+
+**Validation**: Raises `ValueError` if:
+- No constraints specified (must have at least one of: start, end, or limit)
+- Empty string dates (`start=""` or `end=""`)
+- Reversed date range (`start > end`)
+
+**Note**: `limit=0` returns an empty DataFrame (0 rows). `limit=None` returns all matching rows.
 
 Returns pandas DataFrame with columns:
 
