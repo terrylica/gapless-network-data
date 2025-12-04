@@ -5,7 +5,7 @@ import re
 import pytest
 
 import gapless_network_data as gmd
-from gapless_network_data.api import _normalize_timestamp
+from gapless_network_data.api import _normalize_timestamp, _validate_fetch_blocks_params
 
 
 def test_version_export():
@@ -108,3 +108,67 @@ class TestFetchBlocksExport:
         """Verify fetch_blocks is exported and callable."""
         assert hasattr(gmd, "fetch_blocks"), "fetch_blocks not exported"
         assert callable(gmd.fetch_blocks), "fetch_blocks not callable"
+
+
+# =============================================================================
+# Input Validation Tests (ADR: 2025-12-03-fetch-blocks-input-validation)
+# =============================================================================
+
+
+class TestFetchBlocksValidation:
+    """Test fetch_blocks() input validation for OOM prevention."""
+
+    def test_empty_string_start_raises_valueerror(self):
+        """Empty string start should raise ValueError, not be silently ignored."""
+        with pytest.raises(ValueError, match="start date cannot be empty string"):
+            _validate_fetch_blocks_params(start="", end=None, limit=None)
+
+    def test_empty_string_end_raises_valueerror(self):
+        """Empty string end should raise ValueError, not be silently ignored."""
+        with pytest.raises(ValueError, match="end date cannot be empty string"):
+            _validate_fetch_blocks_params(start=None, end="", limit=None)
+
+    def test_no_params_raises_valueerror(self):
+        """No parameters should raise ValueError, not return entire blockchain."""
+        with pytest.raises(ValueError, match="Must specify at least one of"):
+            _validate_fetch_blocks_params(start=None, end=None, limit=None)
+
+    def test_reversed_dates_raises_valueerror(self):
+        """Reversed date range should raise ValueError, not return empty result."""
+        with pytest.raises(ValueError, match="must be <="):
+            _validate_fetch_blocks_params(start="2024-03-10", end="2024-03-01", limit=None)
+
+    def test_same_day_ok(self):
+        """Same-day query should work (start == end)."""
+        # Should NOT raise ValueError
+        _validate_fetch_blocks_params(start="2024-03-13", end="2024-03-13", limit=None)
+
+    def test_limit_zero_ok(self):
+        """limit=0 should be allowed (returns 0 rows, not entire blockchain)."""
+        # Should NOT raise ValueError - limit=0 is valid
+        _validate_fetch_blocks_params(start=None, end=None, limit=0)
+
+    def test_limit_only_ok(self):
+        """limit-only query should work."""
+        # Should NOT raise ValueError
+        _validate_fetch_blocks_params(start=None, end=None, limit=1000)
+
+    def test_start_only_ok(self):
+        """start-only query should work (all blocks from start date)."""
+        # Should NOT raise ValueError
+        _validate_fetch_blocks_params(start="2024-01-01", end=None, limit=None)
+
+    def test_end_only_ok(self):
+        """end-only query should work (all blocks until end date)."""
+        # Should NOT raise ValueError
+        _validate_fetch_blocks_params(start=None, end="2024-01-31", limit=None)
+
+    def test_valid_date_range_ok(self):
+        """Valid date range should not raise ValueError."""
+        # Should NOT raise ValueError
+        _validate_fetch_blocks_params(start="2024-01-01", end="2024-01-31", limit=None)
+
+    def test_all_params_ok(self):
+        """All parameters specified should work."""
+        # Should NOT raise ValueError
+        _validate_fetch_blocks_params(start="2024-01-01", end="2024-01-31", limit=1000)
