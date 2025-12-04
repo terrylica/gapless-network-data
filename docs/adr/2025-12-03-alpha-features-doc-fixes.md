@@ -23,19 +23,45 @@ These documentation issues cause user confusion when querying date ranges and ha
 
 ### Before/After
 
-<!-- graph-easy source:
-[ Docs: half-open ] - mismatch -> [ Code: inclusive ]
-[ Docs: no dtype ] - missing -> [ Code: Int64 <NA> ]
--->
+```
+⏮️ Before / ⏭️ After: Documentation Mismatch
+
+             ┌──────────────────┐
+             │  Docs: no dtype  │
+             └──────────────────┘
+               │
+               │ missing
+               ∨
+             ┌──────────────────┐
+             │ Code: Int64 <NA> │
+             └──────────────────┘
+             ┌──────────────────┐
+             │ Docs: half-open  │
+             └──────────────────┘
+               │
+               │ mismatch
+               ∨
+             ┌──────────────────┐
+             │ Code: inclusive  │
+             └──────────────────┘
+```
+
+<details>
+<summary>graph-easy source</summary>
 
 ```
-+------------------+  mismatch   +------------------+
-|  Docs: half-open | ---------> |  Code: inclusive |
-+------------------+            +------------------+
-+------------------+  missing   +-------------------+
-|  Docs: no dtype  | ---------> |  Code: Int64 <NA> |
-+------------------+            +-------------------+
+graph { label: "⏮️ Before / ⏭️ After: Documentation Mismatch"; flow: south; }
+
+[docs_interval] { label: "Docs: half-open"; }
+[code_interval] { label: "Code: inclusive"; }
+[docs_interval] -- mismatch --> [code_interval]
+
+[docs_dtype] { label: "Docs: no dtype"; }
+[code_dtype] { label: "Code: Int64 <NA>"; }
+[docs_dtype] -- missing --> [code_dtype]
 ```
+
+</details>
 
 **After fix**: Documentation accurately reflects implementation behavior.
 
@@ -97,23 +123,58 @@ Chosen option: **Option B** (fix documentation), because:
 
 ## Architecture
 
-<!-- graph-easy source:
-[ api.py ] - docstring -> [ fetch_blocks() ]
-[ llms.txt ] - AI docs -> [ Claude Code ]
-[ CLAUDE.md ] - project docs -> [ Developers ]
--->
+```
+📚 Documentation Sources
+
+    ┌────────────────┐
+    │     api.py     │
+    └────────────────┘
+      │
+      │ docstring
+      ∨
+    ┌────────────────┐
+    │ fetch_blocks() │
+    └────────────────┘
+    ┌────────────────┐
+    │   CLAUDE.md    │
+    └────────────────┘
+      │
+      │ project docs
+      ∨
+    ┌────────────────┐
+    │   Developers   │
+    └────────────────┘
+    ┌────────────────┐
+    │    llms.txt    │
+    └────────────────┘
+      │
+      │ AI docs
+      ∨
+    ┌────────────────┐
+    │  Claude Code   │
+    └────────────────┘
+```
+
+<details>
+<summary>graph-easy source</summary>
 
 ```
-+---------+  docstring   +----------------+
-| api.py  | ----------> | fetch_blocks() |
-+---------+             +----------------+
-+----------+  AI docs    +-------------+
-| llms.txt | ----------> | Claude Code |
-+----------+             +-------------+
-+-----------+  project docs   +------------+
-| CLAUDE.md | -------------> | Developers |
-+-----------+                +------------+
+graph { label: "📚 Documentation Sources"; flow: south; }
+
+[api] { label: "api.py"; }
+[llms] { label: "llms.txt"; }
+[claude] { label: "CLAUDE.md"; }
+
+[fetch] { label: "fetch_blocks()"; }
+[claude_code] { label: "Claude Code"; }
+[developers] { label: "Developers"; }
+
+[api] -- docstring --> [fetch]
+[llms] -- AI docs --> [claude_code]
+[claude] -- project docs --> [developers]
 ```
+
+</details>
 
 ## References
 
