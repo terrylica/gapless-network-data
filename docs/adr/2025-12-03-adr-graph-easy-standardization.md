@@ -16,11 +16,11 @@ perspectives: [Documentation, Consistency]
 
 ADR files in this repository have inconsistent diagram formats:
 
-| File                        | Current State                | Issue                                   |
-| --------------------------- | ---------------------------- | --------------------------------------- | ------------------------------------------ |
-| sdk-user-feedback-v451.md   | Incomplete graph-easy source | Source block doesn't match ASCII output |
-| alpha-features-doc-fixes.md | Simple ASCII (`+`/`-`/`      | `)                                      | Uses HTML comments, not `<details>` blocks |
-| 7 other ADRs                | Proper graph-easy            | Already standardized                    |
+| File                        | Current State                | Issue                                      |
+| --------------------------- | ---------------------------- | ------------------------------------------ |
+| sdk-user-feedback-v451.md   | Incomplete graph-easy source | Source block doesn't match ASCII output    |
+| alpha-features-doc-fixes.md | Simple ASCII (`+`/`-`/`\|`)  | Uses HTML comments, not `<details>` blocks |
+| 7 other ADRs                | Proper graph-easy            | Already standardized                       |
 
 This inconsistency makes diagrams harder to maintain and regenerate.
 
