@@ -1,3 +1,22 @@
+# [5.0.0](https://github.com/terrylica/gapless-network-data/compare/v4.9.1...v5.0.0) (2025-12-04)
+
+
+### Bug Fixes
+
+* **api:** add input validation to fetch_blocks() to prevent OOM crashes ([25807c9](https://github.com/terrylica/gapless-network-data/commit/25807c9735d73f49a8a80fd3b069943b99d44162))
+
+
+### BREAKING CHANGES
+
+* **api:** fetch_blocks() now raises ValueError for:
+- No constraints specified (must have start, end, or limit)
+- Empty string dates (start="" or end="")
+- Reversed date ranges (start > end)
+
+Also fixes limit=0 to return 0 rows instead of entire blockchain.
+
+ADR: 2025-12-03-fetch-blocks-input-validation
+
 ## [4.9.1](https://github.com/terrylica/gapless-network-data/compare/v4.9.0...v4.9.1) (2025-12-03)
 
 
