@@ -1,3 +1,10 @@
+## [5.0.1](https://github.com/terrylica/gapless-network-data/compare/v5.0.0...v5.0.1) (2025-12-05)
+
+
+### Bug Fixes
+
+* **docs:** align README, llms.txt, and probe.py for AI agent discoverability ([a94023d](https://github.com/terrylica/gapless-network-data/commit/a94023d63203907a8d139cbf7ccbdb9ade6c7295))
+
 # [5.0.0](https://github.com/terrylica/gapless-network-data/compare/v4.9.1...v5.0.0) (2025-12-04)
 
 
