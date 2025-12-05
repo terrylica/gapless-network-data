@@ -13,12 +13,15 @@ df = gmd.fetch_blocks(limit=1000)
 # Compute block utilization (alpha feature #2)
 df['utilization'] = df['gas_used'] / df['gas_limit']
 
-# Date range query (half-open interval [start, end))
-# Returns all blocks from Jan 1 00:00:00 to Jan 31 23:59:59
-df = gmd.fetch_blocks(start='2024-01-01', end='2024-02-01')
+# Date range query (inclusive [start, end])
+# Returns all blocks from Jan 1 through Jan 31 (both dates included)
+df = gmd.fetch_blocks(start='2024-01-01', end='2024-01-31')
 
 # Same-day query (returns all blocks on March 13)
 df = gmd.fetch_blocks(start='2024-03-13', end='2024-03-13')
+
+# Second-precision query (explicit times supported)
+df = gmd.fetch_blocks(start='2024-03-13 12:00:00', end='2024-03-13 12:05:00')
 ```
 
 ## Installation
@@ -86,12 +89,25 @@ Get eras programmatically: `gmd.probe.get_protocol_eras()`
 
 ```python
 gmd.fetch_blocks(
-    start: str | None = None,     # ISO 8601 date
-    end: str | None = None,       # ISO 8601 date
-    limit: int | None = None,     # Max blocks
+    start: str | None = None,     # ISO 8601 date (inclusive)
+    end: str | None = None,       # ISO 8601 date (inclusive for date-only)
+    limit: int | None = None,     # Max blocks (0 = empty DataFrame)
     include_deprecated: bool = False  # Include difficulty fields
 ) -> pd.DataFrame
 ```
+
+**Date Range Semantics (inclusive [start, end]):**
+
+- Date-only inputs include the entire day: `end='2024-03-13'` includes all of March 13
+- Explicit times are preserved: `end='2024-03-13 12:00:00'` excludes blocks after noon
+- Same-day queries work: `start='2024-03-13', end='2024-03-13'` returns all blocks on March 13
+
+**Parameter Requirements:**
+
+- At least one of `start`, `end`, or `limit` must be specified
+- Empty strings (`""`) are rejected — use `None` to omit
+- `start` must be ≤ `end` if both provided
+- `limit=0` returns empty DataFrame (0 rows, not entire blockchain)
 
 Returns pandas DataFrame with columns:
 
@@ -138,6 +154,21 @@ export CLICKHOUSE_PASSWORD_READONLY=<password>
 
 Get setup instructions: `gmd.probe.get_setup_workflow()`
 
+## Time Precision
+
+- **Timestamp storage**: Millisecond precision (DateTime64(3))
+- **Block granularity**: ~12 second intervals (Ethereum block time)
+- **Query precision**: Second-level supported for start/end parameters
+
+**Supported timestamp formats:**
+
+| Format            | Example                     | Behavior                          |
+| ----------------- | --------------------------- | --------------------------------- |
+| Date-only         | `'2024-03-13'`              | Expands to include full day       |
+| Date + time       | `'2024-03-13 12:30:45'`     | Preserved exactly                 |
+| ISO 8601          | `'2024-03-13T12:30:45'`     | Preserved exactly                 |
+| With milliseconds | `'2024-03-13 12:30:45.123'` | Preserved (truncated to 3 digits) |
+
 ## Data Coverage
 
 - **Blocks**: 23.87M Ethereum blocks (2015-2025)
@@ -149,9 +180,16 @@ Get setup instructions: `gmd.probe.get_setup_workflow()`
 
 All exceptions include structured context (timestamp, endpoint, HTTP status):
 
+**Credential & Database:**
+
 - `CredentialException`: Credential resolution failed
 - `DatabaseException`: ClickHouse query failed
-- `MempoolException`: Base exception class
+
+**Parameter Validation (fetch_blocks):**
+
+- `ValueError`: Empty string for start/end (use `None` to omit)
+- `ValueError`: No parameters specified (must have start, end, or limit)
+- `ValueError`: Reversed date range (start > end)
 
 ## Feature Engineering Integration
 

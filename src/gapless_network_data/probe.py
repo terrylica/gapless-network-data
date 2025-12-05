@@ -266,17 +266,20 @@ df['utilization'] = df['gas_used'] / df['gas_limit']
 # Fee pressure indicator
 df['fee_change'] = df['base_fee_per_gas'].pct_change()
 
-# Date range query (half-open interval [start, end))
-# Returns all blocks from Jan 1 00:00:00 to Jan 31 23:59:59
-df_hist = gmd.fetch_blocks(start='2024-01-01', end='2024-02-01')
+# Date range query (inclusive [start, end])
+# Returns all blocks from Jan 1 through Jan 31 (both dates included)
+df_hist = gmd.fetch_blocks(start='2024-01-01', end='2024-01-31')
 
 # Same-day query (returns all blocks on March 13)
 df_single = gmd.fetch_blocks(start='2024-03-13', end='2024-03-13')
 
+# Second-precision query (explicit times supported)
+df_precise = gmd.fetch_blocks(start='2024-03-13 12:00:00', end='2024-03-13 12:05:00')
+
 # Include deprecated fields (pre-Merge analysis only)
 df_legacy = gmd.fetch_blocks(
     start='2021-01-01',
-    end='2022-09-16',  # Before The Merge (exclusive end)
+    end='2022-09-15',  # Before The Merge (Sep 15, 2022)
     include_deprecated=True
 )
 '''.strip()
