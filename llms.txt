@@ -19,6 +19,9 @@ df = gmd.fetch_blocks(start='2024-01-01', end='2024-01-31')
 
 # Same-day query (returns all blocks on March 13)
 df = gmd.fetch_blocks(start='2024-03-13', end='2024-03-13')
+
+# Second-precision query (explicit times supported)
+df = gmd.fetch_blocks(start='2024-03-13 12:00:00', end='2024-03-13 12:05:00')
 ```
 
 ## Alpha Feature Rankings
@@ -325,6 +328,21 @@ Get setup instructions: `gmd.probe.get_setup_workflow()`
 - **Storage**: ClickHouse Cloud (AWS)
 - **Deduplication**: Automatic via ReplacingMergeTree
 
+## Time Precision
+
+- **Timestamp storage**: Millisecond precision (DateTime64(3))
+- **Block granularity**: ~12 second intervals (Ethereum block time)
+- **Query precision**: Second-level supported for start/end parameters
+
+**Supported timestamp formats:**
+
+| Format            | Example                     | Behavior                          |
+| ----------------- | --------------------------- | --------------------------------- |
+| Date-only         | `'2024-03-13'`              | Expands to include full day       |
+| Date + time       | `'2024-03-13 12:30:45'`     | Preserved exactly                 |
+| ISO 8601          | `'2024-03-13T12:30:45'`     | Preserved exactly                 |
+| With milliseconds | `'2024-03-13 12:30:45.123'` | Preserved (truncated to 3 digits) |
+
 ## Deprecated Features
 
 Excluded by default (use `include_deprecated=True` for pre-Merge analysis):
@@ -336,6 +354,13 @@ Excluded by default (use `include_deprecated=True` for pre-Merge analysis):
 
 All exceptions include structured context (timestamp, endpoint, HTTP status):
 
+**Credential & Database:**
+
 - `CredentialException`: Credential resolution failed
 - `DatabaseException`: ClickHouse query failed
-- `MempoolException`: Base exception class
+
+**Parameter Validation (fetch_blocks):**
+
+- `ValueError`: Empty string for start/end (use `None` to omit)
+- `ValueError`: No parameters specified (must have start, end, or limit)
+- `ValueError`: Reversed date range (start > end)
