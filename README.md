@@ -17,6 +17,12 @@ df['utilization'] = df['gas_used'] / df['gas_limit']
 # Returns all blocks from Jan 1 through Jan 31 (both dates included)
 df = gmd.fetch_blocks(start='2024-01-01', end='2024-01-31')
 
+# Start-only: all blocks from Jan 1 to most recent
+df = gmd.fetch_blocks(start='2024-01-01')
+
+# End-only: all blocks from genesis to Jan 31
+df = gmd.fetch_blocks(end='2024-01-31')
+
 # Same-day query (returns all blocks on March 13)
 df = gmd.fetch_blocks(start='2024-03-13', end='2024-03-13')
 
