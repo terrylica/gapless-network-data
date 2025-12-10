@@ -1,3 +1,10 @@
+## [5.0.2](https://github.com/terrylica/gapless-network-data/compare/v5.0.1...v5.0.2) (2025-12-10)
+
+
+### Bug Fixes
+
+* **docs:** add start-only and end-only query patterns to documentation ([fb392eb](https://github.com/terrylica/gapless-network-data/commit/fb392eb5b12ab4e0f4b885b97ccf7a6bfeb167b0))
+
 ## [5.0.1](https://github.com/terrylica/gapless-network-data/compare/v5.0.0...v5.0.1) (2025-12-05)
 
 

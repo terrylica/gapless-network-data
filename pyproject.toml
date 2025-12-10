@@ -1,6 +1,6 @@
 [project]
 name = "gapless-network-data"
-version = "5.0.1"
+version = "5.0.2"
 description = "Ethereum blockchain network metrics collection infrastructure with zero-gap guarantee (multi-chain support planned)"
 readme = "README.md"
 requires-python = ">=3.9"
