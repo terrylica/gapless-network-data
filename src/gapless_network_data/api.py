@@ -292,12 +292,12 @@ def fetch_blocks(
     Returns:
         pd.DataFrame with standard time-series column order:
         - timestamp (datetime64[ns, UTC])
-        - number (uint64)
-        - gas_limit (uint64)
-        - gas_used (uint64)
-        - base_fee_per_gas (uint64)
-        - transaction_count (uint64)
-        - size (uint64)
+        - number (int64)
+        - gas_limit (int64)
+        - gas_used (int64)
+        - base_fee_per_gas (int64)
+        - transaction_count (int64)
+        - size (int64)
         - blob_gas_used (Int64, nullable) - Post-EIP4844 (pd.NA for pre-Dencun)
         - excess_blob_gas (Int64, nullable) - Post-EIP4844 (pd.NA for pre-Dencun)
         - [difficulty, total_difficulty if include_deprecated=True]

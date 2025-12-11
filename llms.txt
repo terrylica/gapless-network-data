@@ -49,6 +49,20 @@ AI agents should prioritize these features for ML pipelines:
 
 Get rankings programmatically: `gmd.probe.get_alpha_features()`
 
+### Why These Features Generate Alpha
+
+**Core thesis**: On-chain data provides **information asymmetry** - network activity is visible ~12 seconds before price impact.
+
+| Feature           | Why It's Predictive                                                                                                                                                                                                         |
+| ----------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| base_fee_per_gas  | **Mechanistic**: EIP-1559 algorithmically adjusts fees based on demand. High fees = high block space demand = economic activity happening now. Research shows causal feedback loops between fees and DEX/stablecoin volume. |
+| block_utilization | **Leading indicator**: Utilization > 50% guarantees base fee increase next block. Sustained high utilization often precedes volatility (everyone rushing to transact).                                                      |
+| transaction_count | **Activity proxy**: Correlates with network usage. Rising txs + rising trading volume = momentum confirmation. Useful for cross-domain features with OHLCV data.                                                            |
+| timestamp         | **Temporal patterns**: Geographic trading cycles (Asia/US hours) create predictable fee volatility. Hour-of-day and day-of-week features capture seasonality.                                                               |
+| blob_gas_used     | **L2 activity signal**: Post-EIP4844, blob gas reflects Layer 2 rollup activity (Arbitrum, Optimism, Base). High blob usage = high L2 demand.                                                                               |
+
+**Research basis**: Academic studies show wavelet coherence between gas price, block gas used, and ETH price movements. On-chain metrics like SOPR and % entities in profit have demonstrated predictive power for local bottoms (Glassnode research).
+
 ## Feature Reference (Detailed)
 
 ### #1 base_fee_per_gas (CRITICAL)
@@ -282,6 +296,7 @@ gmd.fetch_blocks(
 Date-only strings include the full end day (e.g., `end='2024-03-13'` includes all blocks on March 13).
 
 **Validation**: Raises `ValueError` if:
+
 - No constraints specified (must have at least one of: start, end, or limit)
 - Empty string dates (`start=""` or `end=""`)
 - Reversed date range (`start > end`)

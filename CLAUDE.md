@@ -230,6 +230,14 @@ AI agents should prioritize these features for ML pipelines:
 
 Get rankings programmatically: `gmd.probe.get_alpha_features()`
 
+**Why these features generate alpha**: On-chain data provides information asymmetry - network activity is visible ~12 seconds before price impact. Key mechanisms:
+
+- **base_fee_per_gas**: EIP-1559 algorithmically links fees to block space demand (causal feedback with DEX volume)
+- **block_utilization**: Leading indicator - utilization >50% guarantees fee increase next block
+- **transaction_count**: Activity proxy correlating with network usage and trading momentum
+
+See [llms.txt](https://github.com/terrylica/gapless-network-data/blob/main/llms.txt#why-these-features-generate-alpha) for detailed justifications.
+
 ### Protocol Era Boundaries
 
 | Era       | Block      | Date     | Impact                      |
