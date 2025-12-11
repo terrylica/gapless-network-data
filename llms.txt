@@ -331,8 +331,9 @@ Get setup instructions: `gmd.probe.get_setup_workflow()`
 
 - **Blocks**: 23.87M Ethereum blocks (2015-2025)
 - **Update frequency**: Real-time (~12 second intervals)
-- **Storage**: ClickHouse Cloud (AWS)
+- **Storage**: ClickHouse Cloud (AWS) with optimized compression codecs
 - **Deduplication**: Automatic via ReplacingMergeTree
+- **Compression**: DoubleDelta (timestamps), T64 (integers), Delta (slow-changing), ZSTD (UInt256)
 
 ## Time Precision
 

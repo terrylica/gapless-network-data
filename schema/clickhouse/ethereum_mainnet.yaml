@@ -26,6 +26,10 @@ x-clickhouse:
   partition_by: "toYYYYMM(timestamp)"
   settings:
     index_granularity: 8192
+  projections:
+    blocks_by_timestamp:
+      select: "*"
+      order_by: [timestamp, number]
 
 type: object
 
@@ -48,6 +52,7 @@ properties:
     x-clickhouse:
       type: "DateTime64(3)"
       not_null: true
+      codec: "CODEC(DoubleDelta, ZSTD)"
     x-pandas:
       dtype: "datetime64[ns, UTC]"
     x-alpha-feature:
@@ -61,6 +66,7 @@ properties:
     x-clickhouse:
       type: "Int64"
       not_null: true
+      codec: "CODEC(DoubleDelta, ZSTD)"
     x-pandas:
       dtype: "int64"
     x-alpha-feature:
@@ -74,6 +80,7 @@ properties:
     x-clickhouse:
       type: "Int64"
       not_null: true
+      codec: "CODEC(Delta, ZSTD)"
     x-pandas:
       dtype: "int64"
     x-alpha-feature:
@@ -87,6 +94,7 @@ properties:
     x-clickhouse:
       type: "Int64"
       not_null: true
+      codec: "CODEC(T64, ZSTD)"
     x-pandas:
       dtype: "int64"
     x-alpha-feature:
@@ -100,6 +108,7 @@ properties:
     x-clickhouse:
       type: "Int64"
       not_null: true
+      codec: "CODEC(T64, ZSTD)"
     x-pandas:
       dtype: "int64"
     x-alpha-feature:
@@ -113,6 +122,7 @@ properties:
     x-clickhouse:
       type: "Int64"
       not_null: true
+      codec: "CODEC(T64, ZSTD)"
     x-pandas:
       dtype: "int64"
     x-alpha-feature:
@@ -126,6 +136,7 @@ properties:
     x-clickhouse:
       type: "UInt256"
       not_null: true
+      codec: "CODEC(ZSTD(3))"
     x-pandas:
       dtype: "object"  # Python int for arbitrary precision
     x-deprecated:
@@ -139,6 +150,7 @@ properties:
     x-clickhouse:
       type: "UInt256"
       not_null: true
+      codec: "CODEC(ZSTD(3))"
     x-pandas:
       dtype: "object"
     x-deprecated:
@@ -152,6 +164,7 @@ properties:
     x-clickhouse:
       type: "Int64"
       not_null: true
+      codec: "CODEC(T64, ZSTD)"
     x-pandas:
       dtype: "int64"
     x-alpha-feature:
@@ -164,6 +177,7 @@ properties:
     description: "EIP-4844 blob gas used (null pre-Dencun, Mar 2024)"
     x-clickhouse:
       type: "Nullable(Int64)"
+      codec: "CODEC(T64, ZSTD)"
     x-pandas:
       dtype: "Int64"  # pandas nullable integer
     x-alpha-feature:
@@ -179,6 +193,7 @@ properties:
     description: "EIP-4844 excess blob gas (null pre-Dencun)"
     x-clickhouse:
       type: "Nullable(Int64)"
+      codec: "CODEC(T64, ZSTD)"
     x-pandas:
       dtype: "Int64"
     x-alpha-feature:

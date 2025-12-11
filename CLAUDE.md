@@ -336,21 +336,42 @@ Get setup instructions: `gmd.probe.get_setup_workflow()`
 
 ```sql
 CREATE TABLE ethereum_mainnet.blocks (
-    timestamp DateTime64(3) NOT NULL,  -- Millisecond precision
-    number Int64,
-    gas_limit Int64,
-    gas_used Int64,
-    base_fee_per_gas Int64,
-    transaction_count Int64,
-    difficulty UInt256,
-    total_difficulty UInt256,
-    size Int64,
-    blob_gas_used Nullable(Int64),
-    excess_blob_gas Nullable(Int64)
+    -- Temporal (DoubleDelta for monotonic timestamps)
+    timestamp DateTime64(3) NOT NULL CODEC(DoubleDelta, ZSTD),
+
+    -- Block identification (DoubleDelta for strictly increasing)
+    number Int64 CODEC(DoubleDelta, ZSTD),
+
+    -- Gas metrics (Delta for slow-changing, T64 for high-variance)
+    gas_limit Int64 CODEC(Delta, ZSTD),
+    gas_used Int64 CODEC(T64, ZSTD),
+    base_fee_per_gas Int64 CODEC(T64, ZSTD),
+
+    -- Transaction count (T64 for bounded integers)
+    transaction_count Int64 CODEC(T64, ZSTD),
+
+    -- Mining difficulty (ZSTD(3) - T64 doesn't support UInt256)
+    difficulty UInt256 CODEC(ZSTD(3)),
+    total_difficulty UInt256 CODEC(ZSTD(3)),
+
+    -- Block size in bytes (T64 for bounded integers)
+    size Int64 CODEC(T64, ZSTD),
+
+    -- EIP-4844 blob fields (T64 for sparse nulls, high variance)
+    blob_gas_used Nullable(Int64) CODEC(T64, ZSTD),
+    excess_blob_gas Nullable(Int64) CODEC(T64, ZSTD)
 ) ENGINE = ReplacingMergeTree()
-ORDER BY number
 PARTITION BY toYYYYMM(timestamp)
+ORDER BY number
+SETTINGS index_granularity = 8192
 ```
+
+**Compression Codecs** (ADR: 2025-12-10-clickhouse-codec-optimization):
+
+- **DoubleDelta**: Monotonic sequences (timestamp, block number) - best for strictly increasing
+- **Delta**: Slow-changing values (gas_limit) - good for values that change infrequently
+- **T64**: High-variance bounded integers (gas_used, transaction_count) - optimal for Int64
+- **ZSTD(3)**: Large integers (UInt256 difficulty) - T64 doesn't support UInt256
 
 ## Feature Engineering Integration
 
