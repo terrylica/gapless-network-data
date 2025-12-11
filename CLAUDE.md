@@ -233,10 +233,11 @@ Get rankings programmatically: `gmd.probe.get_alpha_features()`
 **Why these features generate alpha**: On-chain data provides information asymmetry - network activity is visible ~12 seconds before price impact. Key mechanisms:
 
 - **base_fee_per_gas**: EIP-1559 algorithmically links fees to block space demand (causal feedback with DEX volume)
-- **block_utilization**: Leading indicator - utilization >50% guarantees fee increase next block
+- **block_utilization**: Leading indicator - utilization >50% guarantees fee increase next block (derived: gas_used/gas_limit)
 - **transaction_count**: Activity proxy correlating with network usage and trading momentum
+- **blob_gas_used**: L2 rollup activity signal (Arbitrum, Optimism, Base demand)
 
-See [llms.txt](https://github.com/terrylica/gapless-network-data/blob/main/llms.txt#why-these-features-generate-alpha) for detailed justifications.
+All 10 features (9 columns + 1 derived) have documented rationale in [llms.txt](https://github.com/terrylica/gapless-network-data/blob/main/llms.txt#why-these-features-generate-alpha).
 
 ### Protocol Era Boundaries
 
