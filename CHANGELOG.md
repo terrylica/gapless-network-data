@@ -1,3 +1,10 @@
+# [5.1.0](https://github.com/terrylica/gapless-network-data/compare/v5.0.2...v5.1.0) (2025-12-11)
+
+
+### Features
+
+* **schema:** add ClickHouse compression codecs for 15% storage reduction ([2e06e04](https://github.com/terrylica/gapless-network-data/commit/2e06e04addcd01c2dbfe7461352c7f6e4c38fb4c)), closes [hi#variance](https://github.com/hi/issues/variance)
+
 ## [5.0.2](https://github.com/terrylica/gapless-network-data/compare/v5.0.1...v5.0.2) (2025-12-10)
 
 
