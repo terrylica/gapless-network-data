@@ -140,6 +140,33 @@ client = clickhouse_connect.get_client(
 result = client.query('SELECT COUNT(*) FROM ethereum_mainnet.blocks FINAL')
 ```
 
+### Local Development
+
+Run ClickHouse locally for development/testing without production credentials:
+
+```bash
+# 1. Start local ClickHouse server (in separate terminal)
+clickhouse server
+
+# 2. Set up local database and schema
+uv run scripts/clickhouse/setup_local.py
+
+# 3. Load sample data (100 blocks)
+uv run scripts/clickhouse/load_sample_data.py
+
+# 4. Or sync production data (requires Doppler)
+doppler run --project aws-credentials --config prd -- \
+  uv run scripts/clickhouse/sync_to_local.py --limit 10000
+
+# 5. Test SDK against local database
+export CLICKHOUSE_HOST_READONLY=localhost
+export CLICKHOUSE_USER_READONLY=default
+export CLICKHOUSE_PASSWORD_READONLY=''
+python -c "import gapless_network_data as gmd; print(gmd.fetch_blocks(limit=5))"
+```
+
+**How it works**: The SDK auto-detects `localhost` and uses local settings (port 8123, no TLS). Environment variables take precedence over Doppler, allowing local override.
+
 ## Project Skills
 
 **Skills**: 6 project skills + 2 managed skills (blockchain RPC research, data collection validation, BigQuery acquisition, ClickHouse operations, pipeline monitoring, VM infrastructure ops)

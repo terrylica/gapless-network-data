@@ -148,11 +148,13 @@ def _get_clickhouse_credentials() -> tuple[str, str, str]:
     """
     Resolve ClickHouse credentials from multiple sources.
 
-    Resolution order:
+    Resolution order (env vars first to allow local override):
     1. .env file (auto-loaded via python-dotenv)
-    2. Doppler CLI (if configured) - gapless-network-data/prd
-    3. Environment variables (CLICKHOUSE_HOST_READONLY, etc.)
+    2. Environment variables (CLICKHOUSE_HOST_READONLY, etc.) - checked FIRST
+    3. Doppler CLI (if configured) - gapless-network-data/prd
     4. Raise CredentialException with setup instructions
+
+    Local development: Set env vars to override Doppler (localhost uses port 8123, no TLS).
 
     Returns:
         Tuple of (host, user, password)
@@ -164,7 +166,16 @@ def _get_clickhouse_credentials() -> tuple[str, str, str]:
     # ADR: 2025-12-01-dotenv-credential-loading
     load_dotenv()
 
-    # Try Doppler first
+    # Check env vars FIRST (allows local override of Doppler)
+    host = os.environ.get("CLICKHOUSE_HOST_READONLY")
+    user = os.environ.get("CLICKHOUSE_USER_READONLY")
+    password = os.environ.get("CLICKHOUSE_PASSWORD_READONLY")
+
+    if host and user is not None:
+        # For local dev, password can be empty string
+        return host, user, password or ""
+
+    # Fall back to Doppler
     try:
         result = subprocess.run(
             [
@@ -194,30 +205,22 @@ def _get_clickhouse_credentials() -> tuple[str, str, str]:
     except (FileNotFoundError, json.JSONDecodeError, subprocess.TimeoutExpired, KeyError):
         pass
 
-    # Fall back to env vars
-    host = os.environ.get("CLICKHOUSE_HOST_READONLY")
-    user = os.environ.get("CLICKHOUSE_USER_READONLY")
-    password = os.environ.get("CLICKHOUSE_PASSWORD_READONLY")
-
-    if host and user and password:
-        return host, user, password
-
     # Clear error with setup instructions
     raise CredentialException(
         "ClickHouse credentials not found.\n\n"
-        "Option 1: Use .env file (simplest for small teams)\n"
+        "Option 1: Local development\n"
+        "  export CLICKHOUSE_HOST_READONLY=localhost\n"
+        "  export CLICKHOUSE_USER_READONLY=default\n"
+        "  export CLICKHOUSE_PASSWORD_READONLY=''\n\n"
+        "Option 2: Use .env file (simplest for small teams)\n"
         "  Create .env in your project root with:\n"
         "    CLICKHOUSE_HOST_READONLY=<host>\n"
         "    CLICKHOUSE_USER_READONLY=<user>\n"
         "    CLICKHOUSE_PASSWORD_READONLY=<password>\n\n"
-        "Option 2 (Recommended for production): Use Doppler service token\n"
+        "Option 3 (Recommended for production): Use Doppler service token\n"
         "  1. Get token from 1Password: Engineering vault → 'gapless-network-data Doppler Service Token'\n"
         "  2. doppler configure set token <token_from_1password>\n"
         "  3. doppler setup --project gapless-network-data --config prd\n\n"
-        "Option 3: Set environment variables directly\n"
-        "  export CLICKHOUSE_HOST_READONLY=<host>\n"
-        "  export CLICKHOUSE_USER_READONLY=<user>\n"
-        "  export CLICKHOUSE_PASSWORD_READONLY=<password>\n\n"
         "Contact your team lead for credentials."
     )
 
@@ -225,6 +228,10 @@ def _get_clickhouse_credentials() -> tuple[str, str, str]:
 def _get_clickhouse_client() -> clickhouse_connect.driver.Client:
     """
     Get authenticated ClickHouse client.
+
+    Automatically detects local vs cloud mode:
+    - localhost: port 8123, no TLS (local development)
+    - Other hosts: port 8443, TLS enabled (ClickHouse Cloud)
 
     Returns:
         Configured ClickHouse client
@@ -237,18 +244,38 @@ def _get_clickhouse_client() -> clickhouse_connect.driver.Client:
 
     host, user, password = _get_clickhouse_credentials()
 
+    # Detect local development mode
+    is_local = host in ("localhost", "127.0.0.1", "::1")
+
     try:
-        return clickhouse_connect.get_client(
-            host=host,
-            port=8443,
-            username=user,
-            password=password,
-            secure=True,
-        )
+        if is_local:
+            # Local ClickHouse: HTTP port, no TLS, no auth for default user
+            # Note: clickhouse_connect requires omitting auth params entirely for no-password mode
+            if user == "default" and not password:
+                return clickhouse_connect.get_client(
+                    host=host,
+                    port=8123,
+                )
+            else:
+                return clickhouse_connect.get_client(
+                    host=host,
+                    port=8123,
+                    username=user,
+                    password=password,
+                )
+        else:
+            # ClickHouse Cloud: HTTPS port, TLS required
+            return clickhouse_connect.get_client(
+                host=host,
+                port=8443,
+                username=user,
+                password=password,
+                secure=True,
+            )
     except Exception as e:
         raise DatabaseException(
             f"Failed to connect to ClickHouse: {e}",
-            context={"host": host, "user": user},
+            context={"host": host, "user": user, "local_mode": is_local},
         ) from e
 
 
