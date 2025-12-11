@@ -10,6 +10,8 @@
 """
 Historical Ethereum Data Migration: BigQuery → ClickHouse
 
+ADR: 2025-12-10-clickhouse-codec-optimization (port fix for ClickHouse Cloud HTTPS)
+
 Loads Ethereum blocks from BigQuery public dataset directly to ClickHouse.
 Processes in yearly chunks to prevent OOM.
 

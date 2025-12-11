@@ -19,6 +19,8 @@ def _generate_column_def(col: ColumnConfig) -> str:
     """
     Generate a single column definition.
 
+    ADR: 2025-12-10-clickhouse-codec-optimization - Added codec emission
+
     Args:
         col: Column configuration
 
@@ -30,6 +32,10 @@ def _generate_column_def(col: ColumnConfig) -> str:
     # Add NOT NULL for required columns (nullable columns don't need it)
     if col.clickhouse_not_null:
         parts.append("NOT NULL")
+
+    # Add CODEC if specified (ADR: 2025-12-10-clickhouse-codec-optimization)
+    if col.clickhouse_codec:
+        parts.append(col.clickhouse_codec)
 
     # Add COMMENT with description
     if col.description:
@@ -93,6 +99,17 @@ ENGINE = {ch.engine}
         ddl += f"\nSETTINGS {settings_sql}"
 
     ddl += ";\n"
+
+    # Generate projection ALTER statements (ADR: 2025-12-10-clickhouse-codec-optimization)
+    for proj in ch.projections:
+        order_by_proj = ", ".join(proj.order_by) if proj.order_by else "tuple()"
+        ddl += f"""
+-- Projection: {proj.name}
+ALTER TABLE {ch.database}.{ch.table} ADD PROJECTION {proj.name} (
+    SELECT {proj.select} ORDER BY ({order_by_proj})
+);
+ALTER TABLE {ch.database}.{ch.table} MATERIALIZE PROJECTION {proj.name};
+"""
 
     # Determine output path
     output_dir = Path.cwd() / "schema" / "clickhouse" / "_generated"

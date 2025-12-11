@@ -57,6 +57,18 @@ def _find_schema_dir() -> Path:
 
 
 @dataclass
+class ProjectionConfig:
+    """ClickHouse projection configuration.
+
+    ADR: 2025-12-10-clickhouse-codec-optimization
+    """
+
+    name: str
+    select: str
+    order_by: list[str]
+
+
+@dataclass
 class ClickHouseConfig:
     """ClickHouse-specific configuration from x-clickhouse extension."""
 
@@ -66,17 +78,22 @@ class ClickHouseConfig:
     order_by: list[str]
     partition_by: str
     settings: dict[str, Any]
+    projections: list[ProjectionConfig]
 
 
 @dataclass
 class ColumnConfig:
-    """Configuration for a single column."""
+    """Configuration for a single column.
+
+    ADR: 2025-12-10-clickhouse-codec-optimization - Added clickhouse_codec field
+    """
 
     name: str
     json_type: str | list[str]
     description: str
     clickhouse_type: str
     clickhouse_not_null: bool
+    clickhouse_codec: str | None
     pandas_dtype: str
     alpha_rank: int | None
     alpha_importance: str | None
@@ -138,6 +155,7 @@ def _parse_column(name: str, props: dict[str, Any]) -> ColumnConfig:
         description=props.get("description", ""),
         clickhouse_type=x_ch.get("type", "String"),
         clickhouse_not_null=x_ch.get("not_null", False),
+        clickhouse_codec=x_ch.get("codec"),  # ADR: 2025-12-10-clickhouse-codec-optimization
         pandas_dtype=x_pandas.get("dtype", "object"),
         alpha_rank=x_alpha.get("rank"),
         alpha_importance=x_alpha.get("importance"),
@@ -150,7 +168,21 @@ def _parse_column(name: str, props: dict[str, Any]) -> ColumnConfig:
 
 
 def _parse_clickhouse_config(x_clickhouse: dict[str, Any]) -> ClickHouseConfig:
-    """Parse ClickHouse configuration from x-clickhouse extension."""
+    """Parse ClickHouse configuration from x-clickhouse extension.
+
+    ADR: 2025-12-10-clickhouse-codec-optimization - Added projections parsing
+    """
+    # Parse projections (ADR: 2025-12-10-clickhouse-codec-optimization)
+    projections_raw = x_clickhouse.get("projections", {})
+    projections = [
+        ProjectionConfig(
+            name=name,
+            select=proj.get("select", "*"),
+            order_by=proj.get("order_by", []),
+        )
+        for name, proj in projections_raw.items()
+    ]
+
     return ClickHouseConfig(
         database=x_clickhouse.get("database", "default"),
         table=x_clickhouse.get("table", "unknown"),
@@ -158,6 +190,7 @@ def _parse_clickhouse_config(x_clickhouse: dict[str, Any]) -> ClickHouseConfig:
         order_by=x_clickhouse.get("order_by", []),
         partition_by=x_clickhouse.get("partition_by", ""),
         settings=x_clickhouse.get("settings", {}),
+        projections=projections,
     )
 
 
