@@ -44,7 +44,9 @@ GCP_PROJECT = os.environ.get('GCP_PROJECT', 'eonlabs-ethereum-bq')
 BATCH_INTERVAL_SECONDS = int(os.environ.get('BATCH_INTERVAL_SECONDS', '300'))  # Default: 5 minutes
 ALCHEMY_WS_URL = None  # Will be set by validate_config() from Secret Manager
 ALCHEMY_HTTP_URL = None  # HTTP endpoint for JSON-RPC calls (eth_getBlockByNumber)
-HEALTHCHECK_URL = 'https://hc-ping.com/d73a71f2-9457-4e58-9ed6-8a31db5bbed1'  # Healthchecks.io heartbeat
+# Healthchecks.io heartbeat ping URL (contains a write-capable UUID - never hardcode).
+# Set HEALTHCHECK_URL in the environment; heartbeats are skipped when unset.
+HEALTHCHECK_URL = os.environ.get('HEALTHCHECK_URL')
 
 # ClickHouse configuration
 CLICKHOUSE_HOST = os.environ.get('CLICKHOUSE_HOST')
@@ -237,6 +239,11 @@ def heartbeat_worker():
     This provides a Dead Man's Switch monitoring pattern - if the VM or service
     stops running, Healthchecks.io will detect the missing pings and send alerts.
     """
+    if not HEALTHCHECK_URL:
+        now = datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M:%S')
+        print(f"[{now}] [HEARTBEAT] HEALTHCHECK_URL not set - heartbeats disabled")
+        return
+
     while True:
         try:
             response = requests.get(HEALTHCHECK_URL, timeout=10)

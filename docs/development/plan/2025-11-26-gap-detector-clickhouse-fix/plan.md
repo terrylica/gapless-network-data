@@ -210,7 +210,7 @@ gcloud scheduler jobs run clickhouse-monitor-trigger --location=us-east1
 - [x] **2.2** Deploy Cloud Function (revision 00018-wur)
 - [x] **2.3** Manual trigger via Cloud Scheduler
 - [x] **2.4** Verify Pushover notification (ULID: 01KB1EDPRY6SBJ9PVKB6NX0Y71)
-- [x] **2.5** Healthchecks.io ping - Configured via MADR-0016 (`1a74805b-5315-4808-91d2-1b8b248422b6`)
+- [x] **2.5** Healthchecks.io ping - Configured via MADR-0016 (`${GAP_DETECTOR_CHECK_UUID}`)
 - [x] **2.6** Update ADR status to Accepted
 
 ### Verification Results (2025-11-27T01:21)

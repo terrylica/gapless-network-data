@@ -89,7 +89,7 @@ gcloud functions logs read motherduck-gap-detector \
 ### Phase 1: Create Healthchecks.io Check - COMPLETED
 
 - [x] **1.1** Create check at healthchecks.io with 3h period, 15min grace
-- [x] **1.2** Note UUID for environment variable: `1a74805b-5315-4808-91d2-1b8b248422b6`
+- [x] **1.2** Note UUID for environment variable: `${GAP_DETECTOR_CHECK_UUID}`
 
 ### Phase 2: Update Cloud Function - COMPLETED
 

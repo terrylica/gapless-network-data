@@ -247,7 +247,7 @@ requests.get(f"{ping_url}/fail")
 **Delete Check**:
 
 ```python
-client.delete_check(check_uuid="6a991157-552d-4c2c-b972-d43de0a96bff")
+client.delete_check(check_uuid="${HEALTHCHECKS_CHECK_UUID}")
 ```
 
 ### Dead Man's Switch Pattern

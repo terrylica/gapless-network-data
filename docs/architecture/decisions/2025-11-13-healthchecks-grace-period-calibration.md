@@ -103,22 +103,22 @@ Detection latency increase is acceptable because:
 export HEALTHCHECKS_API_KEY=$(doppler secrets get HEALTHCHECKS_API_KEY --plain)
 
 # motherduck-monitor
-curl -X POST https://healthchecks.io/api/v3/checks/2dfd9e29-667d-4a84-9fda-8bed95a58a43 \
+curl -X POST https://healthchecks.io/api/v3/checks/${HEALTHCHECKS_CHECK_UUID} \
   -H "X-Api-Key: $HEALTHCHECKS_API_KEY" \
   -d '{"grace": 1800}'
 
 # VM Collector
-curl -X POST https://healthchecks.io/api/v3/checks/d73a71f2-9457-4e58-9ed6-8a31db5bbed1 \
+curl -X POST https://healthchecks.io/api/v3/checks/${HEALTHCHECKS_CHECK_UUID} \
   -H "X-Api-Key: $HEALTHCHECKS_API_KEY" \
   -d '{"grace": 900}'
 
 # Hourly Updater
-curl -X POST https://healthchecks.io/api/v3/checks/616d5e4b-9e5b-470f-bd85-7870c2329ba3 \
+curl -X POST https://healthchecks.io/api/v3/checks/${HEALTHCHECKS_CHECK_UUID} \
   -H "X-Api-Key: $HEALTHCHECKS_API_KEY" \
   -d '{"grace": 1800}'
 
 # Data Quality
-curl -X POST https://healthchecks.io/api/v3/checks/c3087199-8265-4721-99fe-589c5d10a119 \
+curl -X POST https://healthchecks.io/api/v3/checks/${HEALTHCHECKS_CHECK_UUID} \
   -H "X-Api-Key: $HEALTHCHECKS_API_KEY" \
   -d '{"grace": 900}'
 ```

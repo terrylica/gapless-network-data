@@ -75,7 +75,7 @@ Response structure:
 
 **Assign to Checks:**
 
-- Use integration UUID: `"channels": "4ec5a071-2d08-4baa-898a-eb4eb3cd6941"`
+- Use integration UUID: `"channels": "${HEALTHCHECKS_CHANNEL_UUID}"`
 - Use integration name: `"channels": "My Work Email"`
 - Assign all: `"channels": "*"`
 - Remove all: `"channels": ""`
