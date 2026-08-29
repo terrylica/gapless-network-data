@@ -47,14 +47,14 @@ Cloud Logging
 **Monitors**:
 
 1. **[IDIOMATIC TEST] Health Check**
-   - URL: https://httpbin.org/status/200
+   - URL: <https://httpbin.org/status/200>
    - Type: HTTP(S)
    - Interval: 300 seconds (5 minutes)
    - Status: ✅ UP
    - Alert Contact: Pushover integration #1 (ID: 7898795)
 
 2. **eth-md-updater Cloud Run Job**
-   - URL: https://us-central1-run.googleapis.com/apis/run.googleapis.com/v1/namespaces/eonlabs-ethereum-bq/jobs/eth-md-updater
+   - URL: <https://us-central1-run.googleapis.com/apis/run.googleapis.com/v1/namespaces/eonlabs-ethereum-bq/jobs/eth-md-updater>
    - Type: HTTP(S)
    - Interval: 3600 seconds (1 hour)
    - Status: ✅ UP
@@ -62,12 +62,13 @@ Cloud Logging
    - Monitor ID: 801766938
 
 **Alert Contacts**:
-- Email: usalchemist@gmail.com (ID: 7898750)
+
+- Email: <usalchemist@gmail.com> (ID: 7898750)
 - Pushover: "Pushover integration #1" (ID: 7898795, Type: 9)
 
 **Credentials**: `UPTIMEROBOT_API_KEY` from Doppler
 
-**API Documentation**: https://uptimerobot.com/api/
+**API Documentation**: <https://uptimerobot.com/api/>
 
 ### Healthchecks.io (Heartbeat Monitoring)
 
@@ -82,46 +83,52 @@ Cloud Logging
    - Status: 🧪 Test
 
 2. **eth-collector real-time stream**
-   - UUID: a2fba09b-9635-4e75-9306-42573d601813
-   - Ping URL: https://hc-ping.com/a2fba09b-9635-4e75-9306-42573d601813
+   - UUID: stored in Doppler as `HEALTHCHECK_URL` (never commit it - the ping
+     UUID is an unauthenticated write capability)
+   - Ping URL: `${HEALTHCHECK_URL}`
    - Timeout: 3600 seconds (1 hour)
    - Grace: 300 seconds (5 minutes)
    - Description: VM eth-realtime-collector systemd service streaming Ethereum blocks
    - Channels: Email + Pushover (all channels)
 
 **Notification Channels**:
+
 - Email: (ID: 2de8b341-4f5a-4b54-a7ce-613c0905605a)
 - Pushover: (ID: ecee4935-7504-4ee7-9a10-0bb2f9060024, Kind: "po")
 
 **Credentials**: `HEALTHCHECKS_API_KEY` from Doppler
 
-**API Documentation**: https://healthchecks.io/docs/api/
+**API Documentation**: <https://healthchecks.io/docs/api/>
 
 ### Pushover (Alert Delivery)
 
 **Purpose**: Unified notification delivery to mobile devices
 
 **Configuration**:
+
 - Application Token: `PUSHOVER_TOKEN` from Doppler
-- User Key: `PUSHOVER_USER` from Doppler (ury88s1def6v16seeueoefqn1zbua1)
+- User Key: `PUSHOVER_USER` from Doppler
 
 **Integrated With**:
+
 - ✅ UptimeRobot (Pushover integration #1)
 - ✅ Healthchecks.io (Pushover channel)
 - ✅ Local scripts (send_pushover_alert.py)
 
-**API Documentation**: https://pushover.net/api
+**API Documentation**: <https://pushover.net/api>
 
 ## How It Works
 
 ### UptimeRobot → Pushover
 
 **Automatic (no code required)**:
+
 1. UptimeRobot checks endpoints every 5 minutes (test) or 1 hour (Cloud Run)
 2. On status change (UP ↔ DOWN), sends notification via Pushover integration
 3. Alert appears on your device with monitor name, URL, and downtime duration
 
 **Example Alert**:
+
 ```
 Monitor is UP: [IDIOMATIC TEST] Health Check ( https://httpbin.org/status/200 ).
 It was down for 5 minutes and 22 seconds.
@@ -130,6 +137,7 @@ It was down for 5 minutes and 22 seconds.
 ### Healthchecks.io → Pushover
 
 **Requires periodic pings from services**:
+
 1. Service pings Healthchecks.io URL on successful operation
 2. If ping not received within timeout + grace period, sends alert
 3. Alert delivered via Pushover channel
@@ -139,15 +147,16 @@ It was down for 5 minutes and 22 seconds.
 ```python
 # On VM eth-realtime-collector (add to eth-collector service)
 # Ping after successful block insertion
+import os
 import requests
-HEALTHCHECK_URL = "https://hc-ping.com/a2fba09b-9635-4e75-9306-42573d601813"
+HEALTHCHECK_URL = os.environ["HEALTHCHECK_URL"]  # from Doppler
 requests.get(HEALTHCHECK_URL, timeout=10)
 ```
 
 ```bash
 # Or via systemd OnSuccess=
 [Service]
-ExecStartPost=/usr/bin/curl -fsS --retry 3 https://hc-ping.com/a2fba09b-9635-4e75-9306-42573d601813
+ExecStartPost=/usr/bin/curl -fsS --retry 3 ${HEALTHCHECK_URL}
 ```
 
 ### Local Scripts → Pushover
@@ -165,20 +174,31 @@ uv run scripts/send_pushover_alert.py --title "Test" --message "Hello" --priorit
 
 ## Credentials Management
 
-All credentials stored in **Doppler** (`claude-config/dev`):
+All credentials are stored in **Doppler** (`claude-config/dev`). Only the
+variable **names** are documented here - values must never appear in this repo:
 
-- `PUSHOVER_TOKEN`: aej7osoja3x8nvxgi96up2poxdjmfj
-- `PUSHOVER_USER`: ury88s1def6v16seeueoefqn1zbua1
-- `HEALTHCHECKS_API_KEY`: hcw_4Kx60417mnb3Gsj3jt6v4BQpmQpT
-- `UPTIMEROBOT_API_KEY`: u3171159-f0012195934f23e94f503cc5
+- `PUSHOVER_TOKEN` - Pushover application token
+- `PUSHOVER_USER` - Pushover account user key
+- `HEALTHCHECKS_API_KEY` - Healthchecks.io management API key
+- `HEALTHCHECK_URL` - Healthchecks.io ping URL (embeds a write-capable UUID)
+- `UPTIMEROBOT_API_KEY` - UptimeRobot API key
+
+Fetch one with:
+
+```bash
+doppler secrets get <NAME> --project claude-config --config dev --plain
+```
 
 **Security**: Never commit credentials to git. Always source from Doppler.
+This includes Healthchecks.io ping UUIDs - they are unauthenticated write
+capabilities, so anyone holding one can forge or suppress heartbeats.
 
 ## Testing
 
 **Test UptimeRobot → Pushover**:
+
 - UptimeRobot automatically sends alerts on status changes
-- Test endpoint: https://httpbin.org/status/200 (check every 5 minutes)
+- Test endpoint: <https://httpbin.org/status/200> (check every 5 minutes)
 
 **Test Healthchecks.io → Pushover**:
 
@@ -213,7 +233,7 @@ Description=Ping Healthchecks.io
 
 [Service]
 Type=oneshot
-ExecStart=/usr/bin/curl -fsS --retry 3 https://hc-ping.com/a2fba09b-9635-4e75-9306-42573d601813
+ExecStart=/usr/bin/curl -fsS --retry 3 ${HEALTHCHECK_URL}
 
 # Create /etc/systemd/system/healthcheck-ping.timer
 [Unit]
@@ -235,7 +255,7 @@ sudo systemctl enable --now healthcheck-ping.timer
 ```bash
 # Add to /etc/cron.hourly/healthcheck-ping
 #!/bin/bash
-curl -fsS --retry 3 https://hc-ping.com/a2fba09b-9635-4e75-9306-42573d601813 > /dev/null 2>&1
+curl -fsS --retry 3 ${HEALTHCHECK_URL} > /dev/null 2>&1
 ```
 
 **Option 3: Application-Level Ping**
@@ -243,9 +263,10 @@ curl -fsS --retry 3 https://hc-ping.com/a2fba09b-9635-4e75-9306-42573d601813 > /
 Add to `~/eth-collector/realtime_collector.py`:
 
 ```python
+import os
 import requests
 
-HEALTHCHECK_URL = "https://hc-ping.com/a2fba09b-9635-4e75-9306-42573d601813"
+HEALTHCHECK_URL = os.environ["HEALTHCHECK_URL"]  # from Doppler
 
 # After successful block insertion
 try:
@@ -278,25 +299,28 @@ gcloud scheduler jobs create http eth-md-healthcheck-ping \
 ## SLO Compliance
 
 **Observability**: 100% operation tracking
+
 - ✅ UptimeRobot logs all endpoint checks
 - ✅ Healthchecks.io logs all pings
 - ✅ Pushover logs all notifications
 - ✅ Cloud Logging captures service logs
 
 **Maintainability**: <30 minutes for common operations
+
 - ✅ Add new monitor: 2 minutes (UptimeRobot API)
 - ✅ Add new check: 2 minutes (Healthchecks.io API)
 - ✅ Test alerts: 1 minute (Python scripts)
 
 **Error Handling**: Raise and propagate
+
 - ✅ All scripts use exception-only failures
 - ✅ No silent errors or default values
 - ✅ Structured exceptions with HTTP status codes
 
 ## References
 
-- UptimeRobot API: https://uptimerobot.com/api/
-- Healthchecks.io API: https://healthchecks.io/docs/api/
-- Pushover API: https://pushover.net/api
+- UptimeRobot API: <https://uptimerobot.com/api/>
+- Healthchecks.io API: <https://healthchecks.io/docs/api/>
+- Pushover API: <https://pushover.net/api>
 - Scripts: `.claude/skills/data-pipeline-monitoring/scripts/`
 - CLAUDE.md: Operational Status section (lines 290-332)

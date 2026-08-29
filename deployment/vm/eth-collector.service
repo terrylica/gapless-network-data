@@ -7,6 +7,11 @@ Type=simple
 User=terry_eonlabs_com
 WorkingDirectory=/home/terry_eonlabs_com/eth-collector
 Environment="BATCH_INTERVAL_SECONDS=300"
+# Healthchecks.io heartbeat. The ping UUID is a write capability, so keep the
+# real value out of git - supply it via a drop-in or EnvironmentFile:
+#   Environment="HEALTHCHECK_URL=https://hc-ping.com/<uuid>"
+# Heartbeats are skipped when unset.
+EnvironmentFile=-/etc/eth-collector.env
 ExecStart=/usr/bin/python3 -u /home/terry_eonlabs_com/eth-collector/realtime_collector.py
 Restart=always
 RestartSec=10

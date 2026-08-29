@@ -177,7 +177,7 @@ print("✅ 0 false positives at 600s threshold")
 
 # Query Healthchecks.io for any /fail pings
 curl -H "X-Api-Key: $HEALTHCHECKS_API_KEY" \
-  https://healthchecks.io/api/v3/checks/c3087199-8265-4721-99fe-589c5d10a119/pings | \
+  https://healthchecks.io/api/v3/checks/${HEALTHCHECKS_CHECK_UUID}/pings | \
   jq '.[] | select(.type == "fail") | {created, body}'
 
 # Expected: Empty (no failures in 24 hours)

@@ -115,12 +115,12 @@ def get_checks() -> list[dict]:
             "failure_kw": "",
             "filter_subject": false,
             "filter_body": false,
-            "badge_url": "https://healthchecks.io/b/2/2b3095fa-c222-4533-b0e0-7756071c53d1.svg",
-            "uuid": "6a991157-552d-4c2c-b972-d43de0a96bff",
-            "ping_url": "https://hc-ping.com/6a991157-552d-4c2c-b972-d43de0a96bff",
-            "update_url": "https://healthchecks.io/api/v3/checks/6a991157-552d-4c2c-b972-d43de0a96bff",
-            "pause_url": "https://healthchecks.io/api/v3/checks/6a991157-552d-4c2c-b972-d43de0a96bff/pause",
-            "resume_url": "https://healthchecks.io/api/v3/checks/6a991157-552d-4c2c-b972-d43de0a96bff/resume",
+            "badge_url": "https://healthchecks.io/b/2/${HEALTHCHECKS_BADGE_UUID}.svg",
+            "uuid": "${HEALTHCHECKS_CHECK_UUID}",
+            "ping_url": "https://hc-ping.com/${HEALTHCHECKS_CHECK_UUID}",
+            "update_url": "https://healthchecks.io/api/v3/checks/${HEALTHCHECKS_CHECK_UUID}",
+            "pause_url": "https://healthchecks.io/api/v3/checks/${HEALTHCHECKS_CHECK_UUID}/pause",
+            "resume_url": "https://healthchecks.io/api/v3/checks/${HEALTHCHECKS_CHECK_UUID}/resume",
             "channels": "2de8b341-4f5a-4b54-a7ce-613c0905605a",
             "timeout": 86400
         }
@@ -206,7 +206,7 @@ def ping_check(ping_url: str) -> None:
     response = requests.get(ping_url)
     response.raise_for_status()
 
-# Example ping URL: https://hc-ping.com/6a991157-552d-4c2c-b972-d43de0a96bff
+# Example ping URL: https://hc-ping.com/${HEALTHCHECKS_CHECK_UUID}
 ```
 
 **No authentication required for pings** - ping URL is the authentication token.

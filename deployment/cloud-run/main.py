@@ -44,7 +44,9 @@ CLICKHOUSE_DATABASE = 'ethereum_mainnet'
 CLICKHOUSE_TABLE = 'blocks'
 
 # Monitoring
-HEALTHCHECK_URL = 'https://hc-ping.com/616d5e4b-9e5b-470f-bd85-7870c2329ba3'
+# Healthchecks.io ping URL (contains a write-capable UUID - never hardcode).
+# Set HEALTHCHECK_URL in the environment; pings are skipped when unset.
+HEALTHCHECK_URL = os.environ.get('HEALTHCHECK_URL')
 
 # ML-optimized columns (11 columns for feature engineering)
 COLUMNS = [
@@ -184,6 +186,10 @@ def ping_healthcheck(success: bool = True):
     Args:
         success: True for success ping, False for failure ping
     """
+    if not HEALTHCHECK_URL:
+        print("[3/3] HEALTHCHECK_URL not set - skipping Healthchecks.io ping")
+        return
+
     try:
         url = HEALTHCHECK_URL if success else f"{HEALTHCHECK_URL}/fail"
         response = requests.get(url, timeout=10)
