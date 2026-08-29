@@ -88,13 +88,13 @@ class MempoolCollector:
                                 raise MempoolRateLimitException(
                                     endpoint=endpoint_mempool,
                                     retry_after=int(retry_after) if retry_after else None,
-                                )
+                                ) from e
                             raise MempoolHTTPException(
                                 message=f"HTTP request failed: {e}",
                                 endpoint=endpoint_mempool,
                                 http_status=e.response.status_code,
                                 retry_count=attempt.retry_state.attempt_number - 1,
-                            )
+                            ) from e
 
                         # Fetch recommended fees
                         endpoint_fees = "/v1/fees/recommended"
@@ -108,13 +108,13 @@ class MempoolCollector:
                                 raise MempoolRateLimitException(
                                     endpoint=endpoint_fees,
                                     retry_after=int(retry_after) if retry_after else None,
-                                )
+                                ) from e
                             raise MempoolHTTPException(
                                 message=f"HTTP request failed: {e}",
                                 endpoint=endpoint_fees,
                                 http_status=e.response.status_code,
                                 retry_count=attempt.retry_state.attempt_number - 1,
-                            )
+                            ) from e
 
                         # Combine into snapshot
                         snapshot = {
@@ -138,7 +138,7 @@ class MempoolCollector:
                         endpoint=str(e.request.url.path) if e.request else "unknown",
                         http_status=None,
                         retry_count=attempt.retry_state.attempt_number - 1,
-                    )
+                    ) from e
 
         # This line should never be reached due to reraise=True
         raise RuntimeError("Retry loop exited unexpectedly")
