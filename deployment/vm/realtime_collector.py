@@ -37,7 +37,7 @@ from datetime import datetime, timezone
 import requests
 import websockets
 from google.cloud import secretmanager
-from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_exception_type
+from tenacity import retry, retry_if_exception_type, stop_after_attempt, wait_exponential
 
 # Configuration
 GCP_PROJECT = os.environ.get('GCP_PROJECT', 'eonlabs-ethereum-bq')
@@ -279,7 +279,7 @@ def validate_config():
         CLICKHOUSE_PASSWORD = get_secret('clickhouse-password')
         print(f"[INIT] ClickHouse credentials loaded (host: {CLICKHOUSE_HOST})")
     except Exception as e:
-        raise ValueError(f"ClickHouse secrets required: {e}")
+        raise ValueError(f"ClickHouse secrets required: {e}") from e
 
     print("[INIT] Secrets loaded")
 
