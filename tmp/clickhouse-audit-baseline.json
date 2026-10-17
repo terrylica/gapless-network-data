@@ -1,0 +1,126 @@
+{
+  "timestamp": "2025-12-10T15:09:46.121165",
+  "host": "ebmf8f35lu.us-west-2.aws.clickhouse.cloud",
+  "database": "ethereum_mainnet",
+  "table": "blocks",
+  "row_count": 23969279,
+  "storage": {
+    "compressed_size": "489.48 MiB",
+    "uncompressed_size": "2.66 GiB",
+    "compressed_bytes": 513255416,
+    "uncompressed_bytes": 2852598301,
+    "compression_ratio": 5.56
+  },
+  "columns": [
+    {
+      "name": "base_fee_per_gas",
+      "type": "Int64",
+      "compressed": "0.00 B",
+      "uncompressed": "0.00 B",
+      "compressed_bytes": 0,
+      "uncompressed_bytes": 0,
+      "ratio": null
+    },
+    {
+      "name": "size",
+      "type": "Int64",
+      "compressed": "0.00 B",
+      "uncompressed": "0.00 B",
+      "compressed_bytes": 0,
+      "uncompressed_bytes": 0,
+      "ratio": null
+    },
+    {
+      "name": "gas_limit",
+      "type": "Int64",
+      "compressed": "0.00 B",
+      "uncompressed": "0.00 B",
+      "compressed_bytes": 0,
+      "uncompressed_bytes": 0,
+      "ratio": null
+    },
+    {
+      "name": "difficulty",
+      "type": "UInt256",
+      "compressed": "0.00 B",
+      "uncompressed": "0.00 B",
+      "compressed_bytes": 0,
+      "uncompressed_bytes": 0,
+      "ratio": null
+    },
+    {
+      "name": "transaction_count",
+      "type": "Int64",
+      "compressed": "0.00 B",
+      "uncompressed": "0.00 B",
+      "compressed_bytes": 0,
+      "uncompressed_bytes": 0,
+      "ratio": null
+    },
+    {
+      "name": "excess_blob_gas",
+      "type": "Nullable(Int64)",
+      "compressed": "0.00 B",
+      "uncompressed": "0.00 B",
+      "compressed_bytes": 0,
+      "uncompressed_bytes": 0,
+      "ratio": null
+    },
+    {
+      "name": "blob_gas_used",
+      "type": "Nullable(Int64)",
+      "compressed": "0.00 B",
+      "uncompressed": "0.00 B",
+      "compressed_bytes": 0,
+      "uncompressed_bytes": 0,
+      "ratio": null
+    },
+    {
+      "name": "gas_used",
+      "type": "Int64",
+      "compressed": "0.00 B",
+      "uncompressed": "0.00 B",
+      "compressed_bytes": 0,
+      "uncompressed_bytes": 0,
+      "ratio": null
+    },
+    {
+      "name": "timestamp",
+      "type": "DateTime64(3)",
+      "compressed": "0.00 B",
+      "uncompressed": "0.00 B",
+      "compressed_bytes": 0,
+      "uncompressed_bytes": 0,
+      "ratio": null
+    },
+    {
+      "name": "number",
+      "type": "Int64",
+      "compressed": "0.00 B",
+      "uncompressed": "0.00 B",
+      "compressed_bytes": 0,
+      "uncompressed_bytes": 0,
+      "ratio": null
+    },
+    {
+      "name": "total_difficulty",
+      "type": "UInt256",
+      "compressed": "0.00 B",
+      "uncompressed": "0.00 B",
+      "compressed_bytes": 0,
+      "uncompressed_bytes": 0,
+      "ratio": null
+    }
+  ],
+  "projections": [],
+  "query_latencies_seconds": {
+    "limit_10000": 3.039,
+    "date_range_jan_2024": 1.117,
+    "count_all": 0.478
+  },
+  "engine": {
+    "engine_full": "SharedReplacingMergeTree('/clickhouse/tables/{uuid}/{shard}', '{replica}') PARTITION BY toYYYYMM(timestamp) ORDER BY number SETTINGS index_granularity = 8192",
+    "sorting_key": "number",
+    "partition_key": "toYYYYMM(timestamp)"
+  }
+}
