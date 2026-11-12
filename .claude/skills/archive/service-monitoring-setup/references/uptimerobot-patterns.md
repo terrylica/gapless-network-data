@@ -7,10 +7,10 @@
 
 ## Empirical Validation Summary
 
-**Probe Date**: 2025-11-09
-**API Key**: Stored in Doppler (`UPTIMEROBOT_API_KEY`)
-**Account**: you@example.com
-**Validation Scripts**: `/tmp/probe/uptimerobot/` (5 phases completed)
+- **Probe Date**: 2025-11-09
+- **API Key**: Stored in Doppler (`UPTIMEROBOT_API_KEY`)
+- **Account**: you@example.com
+- **Validation Scripts**: `/tmp/probe/uptimerobot/` (5 phases completed)
 
 **Core Capabilities Validated**:
 
