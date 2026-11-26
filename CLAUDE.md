@@ -114,7 +114,7 @@ Coordinates all project phases, specifications, and implementation work.
 
 ## ClickHouse Integration
 
-**Status**: Operational - Dual-pipeline (BigQuery hourly + Alchemy real-time) → ClickHouse Cloud (AWS) with ReplacingMergeTree automatic deduplication
+**Status**: Retired 2026-11-25. The ClickHouse Cloud service the pipeline wrote to (a trial) no longer exists: its hostname resolves NXDOMAIN, and every retained run of `eth-md-updater` failed with `NameResolutionError`. In GCP the Cloud Scheduler triggers `eth-md-hourly` and `eth-md-data-quality` are paused, the `eth-realtime-collector` VM is stopped (not deleted), and the dead `clickhouse-host` / `clickhouse-password` secrets are deleted; the Cloud Run jobs, BigQuery and this code are kept. Reviving it needs a new ClickHouse target, then: new secrets, `gcloud scheduler jobs resume`, `gcloud compute instances start`, and a backfill from BigQuery. The design it ran: dual pipeline (BigQuery hourly + Alchemy real-time) → ClickHouse Cloud (AWS) with ReplacingMergeTree deduplication.
 
 **Migration**: MotherDuck → ClickHouse completed 2025-11-25 (trial expiration driven). See `docs/development/plan/2025-11-25-motherduck-clickhouse-migration/plan.md` for migration details.
 
